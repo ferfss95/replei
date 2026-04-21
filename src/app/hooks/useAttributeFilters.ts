@@ -1,0 +1,204 @@
+/**
+ * useAttributeFilters Hook
+ * Gerencia estados e lógica de filtros de atributos (Seleção, Exclusão, Agrupamento)
+ *
+ * RESPONSABILIDADES:
+ * - Manter states: selections, grouping, exclusions
+ * - Fornecer opções dinâmicas para cada atributo (dependentes de seleções)
+ * - Gerenciar lógica de toggle de agrupamento
+ * - Calcular filtros ativos consolidados
+ *
+ * REGRA DE OURO: Esta lógica está homologada. Não altere o comportamento.
+ */
+
+import { useState, useCallback, useMemo } from 'react';
+import { LOCATION_ATTRIBUTES, type Step } from '../constants';
+import type { ModuleConfig } from '../modules/types';
+import {
+  REDE_OPTIONS,
+  CANAL_OPTIONS,
+  TIPO_OPTIONS,
+  REGIONAL_OPTIONS,
+  LOCALIZACAO_OPTIONS,
+  VENDEDOR_OPTIONS,
+  ORIGEM_OPTIONS,
+  LOJAS_LIST,
+  STATE_TO_UF,
+  CIDADES_BY_ESTADO,
+  ESTADOS_LIST,
+} from '../referenceData';
+
+// ══════════════════════════════════════════════════════════════════
+// TYPES
+// ══════════════════════════════════════════════════════════════════
+
+interface UseAttributeFiltersProps {
+  currentModuleConfig: ModuleConfig;
+  currentStep: Step;
+}
+
+interface ActiveFilter {
+  key: string;
+  vals: string[];
+  type: 'include' | 'exclude';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// HOOK
+// ══════════════════════════════════════════════════════════════════
+
+export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
+  const { currentModuleConfig, currentStep } = props;
+
+  // ─── STATES ───
+  const [selections, setSelections] = useState<Record<string, string[]>>({});
+  const [grouping, setGrouping] = useState<string[]>([]);
+  const [exclusions, setExclusions] = useState<Record<string, string[]>>({});
+
+  // ─── GET ATTRIBUTE OPTIONS (Dynamic options based on selections) ───
+  const getAttributeOptions = useCallback(
+    (attrId: string) => {
+      // First check if this attribute belongs to the current module's domain
+      // (for Loja module, rede/tipo/estado/regional/cidade/loja are domain attributes)
+      if (
+        currentModuleConfig.domainAttributes.some((attr) => attr.id === attrId)
+      ) {
+        return currentModuleConfig.getDomainAttributeOptions(attrId, selections);
+      }
+
+      // Otherwise handle location attributes (for PRODUTO module)
+      switch (attrId) {
+        case 'rede':
+          return REDE_OPTIONS;
+        case 'canal':
+          return CANAL_OPTIONS;
+        case 'tipo':
+          return TIPO_OPTIONS;
+        case 'regional':
+          return REGIONAL_OPTIONS;
+        case 'localizacao':
+          return LOCALIZACAO_OPTIONS;
+        case 'vendedor':
+          return VENDEDOR_OPTIONS;
+        case 'origem':
+          return ORIGEM_OPTIONS;
+        case 'loja':
+          return LOJAS_LIST;
+        case 'estado': {
+          const selectedCities = selections['cidade'] || [];
+
+          const formatState = (name: string) => `${name} - ${STATE_TO_UF[name] || ''}`;
+
+          if (selectedCities.length === 0) {
+            return ESTADOS_LIST.map(formatState).sort();
+          }
+
+          const states = new Set<string>();
+          selectedCities.forEach((cityString) => {
+            // Format is "City - UF"
+            const parts = cityString.split(' - ');
+            if (parts.length >= 2) {
+              const uf = parts[parts.length - 1];
+              const stateName = Object.keys(STATE_TO_UF).find(
+                (key) => STATE_TO_UF[key] === uf,
+              );
+              if (stateName && ESTADOS_LIST.includes(stateName)) {
+                states.add(formatState(stateName));
+              }
+            }
+          });
+          return Array.from(states).sort();
+        }
+        case 'cidade': {
+          const selectedStates = selections['estado'] || [];
+          let formattedCities: string[] = [];
+
+          const getRawState = (opt: string) => opt.split(' - ')[0];
+
+          if (selectedStates.length === 0) {
+            Object.entries(CIDADES_BY_ESTADO).forEach(([state, cities]) => {
+              const uf = STATE_TO_UF[state];
+              cities.forEach((city) => formattedCities.push(`${city} - ${uf}`));
+            });
+          } else {
+            selectedStates.forEach((stateOpt) => {
+              const rawState = getRawState(stateOpt);
+              const cities = CIDADES_BY_ESTADO[rawState] || [];
+              const uf = STATE_TO_UF[rawState];
+              if (cities && uf) {
+                cities.forEach((city) => formattedCities.push(`${city} - ${uf}`));
+              }
+            });
+          }
+          return Array.from(new Set(formattedCities)).sort();
+        }
+        // Domain-specific attributes — delegated to the active module config
+        default:
+          return currentModuleConfig.getDomainAttributeOptions(attrId, selections);
+      }
+    },
+    [selections, currentModuleConfig],
+  );
+
+  // ─── HANDLE ATTRIBUTE CLICK (Grouping toggle) ───
+  const handleAttributeClick = useCallback(
+    (attrId: string) => {
+      if (currentStep === 'grouping') {
+        setGrouping((prev) => {
+          if (prev.includes(attrId)) {
+            // Remove this attribute from the hierarchy
+            return prev.filter((id) => id !== attrId);
+          } else {
+            // Limit to 3 levels max
+            if (prev.length >= 3) return prev;
+            // Add at the end (next level)
+            return [...prev, attrId];
+          }
+        });
+      }
+    },
+    [currentStep],
+  );
+
+  // ─── ACTIVE FILTERS (Consolidated selections + exclusions) ───
+  const activeFilters: ActiveFilter[] = useMemo(
+    () => [
+      ...(selections
+        ? Object.entries(selections)
+            .filter(([, vals]) => vals && vals.length > 0)
+            .map(([k, v]) => ({
+              key: k,
+              vals: v,
+              type: 'include' as const,
+            }))
+        : []),
+      ...(exclusions
+        ? Object.entries(exclusions)
+            .filter(([, vals]) => vals && vals.length > 0)
+            .map(([k, v]) => ({
+              key: k,
+              vals: v,
+              type: 'exclude' as const,
+            }))
+        : []),
+    ],
+    [selections, exclusions],
+  );
+
+  return {
+    // States
+    selections,
+    setSelections,
+    grouping,
+    setGrouping,
+    exclusions,
+    setExclusions,
+
+    // Functions
+    getAttributeOptions,
+    handleAttributeClick,
+
+    // Computed
+    activeFilters,
+  };
+};
