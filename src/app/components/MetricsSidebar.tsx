@@ -82,9 +82,10 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   return (
     <aside
       className={cn(
-        "bg-white border-l border-[#d5dbe3] flex flex-col overflow-hidden transition-all duration-300 fixed right-0 top-0 bottom-0",
+        "bg-white border-l border-[#d5dbe3] flex flex-col overflow-hidden transition-all duration-300 fixed right-0 bottom-0",
         metricsCollapsed ? "w-12" : "w-72",
       )}
+      style={{ top: 64 }}
     >
       <div
         className={cn(
