@@ -174,7 +174,6 @@ export const produtoModule: ModuleConfig = {
     { id: 'qtd_venda',   label: 'Qtd Venda',        icon: ShoppingCart},
     { id: 'qtd_estoque', label: 'Qtd Estoque',      icon: Package     },
     { id: 'vlr_estoque', label: 'Vlr Estoque',      icon: DollarSign  },
-    { id: 'giro_estoque', label: 'Giro de Estoque', icon: PackageOpen },
     { id: 'dep',         label: 'DEP',              icon: Package     },
     { id: 'def',         label: 'DEF',              icon: DollarSign  },
     // Planejamento group divider
@@ -260,7 +259,7 @@ export const produtoModule: ModuleConfig = {
 
   metricDisplayOrder: [
     'venda', 'sss', 'cmv', 'lucro_bruto', 'margem',
-    'qtd_venda', 'qtd_estoque', 'vlr_estoque', 'giro_estoque', 'dep', 'def',
+    'qtd_venda', 'qtd_estoque', 'vlr_estoque', 'dep', 'def',
     'vlr_plano', 'qtd_plano', 'qtd_desvio_plano', 'vlr_desvio_plano',
     'vlr_target', 'qtd_target', 'qtd_desvio_target', 'vlr_desvio_target',
     ...EXPOSICAO_PRODUTO_METRIC_IDS,
