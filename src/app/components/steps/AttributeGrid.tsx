@@ -32,7 +32,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
   handleAttributeClick,
 }: AttributeGridProps) {
   return (
-    <div className="bg-white rounded-xl border border-[#d5dbe3] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden shrink-0">
+    <div className="bg-white rounded-xl border border-[#808080] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden shrink-0">
       {/* Header */}
       <div className="bg-white px-6 py-4 flex items-center gap-3 flex-none">
         {currentStep === "selection" && (

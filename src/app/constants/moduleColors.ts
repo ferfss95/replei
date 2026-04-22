@@ -62,32 +62,32 @@ export interface ModuleColors {
 export const MODULE_COLORS: Record<Module, ModuleColors> = {
   // ── PRODUTO (Azul) ─────────────────────────────────────────────────────────
   PRODUTO: {
-    primaryColor: '#2563EB',    // COR1
-    iconColor: '#1545C6',       // COR2
-    highlightColor: '#A6D0FF',  // COR3
-    accentColor: '#A8BECE',     // COR4
-    backgroundColor: '#EDF0F4',
+    primaryColor: '#2563EB',    // COR1 — Principal / BG Header
+    iconColor: '#1545C6',       // COR2 — Complementar / Ícone
+    highlightColor: '#A6D0FF',  // COR3 — Destaque / Focus / Hover
+    accentColor: '#A8BECE',     // COR4 — Secundária
+    backgroundColor: '#F8FBFF', // COR5 — Fundo branco azulado
     topBarColor: '#1545C6',     // @deprecated — alias de iconColor
   },
 
   // ── LOJA (Verde) ───────────────────────────────────────────────────────────
   LOJA: {
-    primaryColor: '#16A34A',    // COR1
-    iconColor: '#146829',       // COR2
-    highlightColor: '#80EEA8',  // COR3
-    accentColor: '#A8CCBC',     // COR4
-    backgroundColor: '#EEF4F1',
+    primaryColor: '#16A34A',    // COR1 — Principal / BG Header
+    iconColor: '#146829',       // COR2 — Complementar / Ícone
+    highlightColor: '#80EEA8',  // COR3 — Destaque / Focus / Hover
+    accentColor: '#A8CCBC',     // COR4 — Secundária
+    backgroundColor: '#FBFFF8', // COR5 — Fundo branco esverdeado
     topBarColor: '#146829',     // @deprecated — alias de iconColor
   },
 
-  // ── INDICADORES (Amarelo/Dourado — conforme spec P15) ─────────────────────
+  // ── INDICADORES (Amarelo/Dourado) ─────────────────────────────────────────
   INDICADORES: {
-    primaryColor: '#16A34A',    // COR1
-    iconColor: '#146829',       // COR2
-    highlightColor: '#80EEA8',  // COR3
-    accentColor: '#A8CCBC',     // COR4
-    backgroundColor: '#FFFBEB',
-    topBarColor: '#146829',     // @deprecated — alias de iconColor
+    primaryColor: '#DBA500',    // COR1 — Principal / BG Header
+    iconColor: '#9D7F20',       // COR2 — Complementar / Ícone
+    highlightColor: '#FFFF5C',  // COR3 — Destaque / Focus / Hover
+    accentColor: '#DEDFB4',     // COR4 — Secundária
+    backgroundColor: '#FEFFF8', // COR5 — Fundo branco amarelado
+    topBarColor: '#9D7F20',     // @deprecated — alias de iconColor
   },
 
   // ── EXTRAVIOS (Neutro — sem paleta dedicada na spec P15) ──────────────────

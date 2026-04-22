@@ -128,7 +128,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                         {/* ── Módulo + Análise card ── */}
                         <div
                           className={cn(
-                            "bg-white rounded-[14px] border border-[#d5dbe3] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-[21px] flex flex-col shrink-0 gap-[20px] items-center justify-between",
+                            "bg-white rounded-[14px] border border-[#808080] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-[21px] flex flex-col shrink-0 gap-[20px] items-center justify-between",
                             !isPeriodEditable &&
                               "opacity-60 pointer-events-none",
                           )}
@@ -170,7 +170,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                           content="A ediç��o só é possível no modo de seleção."
                         >
                           <div
-                            className="bg-white rounded-[14px] border border-[#d5dbe3] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col flex-1 min-w-0 px-[21px] pt-[16px] pb-[21px]"
+                            className="bg-white rounded-[14px] border border-[#808080] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col flex-1 min-w-0 px-[21px] pt-[16px] pb-[21px]"
                             style={{ height: 334 }}
                           >
                             <div className="flex items-start mb-3 shrink-0">

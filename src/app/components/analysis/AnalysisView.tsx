@@ -3,6 +3,7 @@
  * Extraído de App.tsx — contém toda a lógica de visualização de análises
  */
 import React, { useState } from "react";
+import ReactDOM from "react-dom";
 import {
   ChevronRight,
   Check,
@@ -86,6 +87,8 @@ import type { AnalysisMode, AveragePeriodType } from "../../types/wizard";
 // ══════════════════════════════════════════════════════════════════
 
 interface AnalysisViewProps {
+  /** Elemento DOM no SecondaryHeader onde os action buttons serão portados */
+  actionsContainer?: HTMLDivElement | null;
   moduleConfig: ModuleConfig;
   selectedMetrics: string[];
   grouping: string[];
@@ -121,6 +124,7 @@ interface AnalysisViewProps {
 }
 
 export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView({
+  actionsContainer,
   moduleConfig,
   selectedMetrics,
   grouping,
@@ -2973,51 +2977,39 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         style={{
           borderWidth: 1,
           borderStyle: "solid",
-          ...bc("#d5dbe3"),
+          borderColor: "#808080",
           boxShadow:
             "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
         }}
       >
-        {/* Row 1: Title + Period + Actions */}
-        <div className="flex items-start gap-4 justify-between">
-          <div className="flex items-center gap-4 min-w-0 flex-1">
+        {/* Row 1: Title + Actions
+            — Quando actionsContainer está disponível (SecondaryHeader montado):
+              • O ícone/título fica no SecondaryHeader (não renderiza aqui)
+              • Os action buttons são portados para o slot do SecondaryHeader
+            — Fallback (sem portal): exibe o Row 1 original inline */}
+        {!actionsContainer && (
+          <div className="flex items-center gap-4 min-w-0 flex-1 mb-0">
             <div className="flex items-center gap-3 min-w-0">
               <div
                 className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
                 style={{ backgroundColor: "#eef1f5" }}
               >
-                {analysisMode === "padrao" && (
-                  <BarChart3
-                    size={18}
-                    className="text-[#314158]"
-                  />
-                )}
-                {analysisMode === "evolucao" && (
-                  <TrendingUp
-                    size={18}
-                    className="text-[#314158]"
-                  />
-                )}
-                {analysisMode === "comparativo" && (
-                  <ArrowLeftRight
-                    size={18}
-                    className="text-[#314158]"
-                  />
-                )}
-                {analysisMode === "horaahora" && (
-                  <Clock size={18} className="text-[#314158]" />
-                )}
+                {analysisMode === "padrao" && <BarChart3 size={18} className="text-[#314158]" />}
+                {analysisMode === "evolucao" && <TrendingUp size={18} className="text-[#314158]" />}
+                {analysisMode === "comparativo" && <ArrowLeftRight size={18} className="text-[#314158]" />}
+                {analysisMode === "horaahora" && <Clock size={18} className="text-[#314158]" />}
               </div>
               <h2 className="text-[24px] font-medium text-[#0f172b] tracking-[0.07px] leading-[32px] truncate">
-                {customTitle ||
-                  MODULE_TITLES[analysisMode] ||
-                  "Análise de Venda e Estoque"}
+                {customTitle || MODULE_TITLES[analysisMode] || "Análise de Venda e Estoque"}
               </h2>
             </div>
           </div>
+        )}
 
-          {/* Actions: Chart + Export */}
-          <div className="flex items-center gap-2 shrink-0">
+        {/* Actions: portados para o SecondaryHeader quando disponível, inline como fallback */}
+        {(() => {
+          const actionsJSX = (
+            <div className="flex items-center gap-2 shrink-0">
             {/* Add % share button */}
             <button
               onClick={() => setShowSharePct((prev) => !prev)}
@@ -3498,16 +3490,26 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
           </div>
-        </div>
+          );
+          return actionsContainer
+            ? ReactDOM.createPortal(actionsJSX, actionsContainer)
+            : actionsJSX;
+        })()}
 
         {/* Row 2: Period + Analysis Attributes (Grouping + Selections + Exclusions) */}
         <div
-          className="mt-3 pt-3 flex items-center gap-2 flex-wrap"
-          style={{
-            borderTopWidth: 1,
-            borderTopStyle: "solid",
-            borderTopColor: "#f1f5f9",
-          }}
+          className="flex items-center gap-2 flex-wrap"
+          style={
+            actionsContainer
+              ? { marginTop: 0 }
+              : {
+                  marginTop: 12,
+                  paddingTop: 12,
+                  borderTopWidth: 1,
+                  borderTopStyle: "solid",
+                  borderTopColor: "#f1f5f9",
+                }
+          }
         >
           {/* Period tag(s) */}
           {analysisMode === "comparativo" ? (

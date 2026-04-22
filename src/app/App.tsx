@@ -23,6 +23,7 @@ import { SelectionView } from "./components/steps/SelectionView";
 import { AttributeGrid } from "./components/steps/AttributeGrid";
 import { MetricsSidebar } from "./components/MetricsSidebar";
 import { AppHeader } from "./components/AppHeader";
+import { SecondaryHeader } from "./components/SecondaryHeader";
 import { getModuleColors } from "./constants/moduleColors";
 import { useDateRange } from "./hooks/useDateRange";
 import { useModuleNavigator } from "./hooks/useModuleNavigator";
@@ -175,6 +176,13 @@ export default function App() {
   // ─── Module theme colors ────────────────────────────────────────
   const moduleColors = getModuleColors(currentModule);
 
+  // ─── Secondary Header: container para portal dos action buttons ─
+  const [actionsContainer, setActionsContainer] = React.useState<HTMLDivElement | null>(null);
+  const handleActionsMount = React.useCallback(
+    (el: HTMLDivElement | null) => setActionsContainer(el),
+    [],
+  );
+
   // ─── Handlers ──────────────────────────────────────────────────
   const toggleMetricsGroup = (groupId: string) => {
     setMetricsGroupExpanded((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -287,9 +295,17 @@ export default function App() {
             )}
           >
             <div className="flex-1 flex flex-col overflow-hidden">
+              {/* ── Secondary Header: 56px fixo, fora da área de scroll ── */}
+              <SecondaryHeader
+                currentStep={currentStep}
+                analysisMode={analysisMode}
+                title={currentAnalysisDisplayName}
+                onActionsMount={handleActionsMount}
+              />
+
               <div
                 className={cn(
-                  "p-6 w-full flex-1 flex flex-col overflow-y-auto",
+                  "px-6 pb-6 w-full flex-1 flex flex-col overflow-y-auto",
                 )}
               >
                 {/* Config Panel - Modo de Análise + Período */}
@@ -359,6 +375,7 @@ export default function App() {
                 {/* Analysis View */}
                 {currentStep === "analysis" && (
                   <AnalysisView
+                    actionsContainer={actionsContainer}
                     moduleConfig={currentModuleConfig}
                     selectedMetrics={selectedMetrics}
                     grouping={grouping}
