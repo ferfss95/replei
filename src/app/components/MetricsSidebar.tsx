@@ -45,7 +45,8 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
     .filter((m): m is MetricDef => Boolean(m));
   const hasOutrasAccordion =
     planejamentoMetrics.length > 0 || outrasAfterPlanningMetrics.length > 0;
-  const isLojaFlatMetrics = currentModule === "LOJA";
+  // Módulos que exibem métricas diretamente, sem accordion "Venda e Estoque"
+  const isLojaFlatMetrics = currentModule === "LOJA" || currentModule === "INDICADORES";
   const extraSidebarSections = currentModuleConfig.metricSidebarExtraSections || [];
 
   const renderMetricRow = (metric: Pick<MetricDef, "id" | "label" | "tooltip">) => {
