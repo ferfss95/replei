@@ -540,7 +540,6 @@ export const SALA_OPTIONS = [
   "Sala V",
   "Sala F",
   "Sala O",
-  "Sala S"
 ];
 
 export const UDN_OPTIONS = [

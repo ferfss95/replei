@@ -2977,7 +2977,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         style={{
           borderWidth: 1,
           borderStyle: "solid",
-          borderColor: "#808080",
+          borderColor: "#D9D9D9",
           boxShadow:
             "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
         }}

@@ -14,10 +14,10 @@ export const MODE_LABELS: Record<AnalysisMode, string> = {
 };
 
 export const MODULE_TITLES: Record<Module, string> = {
-  PRODUTO: 'ANÁLISE DE PRODUTO',
-  LOJA: 'ANÁLISE DE LOJA',
-  EXTRAVIOS: 'ANÁLISE DE EXTRAVIOS',
-  INDICADORES: 'ANÁLISE DE INDICADORES',
+  PRODUTO: 'PRODUTO',
+  LOJA: 'LOJA',
+  EXTRAVIOS: 'EXTRAVIOS',
+  INDICADORES: 'INDICADORES',
 };
 
 export const getModuleTitle = (module: Module): string => {

@@ -8,7 +8,7 @@ interface LogoProps {
 export function Logo({ color = "#0F172B" }: LogoProps) {
   return (
     <span className="contents select-none">
-      <svg className="block shrink-0" width="64" height="23" fill="none" viewBox="0 0 60 19.0327">
+      <svg className="block shrink-0" width="67" height="25" fill="none" viewBox="0 0 60 19.0327">
         <path d={svgPaths.pbff1d00} fill={color} />
         <path d={svgPaths.p2c3c4d80} fill={color} />
         <path d={svgPaths.p2cd23571} fill={color} />

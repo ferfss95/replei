@@ -266,7 +266,7 @@ export default function App() {
       {isTransitioning && <ModuleTransition />}
       <div
         className="h-screen overflow-hidden text-slate-900 font-sans flex flex-col"
-        style={{ backgroundColor: moduleColors.backgroundColor }}
+        style={{ backgroundColor: "#F1F1F1" }}
       >
         <AppHeader
           currentModule={currentModule}
