@@ -23,6 +23,7 @@ import { SelectionView } from "./components/steps/SelectionView";
 import { AttributeGrid } from "./components/steps/AttributeGrid";
 import { MetricsSidebar } from "./components/MetricsSidebar";
 import { AppHeader } from "./components/AppHeader";
+import { getModuleColors } from "./constants/moduleColors";
 import { useDateRange } from "./hooks/useDateRange";
 import { useModuleNavigator } from "./hooks/useModuleNavigator";
 import { useAttributeFilters } from "./hooks/useAttributeFilters";
@@ -172,21 +173,6 @@ export default function App() {
         : compYears1.length > 0 && compYears2.length > 0);
 
   // ─── Module theme colors ────────────────────────────────────────
-  const getModuleColors = (module: Module) => {
-    switch (module) {
-      case "PRODUTO":
-        return { primaryColor: "#2563EB", topBarColor: "#1E3D92", backgroundColor: "#EDF0F4" };
-      case "LOJA":
-        return { primaryColor: "#16A34A", topBarColor: "#146829", backgroundColor: "#EEF4F1" };
-      case "EXTRAVIOS":
-        return { primaryColor: "#314158", topBarColor: "#314158", backgroundColor: "#F4EFF0" };
-      // ── INDICADORES (amarelo/âmbar) ──
-      case "INDICADORES":
-        return { primaryColor: "#D97706", topBarColor: "#92400E", backgroundColor: "#FFFBEB" };
-      default:
-        return { primaryColor: "#314158", topBarColor: "#314158", backgroundColor: "#EDF0F4" };
-    }
-  };
   const moduleColors = getModuleColors(currentModule);
 
   // ─── Handlers ──────────────────────────────────────────────────
@@ -274,12 +260,6 @@ export default function App() {
         className="h-screen overflow-hidden text-slate-900 font-sans flex flex-col"
         style={{ backgroundColor: moduleColors.backgroundColor }}
       >
-        {/* FAIXA SUPERIOR ~10px */}
-        <div
-          className="h-[10px] flex-none z-40"
-          style={{ backgroundColor: moduleColors.topBarColor }}
-        />
-
         <AppHeader
           currentModule={currentModule}
           currentStep={currentStep}
