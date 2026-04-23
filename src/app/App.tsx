@@ -407,6 +407,7 @@ export default function App() {
                   <AnalysisView
                     actionsContainer={actionsContainer}
                     moduleConfig={currentModuleConfig}
+                    moduleColors={moduleColors}
                     selectedMetrics={selectedMetrics}
                     grouping={grouping}
                     getAttributeOptions={getAttributeOptions}

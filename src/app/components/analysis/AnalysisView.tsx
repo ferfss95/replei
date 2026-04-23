@@ -28,7 +28,6 @@ import {
   Palette,
   Component,
   Hash,
-  Anchor,
   Ban,
   Clock,
   PieChart as PieChartIcon,
@@ -81,6 +80,7 @@ import { bc, shortPeriodLabel } from "../../utils/formatting";
 import { isPlanningMetric, getPlanningBg, generateHourlyValue } from "../../utils/dataGenerators";
 import { hashString } from "../../utils/calculations";
 import type { ModuleConfig } from "../../modules/types";
+import type { ModuleColors } from "../../constants/moduleColors";
 import type { AnalysisMode, AveragePeriodType } from "../../types/wizard";
 
 // ══════════════════════════════════════════════════════════════════
@@ -91,6 +91,7 @@ interface AnalysisViewProps {
   /** Elemento DOM no SecondaryHeader onde os action buttons serão portados */
   actionsContainer?: HTMLDivElement | null;
   moduleConfig: ModuleConfig;
+  moduleColors: ModuleColors;
   selectedMetrics: string[];
   grouping: string[];
   getAttributeOptions: (attrId: string) => string[];
@@ -127,6 +128,7 @@ interface AnalysisViewProps {
 export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView({
   actionsContainer,
   moduleConfig,
+  moduleColors,
   selectedMetrics,
   grouping,
   getAttributeOptions,
@@ -168,6 +170,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     string,
     string
   >;
+  const TABLE_HEADER_BG = "#314158";
+  const TABLE_HEADER_TEXT = "#F1F1F1";
+  const PIVOT_DERIVED_HEADER_BG = moduleColors.accentColor;
+  const PIVOT_DERIVED_HEADER_TEXT = "#314158";
 
   // Attribute label/icon helpers — resolved via active module domain + shared location
   const getAttributeLabel = (id: string): string => {
@@ -2771,6 +2777,91 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     ],
   );
 
+  const hasCurrentTimeInfo = React.useMemo(() => {
+    const today = getTodayFormatted();
+
+    if (analysisMode === "comparativo") {
+      if (periodType === "Diário") {
+        return (
+          compDateRange1.end === today ||
+          compDateRange2.end === today
+        );
+      }
+      if (periodType === "Semanal") {
+        if (weeklyMode === "specific") {
+          return (
+            compSpecificDays1.includes(today) ||
+            compSpecificDays2.includes(today)
+          );
+        }
+        return (
+          compWeeklyComputedDays1.some(
+            (day) => day && formatDate(day) === today,
+          ) ||
+          compWeeklyComputedDays2.some(
+            (day) => day && formatDate(day) === today,
+          )
+        );
+      }
+      if (periodType === "Mensal") {
+        const currentMonth = getCurrentMonthString();
+        return (
+          compMonths1.includes(currentMonth) ||
+          compMonths2.includes(currentMonth)
+        );
+      }
+      if (periodType === "Anual") {
+        const currentYear = getCurrentYearString();
+        return (
+          compYears1.includes(currentYear) ||
+          compYears2.includes(currentYear)
+        );
+      }
+      return false;
+    }
+
+    if (
+      periodType === "Diário" ||
+      analysisMode === "horaahora"
+    ) {
+      return dateRange.end === today;
+    }
+    if (periodType === "Semanal") {
+      if (weeklyMode === "specific") {
+        return selectedSpecificDays.includes(today);
+      }
+      return weeklyComputedDays.some(
+        (day) => day && formatDate(day) === today,
+      );
+    }
+    if (periodType === "Mensal") {
+      return selectedMonths.includes(getCurrentMonthString());
+    }
+    if (periodType === "Anual") {
+      return selectedYears.includes(getCurrentYearString());
+    }
+    return false;
+  }, [
+    analysisMode,
+    periodType,
+    dateRange.end,
+    weeklyMode,
+    selectedSpecificDays,
+    weeklyComputedDays,
+    compDateRange1.end,
+    compDateRange2.end,
+    compSpecificDays1,
+    compSpecificDays2,
+    compWeeklyComputedDays1,
+    compWeeklyComputedDays2,
+    compMonths1,
+    compMonths2,
+    compYears1,
+    compYears2,
+    selectedMonths,
+    selectedYears,
+  ]);
+
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-500">
       {/* ═══════════════ RESUMO DA ANÁLISE ═══════════════ */}
@@ -3342,7 +3433,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
       {/* ═══════════════ HEADER CARD: Title + Ações + Info tempo ═══════════════ */}
       <div
-        className="flex-none bg-white rounded-[14px] px-5 py-4"
+        className={cn(
+          "flex-none bg-white rounded-[14px] px-5 py-4",
+          actionsContainer && !hasCurrentTimeInfo && "hidden",
+        )}
         style={{
           borderWidth: 1,
           borderStyle: "solid",
@@ -3866,95 +3960,33 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         })()}
 
         {/* Current time info - mostrar em todas análises que incluem dia atual */}
-        {(() => {
-          // Verificar se o período inclui hoje
-          const today = getTodayFormatted();
-          let includesToday = false;
-
-          if (analysisMode === "comparativo") {
-            // Comparativo: verificar ambos períodos
-            if (periodType === "Diário") {
-              includesToday =
-                compDateRange1.end === today ||
-                compDateRange2.end === today;
-            } else if (periodType === "Semanal") {
-              if (weeklyMode === "specific") {
-                includesToday =
-                  compSpecificDays1.includes(today) ||
-                  compSpecificDays2.includes(today);
-              } else {
-                includesToday =
-                  compWeeklyComputedDays1.some(
-                    (day) => day && formatDate(day) === today,
-                  ) ||
-                  compWeeklyComputedDays2.some(
-                    (day) => day && formatDate(day) === today,
-                  );
-              }
-            } else if (periodType === "Mensal") {
-              const currentMonth = getCurrentMonthString();
-              includesToday =
-                compMonths1.includes(currentMonth) ||
-                compMonths2.includes(currentMonth);
-            } else if (periodType === "Anual") {
-              const currentYear = getCurrentYearString();
-              includesToday =
-                compYears1.includes(currentYear) ||
-                compYears2.includes(currentYear);
-            }
-          } else {
-            // Geral, Evolutiva, Hora a Hora
-            if (
-              periodType === "Diário" ||
-              analysisMode === "horaahora"
-            ) {
-              includesToday = dateRange.end === today;
-            } else if (periodType === "Semanal") {
-              if (weeklyMode === "specific") {
-                includesToday = selectedSpecificDays.includes(today);
-              } else {
-                includesToday = weeklyComputedDays.some(
-                  (day) => day && formatDate(day) === today,
-                );
-              }
-            } else if (periodType === "Mensal") {
-              includesToday = selectedMonths.includes(
-                getCurrentMonthString(),
-              );
-            } else if (periodType === "Anual") {
-              includesToday = selectedYears.includes(
-                getCurrentYearString(),
-              );
-            }
-          }
-
-          if (!includesToday) return null;
-
-          const now = new Date();
-          const currentTime = now.toLocaleTimeString("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-
-          // Round down to nearest 30-minute interval
-          const minutes = now.getMinutes();
-          const roundedMinutes = minutes < 30 ? 0 : 30;
-          const lastUpdate = new Date(now);
-          lastUpdate.setMinutes(roundedMinutes, 0, 0);
-          const lastUpdateTime = lastUpdate.toLocaleTimeString(
-            "pt-BR",
-            { hour: "2-digit", minute: "2-digit" },
-          );
-
-          return (
-            <div className="flex items-center gap-2 text-[11px] text-[#62748e] mt-3 px-4">
-              <Clock size={11} className="text-[#90a1b9]" />
-              <span>Horário atual: {currentTime}</span>
-              <span className="text-[#90a1b9]">|</span>
-              <span>Última atualização: {lastUpdateTime}</span>
-            </div>
-          );
-        })()}
+        {hasCurrentTimeInfo && (
+          <div className="flex items-center gap-2 text-[11px] text-[#62748e] mt-3 px-4">
+            <Clock size={11} className="text-[#90a1b9]" />
+            <span>
+              Horário atual:{" "}
+              {new Date().toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+            <span className="text-[#90a1b9]">|</span>
+            <span>
+              Última atualização:{" "}
+              {(() => {
+                const now = new Date();
+                const roundedMinutes =
+                  now.getMinutes() < 30 ? 0 : 30;
+                const lastUpdate = new Date(now);
+                lastUpdate.setMinutes(roundedMinutes, 0, 0);
+                return lastUpdate.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+              })()}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ═══════════════ GRÁFICO Section ═══════════════ */}
@@ -5830,22 +5862,20 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             ...bc("#e2e8f0"),
                             borderTopWidth: 0,
                             borderLeftWidth: 0,
+                            backgroundColor: TABLE_HEADER_BG,
+                            color: TABLE_HEADER_TEXT,
                             borderBottomWidth: 2,
                             borderBottomStyle: "solid",
-                            borderBottomColor: "#e2e8f0",
+                            borderBottomColor: "rgba(241, 241, 241, 0.25)",
                             borderRightWidth: 1,
                             borderRightStyle: "solid",
                             boxShadow:
                               "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                           }}
-                          className="px-4 py-2.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider sticky left-0 top-0 z-[50] bg-white select-none align-middle"
+                          className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider sticky left-0 top-0 z-[50] select-none align-middle"
                         >
                           <div className="flex items-center gap-2 overflow-hidden">
-                            <Anchor
-                              size={14}
-                              className="text-slate-400 shrink-0"
-                            />
-                            <span className="truncate text-[rgb(29,41,61)] text-[14px]">
+                            <span className="truncate text-[14px]">
                               {groupingLabel}
                             </span>
                           </div>
@@ -5878,13 +5908,16 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     colSpan={getSubColsForMetric(
                                       mId,
                                     )}
-                                    className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide bg-white text-slate-700 select-none"
+                                    className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide select-none"
                                     style={{
+                                      backgroundColor:
+                                        TABLE_HEADER_BG,
+                                      color: TABLE_HEADER_TEXT,
                                       borderBottomWidth: 1,
                                       borderBottomStyle:
                                         "solid",
                                       borderBottomColor:
-                                        "#e2e8f0",
+                                        "rgba(241, 241, 241, 0.25)",
                                       ...(!isLastMetric
                                         ? {
                                             borderRightWidth: 2,
@@ -5897,12 +5930,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     }}
                                   >
                                     <div className="flex items-center justify-center gap-1.5 text-[13px]">
-                                      {metric?.icon && (
-                                        <metric.icon
-                                          size={12}
-                                          className="shrink-0 opacity-60"
-                                        />
-                                      )}
                                       {abbrev}
                                     </div>
                                   </th>
@@ -5949,9 +5976,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   subHeaders.push(
                                     <th
                                       key={`${mId}__p${pIdx}`}
-                                      className="px-2 py-2 text-right font-bold text-slate-500 uppercase tracking-wider bg-white select-none whitespace-nowrap text-[12px] cursor-pointer group hover:bg-slate-50 transition-colors"
+                                      className="px-2 py-2 text-right font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px] cursor-pointer group hover:brightness-95 transition-colors"
                                       onClick={() => handleSort(periodSortKey)}
                                       style={{
+                                        backgroundColor:
+                                          PIVOT_DERIVED_HEADER_BG,
+                                        color:
+                                          PIVOT_DERIVED_HEADER_TEXT,
                                         width:
                                           getPivotMetricWidth(
                                             mId,
@@ -6044,8 +6075,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     subHeaders.push(
                                       <th
                                         key={`${mId}__p${pIdx}__avg`}
-                                        className="px-2 py-2 text-right font-bold text-slate-500 uppercase tracking-wider bg-white select-none whitespace-nowrap text-[11px]"
+                                        className="px-2 py-2 text-right font-bold uppercase tracking-wider select-none whitespace-nowrap text-[11px]"
                                         style={{
+                                          backgroundColor:
+                                            PIVOT_DERIVED_HEADER_BG,
+                                          color:
+                                            PIVOT_DERIVED_HEADER_TEXT,
                                           width: AVG_COL_WIDTH,
                                           borderBottomWidth: 2,
                                           borderBottomStyle:
@@ -6076,8 +6111,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     subHeaders.push(
                                       <th
                                         key={`${mId}__p${pIdx}__pct`}
-                                        className="px-2 py-2 text-center font-bold text-slate-500 uppercase tracking-wider bg-white select-none whitespace-nowrap text-[12px]"
+                                        className="px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
                                         style={{
+                                          backgroundColor:
+                                            PIVOT_DERIVED_HEADER_BG,
+                                          color:
+                                            PIVOT_DERIVED_HEADER_TEXT,
                                           width: PCT_COL_WIDTH,
                                           borderBottomWidth: 2,
                                           borderBottomStyle:
@@ -6122,9 +6161,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 subHeaders.push(
                                   <th
                                     key={`${mId}__var`}
-                                    className="px-2 py-2 text-right font-bold text-slate-500 uppercase tracking-wider bg-white select-none whitespace-nowrap text-[12px] cursor-pointer group hover:bg-slate-50 transition-colors"
+                                    className="px-2 py-2 text-right font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px] cursor-pointer group hover:brightness-95 transition-colors"
                                     onClick={() => handleSort(variationValueSortKey)}
                                     style={{
+                                      backgroundColor:
+                                        PIVOT_DERIVED_HEADER_BG,
+                                      color:
+                                        PIVOT_DERIVED_HEADER_TEXT,
                                       width:
                                         getPivotMetricWidth(
                                           mId,
@@ -6143,10 +6186,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     }}
                                   >
                                     <div className="flex items-center justify-end gap-2">
-                                      <TrendingUp
-                                        size={10}
-                                        className="shrink-0 opacity-50"
-                                      />
                                       <span>Var Vlr</span>
                                       <span className="shrink-0 text-slate-900">
                                         {renderSortIndicator(variationValueSortKey)}
@@ -6158,10 +6197,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   <th
                                     key={`${mId}__growth`}
                                     className={cn(
-                                      "px-2 py-2 text-right font-bold text-slate-500 uppercase tracking-wider bg-white select-none whitespace-nowrap text-[12px] cursor-pointer group hover:bg-slate-50 transition-colors",
+                                      "px-2 py-2 text-right font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px] cursor-pointer group hover:brightness-95 transition-colors",
                                     )}
                                     onClick={() => handleSort(variationPctSortKey)}
                                     style={{
+                                      backgroundColor:
+                                        PIVOT_DERIVED_HEADER_BG,
+                                      color:
+                                        PIVOT_DERIVED_HEADER_TEXT,
                                       width:
                                         getPivotMetricWidth(
                                           mId,
@@ -6183,10 +6226,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     }}
                                   >
                                     <div className="flex items-center justify-end gap-2">
-                                      <TrendingUp
-                                        size={10}
-                                        className="shrink-0 opacity-50"
-                                      />
                                       <span>Var %</span>
                                       <span className="shrink-0 text-slate-900">
                                         {renderSortIndicator(variationPctSortKey)}
@@ -6211,9 +6250,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   subHeaders.push(
                                     <th
                                       key={`${mId}__${period}`}
-                                      className="px-2 pr-3 py-2 text-right font-bold text-slate-500 uppercase tracking-wider bg-white select-none whitespace-nowrap text-[12px] cursor-pointer group hover:bg-slate-50 transition-colors"
+                                      className="px-2 pr-3 py-2 text-right font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px] cursor-pointer group hover:brightness-95 transition-colors"
                                       onClick={() => handleSort(periodSortKey)}
                                       style={{
+                                        backgroundColor:
+                                          PIVOT_DERIVED_HEADER_BG,
+                                        color:
+                                          PIVOT_DERIVED_HEADER_TEXT,
                                         width:
                                           getPivotMetricWidth(
                                             mId,
@@ -6250,8 +6293,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     subHeaders.push(
                                       <th
                                         key={`${mId}__${period}__avg`}
-                                        className="px-2 py-2 text-right font-bold text-slate-500 uppercase tracking-wider bg-white select-none whitespace-nowrap text-[11px]"
+                                        className="px-2 py-2 text-right font-bold uppercase tracking-wider select-none whitespace-nowrap text-[11px]"
                                         style={{
+                                          backgroundColor:
+                                            PIVOT_DERIVED_HEADER_BG,
+                                          color:
+                                            PIVOT_DERIVED_HEADER_TEXT,
                                           width: AVG_COL_WIDTH,
                                           borderBottomWidth: 2,
                                           borderBottomStyle:
@@ -6281,8 +6328,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     subHeaders.push(
                                       <th
                                         key={`${mId}__${period}__pct`}
-                                        className="px-2 py-2 text-center font-bold text-slate-500 uppercase tracking-wider bg-white select-none whitespace-nowrap text-[12px]"
+                                        className="px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
                                         style={{
+                                          backgroundColor:
+                                            PIVOT_DERIVED_HEADER_BG,
+                                          color:
+                                            PIVOT_DERIVED_HEADER_TEXT,
                                           width: PCT_COL_WIDTH,
                                           borderBottomWidth: 2,
                                           borderBottomStyle:
@@ -6916,11 +6967,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                           row.hasChildren ||
                           row.children?.length > 0;
                         const indentPx = 16 + depth * 32;
-                        const RowIcon = row.attrId
-                          ? getAttributeIcon(row.attrId)
-                          : groupingArr.length > 0
-                            ? getAttributeIcon(groupingArr[0])
-                            : Layers;
                         return (
                           <tr
                             key={row.id}
@@ -6976,9 +7022,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   ) : (
                                     <div className="w-[22px] shrink-0" />
                                   )}
-                                  <div className="p-1.5 rounded-md shrink-0 bg-slate-100 text-slate-500">
-                                    <RowIcon size={14} />
-                                  </div>
                                   <span className="truncate text-[15px]">
                                     {row.label}
                                   </span>
@@ -7554,29 +7597,27 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     className="border-separate border-spacing-0 min-w-max"
                     style={{ width: "auto" }}
                   >
-                    <thead className="bg-white sticky top-0 z-[40]">
+                    <thead className="sticky top-0 z-[40]">
                       <tr>
                         <th
                           style={{
                             width:
                               columnWidths["grouping"] || 350,
                             ...bc("#e2e8f0"),
+                            backgroundColor: TABLE_HEADER_BG,
+                            color: TABLE_HEADER_TEXT,
                             borderBottomWidth: 2,
                             borderBottomStyle: "solid",
-                            borderBottomColor: "#e2e8f0",
+                            borderBottomColor: "rgba(241, 241, 241, 0.25)",
                             borderRightWidth: 1,
                             borderRightStyle: "solid",
                             boxShadow:
                               "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                           }}
-                          className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider sticky left-0 top-0 z-[50] bg-white group select-none"
+                          className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider sticky left-0 top-0 z-[50] group select-none"
                         >
                           <div className="flex items-center gap-2 overflow-hidden">
-                            <Anchor
-                              size={14}
-                              className="text-slate-400 shrink-0"
-                            />
-                            <span className="truncate text-[rgb(29,41,61)] text-[14px]">
+                            <span className="truncate text-[14px]">
                               {groupingLabel}
                             </span>
                           </div>
@@ -7622,11 +7663,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             metricId,
                                           ),
                                         ...bc("#e2e8f0"),
+                                        backgroundColor:
+                                          TABLE_HEADER_BG,
+                                        color: TABLE_HEADER_TEXT,
                                         borderBottomWidth: 2,
                                         borderBottomStyle:
                                           "solid",
                                         borderBottomColor:
-                                          "#e2e8f0",
+                                          "rgba(241, 241, 241, 0.25)",
                                         ...(canShowPct
                                           ? {}
                                           : {
@@ -7640,16 +7684,16 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                                 "#e2e8f0",
                                             }),
                                       }}
-                                      className="px-3 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider bg-white relative group transition-colors hover:bg-slate-50 cursor-pointer"
+                                      className="relative cursor-pointer px-3 py-3 text-left text-xs font-bold uppercase tracking-wider group transition-colors hover:bg-[#3b4f6b]"
                                       onClick={() =>
                                         handleSort(metric.id)
                                       }
                                     >
                                       <div className="flex items-center gap-2">
-                                        <span className="flex-1 select-none truncate text-[rgb(29,41,61)] text-right text-[13px]">
+                                        <span className="flex-1 select-none truncate text-right text-[13px]">
                                           {abbrev}
                                         </span>
-                                        <div className="text-slate-900 shrink-0">
+                                        <div className="shrink-0">
                                           {sortConfig?.key ===
                                           metric.id ? (
                                             sortConfig.direction ===
@@ -7701,11 +7745,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     style={{
                                       width: AVG_COL_WIDTH,
                                       ...bc("#e2e8f0"),
+                                      backgroundColor:
+                                        TABLE_HEADER_BG,
+                                      color: TABLE_HEADER_TEXT,
                                       borderBottomWidth: 2,
                                       borderBottomStyle:
                                         "solid",
                                       borderBottomColor:
-                                        "#e2e8f0",
+                                        "rgba(241, 241, 241, 0.25)",
                                       ...(!canShowPct &&
                                       isLastMetric
                                         ? {
@@ -7717,7 +7764,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                           }
                                         : {}),
                                     }}
-                                    className="px-2 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider bg-white"
+                                    className="px-2 py-3 text-xs font-bold uppercase tracking-wider"
                                   >
                                     <div className="text-center text-[11px]">
                                       x̄ {averagePeriodType}
@@ -7731,18 +7778,21 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     style={{
                                       width: PCT_COL_WIDTH,
                                       ...bc("#e2e8f0"),
+                                      backgroundColor:
+                                        TABLE_HEADER_BG,
+                                      color: TABLE_HEADER_TEXT,
                                       borderBottomWidth: 2,
                                       borderBottomStyle:
                                         "solid",
                                       borderBottomColor:
-                                        "#e2e8f0",
+                                        "rgba(241, 241, 241, 0.25)",
                                       borderRightWidth:
                                         isLastMetric ? 2 : 1,
                                       borderRightStyle: "solid",
                                       borderRightColor:
                                         "#e2e8f0",
                                     }}
-                                    className="px-2 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider bg-white"
+                                    className="px-2 py-3 text-xs font-bold uppercase tracking-wider"
                                   >
                                     <div className="text-center text-[11px]">
                                       %
@@ -7925,12 +7975,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                           row.children?.length > 0;
                         const isNested = depth > 0;
 
-                        const RowIcon = row.attrId
-                          ? getAttributeIcon(row.attrId)
-                          : groupingArr.length > 0
-                            ? getAttributeIcon(groupingArr[0])
-                            : Layers;
-
                         const indentPx = 16 + depth * 32;
 
                         return (
@@ -7992,9 +8036,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   ) : (
                                     <div className="w-[22px] shrink-0" />
                                   )}
-                                  <div className="p-1.5 rounded-md shrink-0 bg-slate-100 text-slate-500">
-                                    <RowIcon size={14} />
-                                  </div>
                                   <span className="truncate text-[14px]">
                                     {row.label}
                                   </span>
