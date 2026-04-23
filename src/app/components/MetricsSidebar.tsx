@@ -202,7 +202,10 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                       >
                         {section.groups.map((group) => (
                           <div key={group.subtitle} className="space-y-1.5">
-                            <p className="text-[10px] font-semibold text-slate-600 tracking-wide px-2">
+                            <p
+                              className="px-2 text-[10px] font-semibold tracking-wide"
+                              style={{ color: "rgba(86, 104, 120, 0.6)" }}
+                            >
                               {group.subtitle}
                             </p>
                             <div className="space-y-1.5">
