@@ -3435,7 +3435,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       <div
         className={cn(
           "flex-none bg-white rounded-[14px] px-5 py-4",
-          actionsContainer && !hasCurrentTimeInfo && "hidden",
+          actionsContainer && "hidden",
         )}
         style={{
           borderWidth: 1,
