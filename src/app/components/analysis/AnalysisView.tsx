@@ -177,10 +177,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const EVOL_TOTAL_COLUMN_BG = "#A9BDD1";
   const DEFAULT_TOTAL_COLUMN_BG = "#F8FAFC";
   const totalColumnBg =
-    analysisMode === "evolucao" ||
-    analysisMode === "horaahora"
+    analysisMode === "evolucao"
       ? EVOL_TOTAL_COLUMN_BG
-      : DEFAULT_TOTAL_COLUMN_BG;
+      : analysisMode === "horaahora"
+        ? PIVOT_DERIVED_HEADER_BG
+        : DEFAULT_TOTAL_COLUMN_BG;
 
   // Attribute label/icon helpers — resolved via active module domain + shared location
   const getAttributeLabel = (id: string): string => {
