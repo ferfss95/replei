@@ -92,7 +92,7 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
     return {
       backgroundColor: "transparent",
       color: "#FFFFFF",
-      border: "none",
+      border: "1px solid transparent",
       cursor: "pointer",
     } as React.CSSProperties;
   };
@@ -111,7 +111,7 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <h1 className="font-bold text-[16px] text-white tracking-[1.2px] uppercase">
+            <h1 className="font-semibold text-[16px] text-white tracking-[1.2px] uppercase">
               {getModuleTitle(currentModule)}
             </h1>
           </motion.div>

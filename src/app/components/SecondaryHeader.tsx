@@ -1,6 +1,6 @@
 /**
  * SecondaryHeader
- * Cabeçalho de conteúdo com 56px fixos — sempre presente em todas as etapas.
+ * Cabeçalho de conteúdo com padding 24px — sempre presente em todas as etapas.
  *
  * Esquerda : Ícone (24px, #566878) + Título da análise (#314158, bold 18px)
  * Direita  : Bolinha 4×4 + Texto orientador (etapas 1–3) | Slot para action buttons (etapa Resultado)
@@ -44,7 +44,7 @@ export const SecondaryHeader = React.memo(function SecondaryHeader({
   return (
     <div
       className="flex-none flex items-center justify-between"
-      style={{ height: 56, paddingLeft: 24, paddingRight: 24 }}
+      style={{ padding: 24 }}
     >
       {/* ── Esquerda: Ícone + Título ── */}
       <div className="flex items-center" style={{ gap: 8 }}>

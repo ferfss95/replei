@@ -295,7 +295,7 @@ export default function App() {
             )}
           >
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* ── Secondary Header: 56px fixo, fora da área de scroll ── */}
+              {/* ── Secondary Header: padding 24px, fora da área de scroll ── */}
               <SecondaryHeader
                 currentStep={currentStep}
                 analysisMode={analysisMode}
