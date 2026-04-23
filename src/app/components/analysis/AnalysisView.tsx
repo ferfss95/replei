@@ -174,6 +174,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const TABLE_HEADER_TEXT = "#F1F1F1";
   const PIVOT_DERIVED_HEADER_BG = moduleColors.accentColor;
   const PIVOT_DERIVED_HEADER_TEXT = "#314158";
+  const EVOL_TOTAL_COLUMN_BG = "#A9BDD1";
+  const DEFAULT_TOTAL_COLUMN_BG = "#F8FAFC";
+  const totalColumnBg =
+    analysisMode === "evolucao"
+      ? EVOL_TOTAL_COLUMN_BG
+      : DEFAULT_TOTAL_COLUMN_BG;
 
   // Attribute label/icon helpers — resolved via active module domain + shared location
   const getAttributeLabel = (id: string): string => {
@@ -6363,9 +6369,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               subHeaders.push(
                                 <th
                                   key={`${mId}__total`}
-                                  className="px-2 pr-3 py-2 text-right font-bold text-slate-500 uppercase tracking-wider bg-slate-50 select-none whitespace-nowrap text-[12px] cursor-pointer group hover:bg-slate-100 transition-colors"
+                                  className="px-2 pr-3 py-2 text-right font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[12px] cursor-pointer group hover:brightness-95 transition-colors"
                                   onClick={() => handleSort(`__total__${mId}`)}
                                   style={{
+                                    backgroundColor:
+                                      totalColumnBg,
                                     width:
                                       getPivotTotalWidth(mId),
                                     borderBottomWidth: 2,
@@ -6398,8 +6406,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 subHeaders.push(
                                   <th
                                     key={`${mId}__total__avg`}
-                                    className="px-2 py-2 text-right font-bold text-slate-500 uppercase tracking-wider bg-slate-50 select-none whitespace-nowrap text-[11px]"
+                                    className="px-2 py-2 text-right font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[11px]"
                                     style={{
+                                      backgroundColor:
+                                        totalColumnBg,
                                       width: AVG_COL_WIDTH,
                                       borderBottomWidth: 2,
                                       borderBottomStyle:
@@ -6428,8 +6438,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 subHeaders.push(
                                   <th
                                     key={`${mId}__total__pct`}
-                                    className="px-2 py-2 text-center font-bold text-slate-500 uppercase tracking-wider bg-slate-50 select-none whitespace-nowrap text-[12px]"
+                                    className="px-2 py-2 text-center font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
                                     style={{
+                                      backgroundColor:
+                                        totalColumnBg,
                                       width: PCT_COL_WIDTH,
                                       borderBottomWidth: 2,
                                       borderBottomStyle:
@@ -6797,8 +6809,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 cells.push(
                                   <td
                                     key={totalKey}
-                                    className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[13px] bg-slate-50 whitespace-nowrap"
+                                    className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[13px] whitespace-nowrap"
                                     style={{
+                                      backgroundColor:
+                                        totalColumnBg,
                                       width:
                                         getPivotTotalWidth(mId),
                                       borderBottomWidth: 2,
@@ -6896,8 +6910,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   cells.push(
                                     <td
                                       key={`${totalKey}__avg`}
-                                      className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[12px] text-slate-600 bg-slate-50 whitespace-nowrap"
+                                      className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[12px] text-slate-600 whitespace-nowrap"
                                       style={{
+                                        backgroundColor:
+                                          totalColumnBg,
                                         width: AVG_COL_WIDTH,
                                         borderBottomWidth: 2,
                                         borderBottomStyle:
@@ -6926,8 +6942,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   cells.push(
                                     <td
                                       key={`${totalKey}__pct`}
-                                      className="h-[46px] px-2 py-2.5 text-center sticky top-[75px] z-[30] text-[12px] text-slate-500 bg-slate-50"
+                                      className="h-[46px] px-2 py-2.5 text-center sticky top-[75px] z-[30] text-[12px] text-slate-500"
                                       style={{
+                                        backgroundColor:
+                                          totalColumnBg,
                                         width: PCT_COL_WIDTH,
                                         borderBottomWidth: 2,
                                         borderBottomStyle:
@@ -7393,12 +7411,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     <td
                                       key={totalKey}
                                       className={cn(
-                                        "px-2 pr-3 py-2.5 text-right text-[14px] transition-colors bg-slate-50/50 whitespace-nowrap",
+                                        "px-2 pr-3 py-2.5 text-right text-[14px] transition-colors whitespace-nowrap",
                                         depth === 0
                                           ? "text-slate-700 font-medium"
                                           : "text-slate-600 font-normal",
                                       )}
                                       style={{
+                                        backgroundColor:
+                                          totalColumnBg,
                                         width:
                                           getPivotTotalWidth(
                                             mId,
@@ -7507,12 +7527,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       <td
                                         key={`${totalKey}__avg`}
                                         className={cn(
-                                          "px-2 pr-3 py-2.5 text-right text-[13px] transition-colors bg-slate-50/50 whitespace-nowrap",
+                                          "px-2 pr-3 py-2.5 text-right text-[13px] transition-colors whitespace-nowrap",
                                           depth === 0
                                             ? "text-slate-600 font-medium"
                                             : "text-slate-500 font-normal",
                                         )}
                                         style={{
+                                          backgroundColor:
+                                            totalColumnBg,
                                           width: AVG_COL_WIDTH,
                                           borderBottomWidth: 1,
                                           borderBottomStyle:
@@ -7550,8 +7572,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     cells.push(
                                       <td
                                         key={`${totalKey}__pct`}
-                                        className="px-2 py-2.5 text-center text-[12px] text-slate-500 transition-colors bg-slate-50/50"
+                                      className="px-2 py-2.5 text-center text-[12px] text-slate-500 transition-colors"
                                         style={{
+                                        backgroundColor:
+                                          totalColumnBg,
                                           width: PCT_COL_WIDTH,
                                           borderBottomWidth: 1,
                                           borderBottomStyle:
