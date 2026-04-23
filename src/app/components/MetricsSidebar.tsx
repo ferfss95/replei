@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { cn } from "../utils";
 import type { Module } from "../constants";
 import type { MetricDef, ModuleConfig } from "../modules/types";
+import { NEUTRAL_PALETTE, type ModuleColors } from "../constants/moduleColors";
 
 interface MetricsSidebarProps {
   metricsCollapsed: boolean;
@@ -14,7 +15,7 @@ interface MetricsSidebarProps {
   toggleMetric: (metricId: string) => void;
   currentModule: Module;
   currentModuleConfig: ModuleConfig;
-  moduleColors: { primaryColor: string };
+  moduleColors: ModuleColors;
 }
 
 export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSidebar({
@@ -28,6 +29,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   currentModuleConfig,
   moduleColors,
 }: MetricsSidebarProps) {
+  const [hoveredMetricId, setHoveredMetricId] = React.useState<string | null>(null);
   const planningMetrics = currentModuleConfig.planningMetrics || [];
   const excludedFromVendaEstoque = new Set(
     currentModuleConfig.metricsSidebarExcludeFromVendaEstoque || [],
@@ -51,29 +53,39 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
 
   const renderMetricRow = (metric: Pick<MetricDef, "id" | "label" | "tooltip">) => {
     const isSelected = selectedMetrics.includes(metric.id);
+    const isHovered = hoveredMetricId === metric.id;
+    const borderColor = isHovered
+      ? NEUTRAL_PALETTE.title
+      : isSelected
+        ? moduleColors.primaryColor
+        : "#ffffff";
+    const boxShadow =
+      isHovered
+        ? "0 0 0 3px rgba(86, 104, 120, 0.3), 0 2px 6px rgba(0, 0, 0, 0.06)"
+        : undefined;
+    const textColor = isSelected ? moduleColors.iconColor : NEUTRAL_PALETTE.muted;
     return (
       <button
         type="button"
         key={metric.id}
         title={metric.tooltip || undefined}
         onClick={() => toggleMetric(metric.id)}
+        onMouseEnter={() => setHoveredMetricId(metric.id)}
+        onMouseLeave={() => setHoveredMetricId(null)}
         className={cn(
-          "w-full text-left px-3 py-2 text-[13px] rounded-lg transition-all flex items-center justify-between border",
-          isSelected
-            ? "text-white shadow-sm"
-            : "text-slate-600 hover:bg-slate-50 border-transparent",
+          "w-full text-left px-3 py-2 text-[13px] rounded-lg transition-all duration-200 flex items-center justify-between border border-solid",
         )}
-        style={
-          isSelected
-            ? {
-                backgroundColor: moduleColors.primaryColor,
-                borderColor: moduleColors.primaryColor,
-              }
-            : {}
-        }
+        style={{
+          backgroundColor: isSelected
+            ? moduleColors.backgroundColor
+            : "transparent",
+          borderColor,
+          boxShadow,
+          color: textColor,
+        }}
       >
         <span className={cn("font-medium", isSelected && "font-semibold")}>{metric.label}</span>
-        {isSelected && <Check size={14} />}
+        {isSelected && <Check size={14} className="shrink-0" aria-hidden />}
       </button>
     );
   };
