@@ -14,8 +14,8 @@
 import React from 'react';
 import { AttributeCard as SmartAttributeCard } from '../AttributeCard';
 import { ScrollableRow } from '../ScrollableRow';
-import { LOCATION_ATTRIBUTES } from '../../constants';
-import type { Step, Module } from '../../types/wizard';
+import { LOCATION_ATTRIBUTES, type Module, type Step } from '../../constants';
+import { getModuleColors, type ModuleColors } from '../../constants/moduleColors';
 
 // ══════════════════════════════════════════════════════════════════
 // TYPES
@@ -26,6 +26,7 @@ interface AnalysisFiltersProps {
   currentModule: Module;
   currentModuleConfig: any;
   currentStep: Step;
+  moduleColors?: ModuleColors;
 
   // Filter states (from useAttributeFilters hook)
   selections: Record<string, string[]>;
@@ -48,6 +49,7 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
   currentModule,
   currentModuleConfig,
   currentStep,
+  moduleColors,
   selections,
   setSelections,
   grouping,
@@ -57,6 +59,7 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
   getAttributeOptions,
   handleAttributeClick,
 }) => {
+  const colors = moduleColors ?? getModuleColors(currentModule);
   return (
     <div className="px-6 py-6">
       <div className="space-y-8">
@@ -79,6 +82,7 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
                   options: getAttributeOptions(attr.id),
                 }}
                 step={currentStep}
+                moduleColors={colors}
                 selectionCount={selections[attr.id]?.length || 0}
                 isGrouped={grouping.includes(attr.id)}
                 groupLevel={grouping.indexOf(attr.id) + 1}
@@ -121,6 +125,7 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
                     options: getAttributeOptions(attr.id),
                   }}
                   step={currentStep}
+                  moduleColors={colors}
                   selectionCount={selections[attr.id]?.length || 0}
                   isGrouped={grouping.includes(attr.id)}
                   groupLevel={grouping.indexOf(attr.id) + 1}

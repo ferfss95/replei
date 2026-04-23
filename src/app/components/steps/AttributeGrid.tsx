@@ -5,11 +5,13 @@ import { LOCATION_ATTRIBUTES, type Step, type Module } from "../../constants";
 import { ScrollableRow } from "../ScrollableRow";
 import { AttributeCard as SmartAttributeCard } from "../AttributeCard";
 import type { ModuleConfig } from "../../modules/types";
+import type { ModuleColors } from "../../constants/moduleColors";
 
 interface AttributeGridProps {
   currentStep: Step;
   currentModule: Module;
   currentModuleConfig: ModuleConfig;
+  moduleColors: ModuleColors;
   selections: Record<string, string[]>;
   setSelections: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   grouping: string[];
@@ -23,6 +25,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
   currentStep,
   currentModule,
   currentModuleConfig,
+  moduleColors,
   selections,
   setSelections,
   grouping,
@@ -34,7 +37,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
   return (
     <div className="bg-white rounded-xl border border-[#D9D9D9] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden shrink-0">
       {/* Header */}
-      <div className="bg-white px-6 py-4 flex items-center gap-3 flex-none">
+      <div className="bg-white px-6 py-3 flex items-center gap-3 flex-none">
         {currentStep === "selection" && (
           <Filter size={16} className="text-[#90A1B9]" />
         )}
@@ -51,20 +54,9 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
         </span>
       </div>
 
-      {/* Description */}
-      <div className="bg-white px-6 pb-3 flex items-center gap-2 flex-none">
-        <div className="w-1 h-1 bg-slate-400 rounded-full flex-none" />
-        <p className="text-[11px] text-slate-500">
-          {currentStep === "selection" && "Quais dados deseja analisar?"}
-          {currentStep === "grouping" &&
-            "Por quais dados gostaria de visualizar o resultado? (Primeira coluna). No máximo 3 níveis de detalhamento."}
-          {currentStep === "exclusion" && "Quais dados devem ser desconsiderados?"}
-        </p>
-      </div>
-
       {/* Content with ScrollableRow */}
-      <div className="px-6 py-6">
-        <div className="space-y-8">
+      <div className="px-6 py-4">
+        <div className="space-y-6">
           {/* Domain attributes */}
           <div>
             {currentModuleConfig.domainSectionLabel && (
@@ -81,6 +73,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
                   key={attr.id}
                   attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
                   step={currentStep}
+                  moduleColors={moduleColors}
                   selectionCount={selections[attr.id]?.length || 0}
                   isGrouped={grouping.includes(attr.id)}
                   groupLevel={grouping.indexOf(attr.id) + 1}
@@ -114,6 +107,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
                     key={attr.id}
                     attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
                     step={currentStep}
+                    moduleColors={moduleColors}
                     selectionCount={selections[attr.id]?.length || 0}
                     isGrouped={grouping.includes(attr.id)}
                     groupLevel={grouping.indexOf(attr.id) + 1}

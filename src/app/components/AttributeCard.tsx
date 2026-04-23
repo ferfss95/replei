@@ -6,11 +6,19 @@ import {
   Trash2, 
   Anchor, 
   X,
-  Ban
 } from 'lucide-react';
 import * as Popover from '@radix-ui/react-popover';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import { cn } from '../utils';
+import type { ModuleColors } from '../constants/moduleColors';
+
+function hexToRgba(hex: string, alpha: number): string {
+  const cleaned = hex.replace('#', '');
+  const r = parseInt(cleaned.slice(0, 2), 16);
+  const g = parseInt(cleaned.slice(2, 4), 16);
+  const b = parseInt(cleaned.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 interface Attribute {
   id: string;
@@ -24,6 +32,7 @@ type Step = 'selection' | 'grouping' | 'exclusion' | 'analysis';
 interface AttributeCardProps {
   attribute: Attribute;
   step: Step;
+  moduleColors: ModuleColors;
   selectionCount: number;
   isGrouped: boolean;
   groupLevel: number;
@@ -38,7 +47,8 @@ interface AttributeCardProps {
 
 export function AttributeCard({ 
   attribute, 
-  step, 
+  step,
+  moduleColors,
   selectionCount, 
   isGrouped, 
   groupLevel,
@@ -102,30 +112,45 @@ export function AttributeCard({
       <button
         onClick={onToggleGroup}
         className={cn(
-          "relative w-[140px] h-[90px] shrink-0 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center group outline-none",
+          "relative w-[140px] h-[68px] shrink-0 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center group outline-none",
           isGrouped 
-            ? "bg-[#F4F7FA] border-[#314158] shadow-md" 
+            ? "shadow-sm" 
             : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm"
         )}
+        style={
+          isGrouped
+            ? {
+                backgroundColor: moduleColors.backgroundColor,
+                borderColor: moduleColors.primaryColor,
+                borderWidth: 1,
+              }
+            : undefined
+        }
       >
-        <span className={cn(
-          "text-[12px] font-bold uppercase tracking-wide transition-colors",
-          isGrouped ? "text-[#314158]" : "text-slate-500 group-hover:text-slate-700"
-        )}>
+        <span
+          className={cn(
+            "text-[12px] font-bold uppercase tracking-wide transition-colors",
+            isGrouped ? "" : "text-slate-500 group-hover:text-slate-700",
+          )}
+          style={isGrouped ? { color: moduleColors.primaryColor } : undefined}
+        >
           {attribute.label}
         </span>
         
         {isGrouped && (
-          <div className="flex items-center gap-1.5 mt-2">
-            <div className="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center">
-              <span className="text-sm font-bold">{groupLevel}</span>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <div
+              className="w-7 h-7 rounded-full text-white flex items-center justify-center text-xs font-bold"
+              style={{ backgroundColor: moduleColors.primaryColor }}
+            >
+              {groupLevel}
             </div>
           </div>
         )}
         
         {isGrouped && (
           <div className="absolute top-2 right-2">
-            <Anchor size={12} className="text-[#314158]" />
+            <Anchor size={12} style={{ color: moduleColors.primaryColor }} />
           </div>
         )}
       </button>
@@ -150,35 +175,39 @@ export function AttributeCard({
   const currentValues = isSelectionMode ? currentSelection : currentExclusion;
 
   // The actual card button JSX (shared between tooltip and non-tooltip variants)
+  const activeBorder = moduleColors.primaryColor;
+  const activeBg = hexToRgba(moduleColors.highlightColor, 0.45);
   const cardButton = (
     <button
       className={cn(
-        "relative w-[140px] h-[90px] shrink-0 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center group outline-none",
+        "relative w-[140px] h-[68px] shrink-0 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center group outline-none",
         !isActive && "bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm",
-        isSelectionMode && count > 0 && "border-[#314158] bg-[#f1f5f9] shadow-sm",
-        !isSelectionMode && count > 0 && "bg-[#FFF6F4] border-[#F0462A] shadow-sm",
-        isOpen && "ring-2 ring-slate-200 ring-offset-2"
+        isActive && "shadow-sm",
+        isOpen && "ring-2 ring-offset-2",
       )}
+      style={
+        isActive
+          ? {
+              borderColor: activeBorder,
+              backgroundColor: activeBg,
+              ...(isOpen
+                ? { boxShadow: `0 0 0 2px ${hexToRgba(moduleColors.highlightColor, 0.9)}` }
+                : {}),
+            }
+          : isOpen
+            ? { boxShadow: "0 0 0 2px rgba(148, 163, 184, 0.35)" }
+            : undefined
+      }
     >
-      <span className={cn("font-bold uppercase tracking-wide transition-colors text-[12px]", isActive && isSelectionMode ? "text-[#314158]" :
-    isActive && !isSelectionMode ? "text-[#B83232]" :
-        "text-slate-500 group-hover:text-slate-700")}>
+      <span
+        className={cn(
+          "font-bold uppercase tracking-wide transition-colors text-[12px]",
+          isActive ? "" : "text-slate-500 group-hover:text-slate-700",
+        )}
+        style={isActive ? { color: moduleColors.primaryColor } : undefined}
+      >
         {attribute.label}
       </span>
-
-      {count > 0 && (
-        <div className={cn(
-          "px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-sm transition-all animate-in zoom-in-50 mt-2",
-          isSelectionMode 
-            ? "bg-[#314158] text-white" 
-            : "bg-[#B83232] text-white"
-        )}>
-          <span>{count}</span>
-          <span className="opacity-80 font-medium">
-            {isSelectionMode ? 'selec.' : 'excl.'}
-          </span>
-        </div>
-      )}
     </button>
   );
 
@@ -197,14 +226,11 @@ export function AttributeCard({
         )}>
           <div className="flex items-center gap-2">
             {isSelectionMode ? (
-              <Filter size={14} className="text-[#314158]" />
+              <Filter size={14} style={{ color: moduleColors.primaryColor }} />
             ) : (
-              <Trash2 size={14} className="text-[#F0462A]" />
+              <Trash2 size={14} className="text-red-600" />
             )}
-            <span className={cn(
-              "text-[14px] font-bold uppercase tracking-wide",
-              isSelectionMode ? "text-slate-700" : "text-[#B83232]"
-            )}>
+            <span className="text-[14px] font-bold uppercase tracking-wide text-slate-700">
               {isSelectionMode ? 'Filtrar' : 'Excluir'} {attribute.label}
             </span>
           </div>
@@ -245,21 +271,30 @@ export function AttributeCard({
                     onClick={() => handleToggleOption(opt, isSelectionMode)}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all group",
-                      isChecked 
-                        ? isSelectionMode 
-                          ? "bg-[#f1f5f9] text-[#314158]" 
-                          : "bg-[#FFF6F4] text-[#B83232]"
-                        : "hover:bg-slate-50 text-slate-600"
+                      isChecked
+                        ? "text-slate-800"
+                        : "hover:bg-slate-50 text-slate-600",
                     )}
+                    style={
+                      isChecked
+                        ? { backgroundColor: hexToRgba(moduleColors.highlightColor, 0.35) }
+                        : undefined
+                    }
                   >
-                    <div className={cn(
-                      "w-4 h-4 rounded border flex items-center justify-center transition-all flex-shrink-0",
-                      isChecked 
-                        ? isSelectionMode 
-                          ? "bg-[#314158] border-[#314158]" 
-                          : "bg-[#F0462A] border-[#F0462A]"
-                        : "border-slate-300 bg-white group-hover:border-slate-400"
-                    )}>
+                    <div
+                      className={cn(
+                        "w-4 h-4 rounded border flex items-center justify-center transition-all flex-shrink-0",
+                        !isChecked && "border-slate-300 bg-white group-hover:border-slate-400",
+                      )}
+                      style={
+                        isChecked
+                          ? {
+                              backgroundColor: moduleColors.primaryColor,
+                              borderColor: moduleColors.primaryColor,
+                            }
+                          : undefined
+                      }
+                    >
                       {isChecked && <Check size={11} className="text-white" strokeWidth={3} />}
                     </div>
                     <span className={cn(

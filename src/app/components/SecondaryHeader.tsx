@@ -19,12 +19,6 @@ const ANALYSIS_TITLES: Record<AnalysisMode, string> = {
   horaahora: "Análise Intraday",
 };
 
-const ORIENTATING_TEXT: Partial<Record<Step, string>> = {
-  selection: "Quais dados deseja analisar?",
-  grouping: "Quais atributos devem compor as linhas da tabela?",
-  exclusion: "Quais dados devem ser desconsiderados?",
-};
-
 interface SecondaryHeaderProps {
   currentStep: Step;
   analysisMode: AnalysisMode;
@@ -74,32 +68,11 @@ export const SecondaryHeader = React.memo(function SecondaryHeader({
         </span>
       </div>
 
-      {/* ── Direita: bolinha + texto orientador OU slot de actions ── */}
+      {/* ── Direita: slot de actions (etapa Resultado) ── */}
       {isAnalysis ? (
-        /* Slot vazio — AnalysisView porta os botões de ação aqui */
         <div ref={onActionsMount} className="flex items-center gap-2 shrink-0" />
       ) : (
-        <div className="flex items-center gap-[6px]">
-          {/* Bolinha 4×4 */}
-          <div
-            style={{
-              width: 4,
-              height: 4,
-              borderRadius: "50%",
-              backgroundColor: "#808080",
-              flexShrink: 0,
-            }}
-          />
-          <span
-            style={{
-              fontSize: 12,
-              color: "#808080",
-              textAlign: "right",
-            }}
-          >
-            {ORIENTATING_TEXT[currentStep]}
-          </span>
-        </div>
+        <div className="w-0 shrink-0" aria-hidden />
       )}
     </div>
   );

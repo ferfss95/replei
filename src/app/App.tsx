@@ -24,6 +24,7 @@ import { AttributeGrid } from "./components/steps/AttributeGrid";
 import { MetricsSidebar } from "./components/MetricsSidebar";
 import { AppHeader } from "./components/AppHeader";
 import { SecondaryHeader } from "./components/SecondaryHeader";
+import { AnalysisSummarySection } from "./components/AnalysisSummarySection";
 import { getModuleColors } from "./constants/moduleColors";
 import { useDateRange } from "./hooks/useDateRange";
 import { useModuleNavigator } from "./hooks/useModuleNavigator";
@@ -305,7 +306,7 @@ export default function App() {
 
               <div
                 className={cn(
-                  "px-6 pb-6 w-full flex-1 flex flex-col overflow-y-auto",
+                  "px-6 pb-6 w-full flex-1 flex flex-col gap-4 overflow-y-auto",
                 )}
               >
                 {/* Config Panel - Modo de Análise + Período */}
@@ -356,12 +357,40 @@ export default function App() {
                   />
                 )}
 
+                {currentStep !== "analysis" && (
+                  <AnalysisSummarySection
+                    moduleConfig={currentModuleConfig}
+                    selections={selections}
+                    exclusions={exclusions}
+                    grouping={grouping}
+                    analysisMode={analysisMode}
+                    periodType={periodType}
+                    dateRange={dateRange}
+                    selectedMonths={selectedMonths}
+                    selectedYears={selectedYears}
+                    weeklyMode={weeklyMode}
+                    weeklyComputedDays={weeklyComputedDays}
+                    selectedSpecificDays={selectedSpecificDays}
+                    compDateRange1={compDateRange1}
+                    compDateRange2={compDateRange2}
+                    compMonths1={compMonths1}
+                    compMonths2={compMonths2}
+                    compYears1={compYears1}
+                    compYears2={compYears2}
+                    compSpecificDays1={compSpecificDays1}
+                    compSpecificDays2={compSpecificDays2}
+                    compWeeklyComputedDays1={compWeeklyComputedDays1}
+                    compWeeklyComputedDays2={compWeeklyComputedDays2}
+                  />
+                )}
+
                 {/* Grid de Atributos */}
                 {currentStep !== "analysis" && (
                   <AttributeGrid
                     currentStep={currentStep}
                     currentModule={currentModule}
                     currentModuleConfig={currentModuleConfig}
+                    moduleColors={moduleColors}
                     selections={selections}
                     setSelections={setSelections}
                     grouping={grouping}

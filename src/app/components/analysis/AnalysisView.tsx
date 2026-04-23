@@ -68,6 +68,7 @@ import {
   getCurrentYearString,
   formatDate,
 } from "../../dateUtils";
+import { computePeriodDisplayText } from "../../utils/analysisPeriodSummary";
 import {
   LOJAS_BY_CIDADE,
   STATE_TO_UF,
@@ -2206,28 +2207,26 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     );
   }, [chartMetricIds]);
 
-  const activeFilters = React.useMemo(
-    () => [
-      ...(selections
-        ? Object.entries(selections)
-            .filter(([_, vals]: any) => vals && vals.length > 0)
-            .map(([k, v]: any) => ({
-              key: k,
-              vals: v,
-              type: "include",
-            }))
-        : []),
-      ...(exclusions
-        ? Object.entries(exclusions)
-            .filter(([_, vals]: any) => vals && vals.length > 0)
-            .map(([k, v]: any) => ({
-              key: k,
-              vals: v,
-              type: "exclude",
-            }))
-        : []),
-    ],
-    [selections, exclusions],
+  const includeSummaryFilters = React.useMemo(
+    () =>
+      Object.entries(selections || {})
+        .filter(([, vals]) => vals && vals.length > 0)
+        .map(([k, v]) => ({ key: k, vals: v as string[], type: "include" as const }))
+        .sort((a, b) =>
+          getAttributeLabel(a.key).localeCompare(getAttributeLabel(b.key), "pt-BR"),
+        ),
+    [selections, moduleConfig],
+  );
+
+  const excludeSummaryFilters = React.useMemo(
+    () =>
+      Object.entries(exclusions || {})
+        .filter(([, vals]) => vals && vals.length > 0)
+        .map(([k, v]) => ({ key: k, vals: v as string[], type: "exclude" as const }))
+        .sort((a, b) =>
+          getAttributeLabel(a.key).localeCompare(getAttributeLabel(b.key), "pt-BR"),
+        ),
+    [exclusions, moduleConfig],
   );
 
   // Pivot mode flag & config
@@ -2748,230 +2747,600 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     customTitle,
   ]);
 
-  // Period display text — smart summary for padrão & evolução
-  const periodDisplayText = React.useMemo(() => {
-    if (analysisMode === "comparativo") return "";
-
-    const today = getTodayFormatted();
-
-    // Hora a hora: show temporal period, not hours (hours go to separate badge)
-    if (analysisMode === "horaahora") {
-      if (periodType === "Diário") {
-        const endLabel =
-          dateRange.end === today ? "Hoje" : dateRange.end;
-        return `${dateRange.start} — ${endLabel}`;
-      }
-      if (periodType === "Semanal") {
-        if (weeklyMode === "specific") {
-          const count = selectedSpecificDays?.length || 0;
-          if (count === 0) return "—";
-          if (count === 1) return selectedSpecificDays[0];
-          return `${count} dias selecionados`;
-        } else {
-          const count = weeklyComputedDays?.length || 0;
-          if (count === 0) return "—";
-          const dayNames = WEEKDAY_FULL.filter((_, i) =>
-            (weeklyComputedDays || []).some(
-              (d: Date) => d.getDay() === i,
-            ),
-          );
-          return `${count} dias (${dayNames.map((n) => n.slice(0, 3)).join(", ")})`;
-        }
-      }
-      if (periodType === "Anual") {
-        const sorted = [...selectedYears].sort();
-        if (sorted.length === 0) return "—";
-        if (sorted.length === 1) return sorted[0];
-        return sorted.join(", ");
-      }
-      // Mensal
-      if (selectedMonths.length === 0) return "—";
-      const MF = [
-        "Janeiro",
-        "Fevereiro",
-        "Março",
-        "Abril",
-        "Maio",
-        "Junho",
-        "Julho",
-        "Agosto",
-        "Setembro",
-        "Outubro",
-        "Novembro",
-        "Dezembro",
-      ];
-      const MS = [
-        "Jan",
-        "Fev",
-        "Mar",
-        "Abr",
-        "Mai",
-        "Jun",
-        "Jul",
-        "Ago",
-        "Set",
-        "Out",
-        "Nov",
-        "Dez",
-      ];
-      const parsed = selectedMonths
-        .map((m) => {
-          const parts = m.split(" ");
-          const mIdx = MF.indexOf(parts[0]);
-          return {
-            monthIdx: mIdx,
-            year: parts[1],
-            short: MS[mIdx] || parts[0],
-          };
-        })
-        .sort((a, b) =>
-          a.year === b.year
-            ? a.monthIdx - b.monthIdx
-            : a.year.localeCompare(b.year),
-        );
-      return parsed
-        .map((p) => `${p.short}/${p.year.slice(-2)}`)
-        .join(", ");
-    }
-
-    if (periodType === "Diário") {
-      const endLabel =
-        dateRange.end === today ? "Hoje" : dateRange.end;
-      return `${dateRange.start} — ${endLabel}`;
-    }
-
-    if (periodType === "Semanal") {
-      if (weeklyMode === "specific") {
-        const count = selectedSpecificDays?.length || 0;
-        if (count === 0) return "—";
-        if (count === 1) return selectedSpecificDays[0];
-        return `${count} dias selecionados`;
-      } else {
-        const count = weeklyComputedDays?.length || 0;
-        if (count === 0) return "—";
-        const dayNames = WEEKDAY_FULL.filter((_, i) =>
-          (weeklyComputedDays || []).some(
-            (d: Date) => d.getDay() === i,
-          ),
-        );
-        return `${count} dias (${dayNames.map((n) => n.slice(0, 3)).join(", ")})`;
-      }
-    }
-
-    if (periodType === "Anual") {
-      const sorted = [...selectedYears].sort();
-      if (sorted.length === 0) return "—";
-      if (sorted.length === 1) return sorted[0];
-      const allConsec = sorted.every(
-        (y, i) => i === 0 || +y === +sorted[i - 1] + 1,
-      );
-      if (allConsec && sorted.length > 2)
-        return `${sorted[0]} a ${sorted[sorted.length - 1]}`;
-      if (sorted.length <= 3) return sorted.join(", ");
-      return `${sorted[0]} a ${sorted[sorted.length - 1]}`;
-    }
-
-    // Mensal — smart grouping
-    if (selectedMonths.length === 0) return "—";
-    const MF = [
-      "Janeiro",
-      "Fevereiro",
-      "Março",
-      "Abril",
-      "Maio",
-      "Junho",
-      "Julho",
-      "Agosto",
-      "Setembro",
-      "Outubro",
-      "Novembro",
-      "Dezembro",
-    ];
-    const MS = [
-      "Jan",
-      "Fev",
-      "Mar",
-      "Abr",
-      "Mai",
-      "Jun",
-      "Jul",
-      "Ago",
-      "Set",
-      "Out",
-      "Nov",
-      "Dez",
-    ];
-    const parsed = selectedMonths
-      .map((m) => {
-        const parts = m.split(" ");
-        const mIdx = MF.indexOf(parts[0]);
-        return {
-          monthIdx: mIdx,
-          year: parts[1],
-          short: MS[mIdx] || parts[0],
-        };
-      })
-      .sort((a, b) =>
-        a.year === b.year
-          ? a.monthIdx - b.monthIdx
-          : a.year.localeCompare(b.year),
-      );
-    const byYear: Record<string, typeof parsed> = {};
-    parsed.forEach((p) => {
-      if (!byYear[p.year]) byYear[p.year] = [];
-      byYear[p.year].push(p);
-    });
-    const arrEq = (a: number[], b: number[]) =>
-      a.length === b.length && a.every((v, i) => v === b[i]);
-    const isConsec = (arr: number[]) =>
-      arr.length > 0 &&
-      arr.every((v, i) => i === 0 || v === arr[i - 1] + 1);
-    const segments: string[] = [];
-    for (const year of Object.keys(byYear).sort()) {
-      const group = byYear[year];
-      const sy = year.slice(-2);
-      const idxs = group.map((g) => g.monthIdx);
-      if (idxs.length === 12) {
-        segments.push(year);
-      } else if (arrEq(idxs, [0, 1, 2, 3, 4, 5])) {
-        segments.push(`1º Sem/${sy}`);
-      } else if (arrEq(idxs, [6, 7, 8, 9, 10, 11])) {
-        segments.push(`2º Sem/${sy}`);
-      } else if (arrEq(idxs, [0, 1, 2])) {
-        segments.push(`1º Tri/${sy}`);
-      } else if (arrEq(idxs, [3, 4, 5])) {
-        segments.push(`2º Tri/${sy}`);
-      } else if (arrEq(idxs, [6, 7, 8])) {
-        segments.push(`3º Tri/${sy}`);
-      } else if (arrEq(idxs, [9, 10, 11])) {
-        segments.push(`4º Tri/${sy}`);
-      } else if (isConsec(idxs) && idxs.length > 2) {
-        segments.push(
-          `${group[0].short} a ${group[group.length - 1].short}/${sy}`,
-        );
-      } else if (idxs.length <= 3) {
-        segments.push(
-          `${group.map((g) => g.short).join(", ")}/${sy}`,
-        );
-      } else {
-        segments.push(`${idxs.length} meses/${sy}`);
-      }
-    }
-    return segments.join(", ");
-  }, [
-    analysisMode,
-    periodType,
-    dateRange,
-    selectedYears,
-    selectedMonths,
-    weeklyMode,
-    weeklyComputedDays,
-    selectedSpecificDays,
-  ]);
+  const periodDisplayText = React.useMemo(
+    () =>
+      computePeriodDisplayText({
+        analysisMode,
+        periodType,
+        dateRange,
+        weeklyMode,
+        weeklyComputedDays,
+        selectedSpecificDays,
+        selectedMonths,
+        selectedYears,
+      }),
+    [
+      analysisMode,
+      periodType,
+      dateRange,
+      weeklyMode,
+      weeklyComputedDays,
+      selectedSpecificDays,
+      selectedMonths,
+      selectedYears,
+    ],
+  );
 
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-500">
-      {/* ═══════════════ HEADER CARD: Title + Period + Attributes ═══════════════ */}
+      {/* ═══════════════ RESUMO DA ANÁLISE ═══════════════ */}
+      <div
+        className="flex-none bg-white rounded-[14px] px-5 py-4"
+        style={{
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: "#D9D9D9",
+          boxShadow:
+            "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
+        }}
+      >
+        <h3 className="text-[14px] font-bold uppercase tracking-wide text-[#314158] mb-3">
+          Resumo da análise
+        </h3>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Period tag(s) */}
+          {analysisMode === "comparativo" ? (
+            <React.Fragment>
+              <Popover.Root>
+                <Popover.Trigger asChild>
+                  <button
+                    className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
+                    style={{
+                      backgroundColor: "#F1F1F1",
+                      color: "#2C2C2C",
+                      borderWidth: 1,
+                      borderStyle: "solid",
+                      ...bc("#D9D9D9"),
+                    }}
+                  >
+                    <CalendarIcon size={10} />
+                    <span className="uppercase">P1</span>
+                    <span className="font-normal ml-0.5">
+                      {compPeriodSmartSummary(1)}
+                    </span>
+                  </button>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content
+                    className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[260px] animate-in zoom-in-95"
+                    sideOffset={5}
+                    align="start"
+                  >
+                    <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
+                      <CalendarIcon
+                        size={12}
+                        className="text-slate-400"
+                      />
+                      Per��odo 1
+                    </h4>
+                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
+                      {compPeriodDetailItems(1).map(
+                        (item: string, idx: number) => (
+                          <div
+                            key={idx}
+                            className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
+                            {item}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                    <Popover.Arrow className="fill-white" />
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
+              <Popover.Root>
+                <Popover.Trigger asChild>
+                  <button
+                    className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
+                    style={{
+                      backgroundColor: "#F1F1F1",
+                      color: "#2C2C2C",
+                      borderWidth: 1,
+                      borderStyle: "solid",
+                      ...bc("#D9D9D9"),
+                    }}
+                  >
+                    <CalendarIcon size={10} />
+                    <span className="uppercase">P2</span>
+                    <span className="font-normal ml-0.5">
+                      {compPeriodSmartSummary(2)}
+                    </span>
+                  </button>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content
+                    className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[260px] animate-in zoom-in-95"
+                    sideOffset={5}
+                    align="start"
+                  >
+                    <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
+                      <CalendarIcon
+                        size={12}
+                        className="text-slate-400"
+                      />
+                      Período 2
+                    </h4>
+                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
+                      {compPeriodDetailItems(2).map(
+                        (item: string, idx: number) => (
+                          <div
+                            key={idx}
+                            className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#45556c]" />
+                            {item}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                    <Popover.Arrow className="fill-white" />
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
+            </React.Fragment>
+          ) : (
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: "#F1F1F1",
+                    color: "#2C2C2C",
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    ...bc("#D9D9D9"),
+                  }}
+                >
+                  <CalendarIcon size={10} />
+                  <span className="uppercase">
+                    {periodType === "Semanal"
+                      ? "Dias da Semana"
+                      : periodType === "Diário"
+                        ? "Período"
+                        : periodType}
+                  </span>
+                  <span className="font-normal ml-0.5">
+                    {periodDisplayText}
+                  </span>
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[280px] animate-in zoom-in-95"
+                  sideOffset={5}
+                  align="start"
+                >
+                  <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
+                    <CalendarIcon
+                      size={12}
+                      className="text-slate-400"
+                    />
+                    Período do Relatório
+                  </h4>
+                  {periodType === "Diário" && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">
+                          Tipo
+                        </span>
+                        <span className="text-slate-800 font-medium">
+                          Período
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">
+                          Início
+                        </span>
+                        <span className="text-slate-800 font-medium">
+                          {dateRange.start}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">
+                          Fim
+                        </span>
+                        <span className="text-slate-800 font-medium">
+                          {dateRange.end}
+                        </span>
+                      </div>
+                      {analysisMode !== "padrao" && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
+                          {analysisMode === "evolucao" ? (
+                            <TrendingUp size={10} />
+                          ) : (
+                            <ArrowLeftRight size={10} />
+                          )}
+                          <span className="font-medium">
+                            {analysisMode === "evolucao"
+                              ? "Visualização Evolutiva ativa"
+                              : "Visualização Comparativa ativa"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {periodType === "Mensal" && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="text-slate-500">
+                          Tipo
+                        </span>
+                        <span className="text-slate-800 font-medium">
+                          Mensal — {selectedMonths.length}{" "}
+                          {selectedMonths.length > 1
+                            ? "meses"
+                            : "mês"}
+                        </span>
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
+                        {selectedMonths.map(
+                          (m: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
+                              {m}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                      {analysisMode !== "padrao" && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
+                          {analysisMode === "evolucao" ? (
+                            <TrendingUp size={10} />
+                          ) : (
+                            <ArrowLeftRight size={10} />
+                          )}
+                          <span className="font-medium">
+                            {analysisMode === "evolucao"
+                              ? "Visualização Evolutiva ativa"
+                              : "Visualização Comparativa ativa"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {periodType === "Semanal" && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="text-slate-500">
+                          Tipo
+                        </span>
+                        <span className="text-slate-800 font-medium">
+                          Período fechado — {periods.length}{" "}
+                          {periods.length !== 1
+                            ? "dias"
+                            : "dia"}
+                        </span>
+                      </div>
+                      {weeklyMode === "weekday" && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-500">
+                            Dias
+                          </span>
+                          <span className="text-slate-800 font-medium">
+                            {WEEKDAY_FULL.filter(
+                              (_: string, i: number) =>
+                                (weeklyComputedDays || []).some(
+                                  (d: Date) => d.getDay() === i,
+                                ),
+                            ).join(", ") || "—"}
+                          </span>
+                        </div>
+                      )}
+                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
+                        {periods.map(
+                          (p: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
+                              {p}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                      {analysisMode !== "padrao" && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
+                          {analysisMode === "evolucao" ? (
+                            <TrendingUp size={10} />
+                          ) : (
+                            <ArrowLeftRight size={10} />
+                          )}
+                          <span className="font-medium">
+                            {analysisMode === "evolucao"
+                              ? "Visualização Evolutiva ativa"
+                              : "Visualização Comparativa ativa"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {periodType === "Anual" && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="text-slate-500">
+                          Tipo
+                        </span>
+                        <span className="text-slate-800 font-medium">
+                          Anual — {selectedYears.length}{" "}
+                          {selectedYears.length > 1
+                            ? "anos"
+                            : "ano"}
+                        </span>
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
+                        {selectedYears.map(
+                          (y: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
+                              {y}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                      {analysisMode !== "padrao" && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
+                          {analysisMode === "evolucao" ? (
+                            <TrendingUp size={10} />
+                          ) : (
+                            <ArrowLeftRight size={10} />
+                          )}
+                          <span className="font-medium">
+                            {analysisMode === "evolucao"
+                              ? "Visualização Evolutiva ativa"
+                              : "Visualização Comparativa ativa"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <Popover.Arrow className="fill-white" />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          )}
+
+          {/* Faixa Horária badge (only for hora a hora mode) */}
+          {analysisMode === "horaahora" && (
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: "#F1F1F1",
+                    color: "#2C2C2C",
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    ...bc("#D9D9D9"),
+                  }}
+                >
+                  <Clock size={10} />
+                  <span className="uppercase">Faixa Horária:</span>
+                  <span className="font-normal ml-0.5">
+                    {intradayHoursLabel}
+                  </span>
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-slate-200 w-[250px] animate-in zoom-in-95"
+                  sideOffset={5}
+                >
+                  <h4 className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide border-b border-slate-100 pb-1 flex items-center justify-between">
+                    <span>Horas Selecionadas</span>
+                    <span className="text-[10px] opacity-70 bg-white/50 px-1.5 py-0.5 rounded-full">
+                      {selectedIntradayHours.length}
+                    </span>
+                  </h4>
+                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
+                    {[...selectedIntradayHours]
+                      .sort(
+                        (a, b) =>
+                          parseInt(a.replace("h", ""), 10) -
+                          parseInt(b.replace("h", ""), 10),
+                      )
+                      .map((hour, idx) => (
+                        <div
+                          key={`${hour}-${idx}`}
+                          className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
+                          {hour}
+                        </div>
+                      ))}
+                  </div>
+                  <Popover.Arrow className="fill-white" />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          )}
+
+          {/* Filtros de inclusão */}
+          {includeSummaryFilters.map((filter) => (
+            <Popover.Root key={`hdr-inc-${filter.key}`}>
+              <Popover.Trigger asChild>
+                <button
+                  type="button"
+                  className="text-[11px] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 font-medium hover:brightness-[0.97] transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: "#F1F1F1",
+                    color: "#2C2C2C",
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    ...bc("#D9D9D9"),
+                  }}
+                >
+                  <Filter size={10} className="shrink-0 text-[#2C2C2C]" />
+                  <span className="uppercase">{getAttributeLabel(filter.key)}:</span>
+                  <span className="font-normal ml-0.5">
+                    {filter.vals.length > 1
+                      ? `${filter.vals.length} itens`
+                      : filter.vals[0]}
+                  </span>
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-[#D9D9D9] w-[250px] animate-in zoom-in-95"
+                  sideOffset={5}
+                >
+                  <h4 className="text-xs font-bold mb-2 uppercase tracking-wide border-b border-[#D9D9D9] pb-1 flex items-center justify-between text-[#314158]">
+                    <span>{getAttributeLabel(filter.key)} (inclusão)</span>
+                    <span className="text-[10px] opacity-70 bg-[#F1F1F1] px-1.5 py-0.5 rounded-full text-[#2C2C2C]">
+                      {filter.vals.length}
+                    </span>
+                  </h4>
+                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                    {filter.vals.map((val: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className="text-xs text-[#2C2C2C] py-1.5 border-b border-[#F1F1F1] last:border-0 flex items-start gap-2 leading-relaxed"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#D9D9D9]" />
+                        {val}
+                      </div>
+                    ))}
+                  </div>
+                  <Popover.Arrow className="fill-white" />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          ))}
+
+          {/* Agrupamento */}
+          {groupingArr.length > 0 && (
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  type="button"
+                  className="text-[11px] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 font-medium hover:brightness-[0.97] transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: "#F1F1F1",
+                    color: "#2C2C2C",
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    ...bc("#D9D9D9"),
+                  }}
+                >
+                  <Layers size={10} className="shrink-0 text-[#2C2C2C]" />
+                  <span className="uppercase">Agrupamento:</span>
+                  <span className="font-normal ml-0.5">
+                    {groupingArr.length > 1
+                      ? `${groupingArr.length} níveis`
+                      : getAttributeLabel(groupingArr[0])}
+                  </span>
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-[#D9D9D9] w-[250px] animate-in zoom-in-95"
+                  sideOffset={5}
+                >
+                  <h4 className="text-xs font-bold text-[#314158] mb-2 uppercase tracking-wide border-b border-[#D9D9D9] pb-1 flex items-center justify-between">
+                    <span>Níveis de Agrupamento</span>
+                    <span className="text-[10px] opacity-70 bg-[#F1F1F1] px-1.5 py-0.5 rounded-full text-[#2C2C2C]">
+                      {groupingArr.length}
+                    </span>
+                  </h4>
+                  <div className="space-y-1">
+                    {groupingArr.map((gId: string, gIdx: number) => {
+                      const GIcon = getAttributeIcon(gId);
+                      return (
+                        <div
+                          key={gId}
+                          className="text-xs text-[#2C2C2C] py-1.5 border-b border-[#F1F1F1] last:border-0 flex items-center gap-2"
+                        >
+                          <span className="text-[10px] text-[#808080] w-4 text-center shrink-0">
+                            {gIdx + 1}.
+                          </span>
+                          <GIcon size={12} className="text-[#566878] shrink-0" />
+                          <span className="uppercase">{getAttributeLabel(gId)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Popover.Arrow className="fill-white" />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          )}
+
+          {/* Filtros de exclusão */}
+          {excludeSummaryFilters.map((filter) => (
+            <Popover.Root key={`hdr-exc-${filter.key}`}>
+              <Popover.Trigger asChild>
+                <button
+                  type="button"
+                  className="text-[11px] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 font-medium hover:brightness-[0.97] transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: "#F1F1F1",
+                    color: "#2C2C2C",
+                    borderWidth: 1,
+                    borderStyle: "solid",
+                    ...bc("#D9D9D9"),
+                  }}
+                >
+                  <Ban size={10} className="shrink-0 text-red-600" />
+                  <span className="uppercase">{getAttributeLabel(filter.key)}:</span>
+                  <span className="font-normal ml-0.5">
+                    {filter.vals.length > 1
+                      ? `${filter.vals.length} itens`
+                      : filter.vals[0]}
+                  </span>
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-[#D9D9D9] w-[250px] animate-in zoom-in-95"
+                  sideOffset={5}
+                >
+                  <h4 className="text-xs font-bold mb-2 uppercase tracking-wide border-b border-[#D9D9D9] pb-1 flex items-center justify-between text-[#314158]">
+                    <span className="flex items-center gap-2">
+                      <Ban size={12} className="text-red-600 shrink-0" />
+                      {getAttributeLabel(filter.key)} (exclusão)
+                    </span>
+                    <span className="text-[10px] opacity-70 bg-[#F1F1F1] px-1.5 py-0.5 rounded-full text-[#2C2C2C]">
+                      {filter.vals.length}
+                    </span>
+                  </h4>
+                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                    {filter.vals.map((val: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className="text-xs text-[#2C2C2C] py-1.5 border-b border-[#F1F1F1] last:border-0 flex items-start gap-2 leading-relaxed"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#D9D9D9]" />
+                        {val}
+                      </div>
+                    ))}
+                  </div>
+                  <Popover.Arrow className="fill-white" />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══════════════ HEADER CARD: Title + Ações + Info tempo ═══════════════ */}
       <div
         className="flex-none bg-white rounded-[14px] px-5 py-4"
         style={{
@@ -3495,564 +3864,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             ? ReactDOM.createPortal(actionsJSX, actionsContainer)
             : actionsJSX;
         })()}
-
-        {/* Row 2: Period + Analysis Attributes (Grouping + Selections + Exclusions) */}
-        <div
-          className="flex items-center gap-2 flex-wrap"
-          style={
-            actionsContainer
-              ? { marginTop: 0 }
-              : {
-                  marginTop: 12,
-                  paddingTop: 12,
-                  borderTopWidth: 1,
-                  borderTopStyle: "solid",
-                  borderTopColor: "#f1f5f9",
-                }
-          }
-        >
-          {/* Period tag(s) */}
-          {analysisMode === "comparativo" ? (
-            <React.Fragment>
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <button
-                    className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                    style={{
-                      backgroundColor: "#f1f5f9",
-                      color: "#314158",
-                      borderWidth: 1,
-                      borderStyle: "solid",
-                      ...bc("#e2e8f0"),
-                    }}
-                  >
-                    <CalendarIcon size={10} />
-                    <span className="uppercase">P1</span>
-                    <span className="font-normal ml-0.5">
-                      {compPeriodSmartSummary(1)}
-                    </span>
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[260px] animate-in zoom-in-95"
-                    sideOffset={5}
-                    align="start"
-                  >
-                    <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
-                      <CalendarIcon
-                        size={12}
-                        className="text-slate-400"
-                      />
-                      Per��odo 1
-                    </h4>
-                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                      {compPeriodDetailItems(1).map(
-                        (item: string, idx: number) => (
-                          <div
-                            key={idx}
-                            className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                            {item}
-                          </div>
-                        ),
-                      )}
-                    </div>
-                    <Popover.Arrow className="fill-white" />
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <button
-                    className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                    style={{
-                      backgroundColor: "#f1f5f9",
-                      color: "#314158",
-                      borderWidth: 1,
-                      borderStyle: "solid",
-                      ...bc("#e2e8f0"),
-                    }}
-                  >
-                    <CalendarIcon size={10} />
-                    <span className="uppercase">P2</span>
-                    <span className="font-normal ml-0.5">
-                      {compPeriodSmartSummary(2)}
-                    </span>
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[260px] animate-in zoom-in-95"
-                    sideOffset={5}
-                    align="start"
-                  >
-                    <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
-                      <CalendarIcon
-                        size={12}
-                        className="text-slate-400"
-                      />
-                      Período 2
-                    </h4>
-                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                      {compPeriodDetailItems(2).map(
-                        (item: string, idx: number) => (
-                          <div
-                            key={idx}
-                            className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#45556c]" />
-                            {item}
-                          </div>
-                        ),
-                      )}
-                    </div>
-                    <Popover.Arrow className="fill-white" />
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-            </React.Fragment>
-          ) : (
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <button
-                  className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: "#f1f5f9",
-                    color: "#314158",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc("#e2e8f0"),
-                  }}
-                >
-                  <CalendarIcon size={10} />
-                  <span className="uppercase">
-                    {periodType === "Semanal"
-                      ? "Dias da Semana"
-                      : periodType === "Diário"
-                        ? "Período"
-                        : periodType}
-                  </span>
-                  <span className="font-normal ml-0.5">
-                    {periodDisplayText}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[280px] animate-in zoom-in-95"
-                  sideOffset={5}
-                  align="start"
-                >
-                  <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
-                    <CalendarIcon
-                      size={12}
-                      className="text-slate-400"
-                    />
-                    Período do Relatório
-                  </h4>
-                  {periodType === "Diário" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                          Tipo
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          Período
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                          Início
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          {dateRange.start}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                          Fim
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          {dateRange.end}
-                        </span>
-                      </div>
-                      {analysisMode !== "padrao" && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
-                          {analysisMode === "evolucao" ? (
-                            <TrendingUp size={10} />
-                          ) : (
-                            <ArrowLeftRight size={10} />
-                          )}
-                          <span className="font-medium">
-                            {analysisMode === "evolucao"
-                              ? "Visualização Evolutiva ativa"
-                              : "Visualização Comparativa ativa"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {periodType === "Mensal" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-slate-500">
-                          Tipo
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          Mensal — {selectedMonths.length}{" "}
-                          {selectedMonths.length > 1
-                            ? "meses"
-                            : "mês"}
-                        </span>
-                      </div>
-                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                        {selectedMonths.map(
-                          (m: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                              {m}
-                            </div>
-                          ),
-                        )}
-                      </div>
-                      {analysisMode !== "padrao" && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
-                          {analysisMode === "evolucao" ? (
-                            <TrendingUp size={10} />
-                          ) : (
-                            <ArrowLeftRight size={10} />
-                          )}
-                          <span className="font-medium">
-                            {analysisMode === "evolucao"
-                              ? "Visualização Evolutiva ativa"
-                              : "Visualização Comparativa ativa"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {periodType === "Semanal" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-slate-500">
-                          Tipo
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          Período fechado — {periods.length}{" "}
-                          {periods.length !== 1
-                            ? "dias"
-                            : "dia"}
-                        </span>
-                      </div>
-                      {weeklyMode === "weekday" && (
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-500">
-                            Dias
-                          </span>
-                          <span className="text-slate-800 font-medium">
-                            {WEEKDAY_FULL.filter(
-                              (_: string, i: number) =>
-                                (weeklyComputedDays || []).some(
-                                  (d: Date) => d.getDay() === i,
-                                ),
-                            ).join(", ") || "—"}
-                          </span>
-                        </div>
-                      )}
-                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                        {periods.map(
-                          (p: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                              {p}
-                            </div>
-                          ),
-                        )}
-                      </div>
-                      {analysisMode !== "padrao" && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
-                          {analysisMode === "evolucao" ? (
-                            <TrendingUp size={10} />
-                          ) : (
-                            <ArrowLeftRight size={10} />
-                          )}
-                          <span className="font-medium">
-                            {analysisMode === "evolucao"
-                              ? "Visualização Evolutiva ativa"
-                              : "Visualização Comparativa ativa"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {periodType === "Anual" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-slate-500">
-                          Tipo
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          Anual — {selectedYears.length}{" "}
-                          {selectedYears.length > 1
-                            ? "anos"
-                            : "ano"}
-                        </span>
-                      </div>
-                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                        {selectedYears.map(
-                          (y: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                              {y}
-                            </div>
-                          ),
-                        )}
-                      </div>
-                      {analysisMode !== "padrao" && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
-                          {analysisMode === "evolucao" ? (
-                            <TrendingUp size={10} />
-                          ) : (
-                            <ArrowLeftRight size={10} />
-                          )}
-                          <span className="font-medium">
-                            {analysisMode === "evolucao"
-                              ? "Visualização Evolutiva ativa"
-                              : "Visualização Comparativa ativa"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          )}
-
-          {/* Faixa Horária badge (only for hora a hora mode) */}
-          {analysisMode === "horaahora" && (
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <button
-                  className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: "#f1f5f9",
-                    color: "#314158",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc("#e2e8f0"),
-                  }}
-                >
-                  <Clock size={10} />
-                  <span className="uppercase">Faixa Horária:</span>
-                  <span className="font-normal ml-0.5">
-                    {intradayHoursLabel}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-slate-200 w-[250px] animate-in zoom-in-95"
-                  sideOffset={5}
-                >
-                  <h4 className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide border-b border-slate-100 pb-1 flex items-center justify-between">
-                    <span>Horas Selecionadas</span>
-                    <span className="text-[10px] opacity-70 bg-white/50 px-1.5 py-0.5 rounded-full">
-                      {selectedIntradayHours.length}
-                    </span>
-                  </h4>
-                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                    {[...selectedIntradayHours]
-                      .sort(
-                        (a, b) =>
-                          parseInt(a.replace("h", ""), 10) -
-                          parseInt(b.replace("h", ""), 10),
-                      )
-                      .map((hour, idx) => (
-                        <div
-                          key={`${hour}-${idx}`}
-                          className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                          {hour}
-                        </div>
-                      ))}
-                  </div>
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          )}
-
-          {/* Grouping levels */}
-          {groupingArr.length > 0 && (
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <button
-                  className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: "#f1f5f9",
-                    color: "#314158",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc("#e2e8f0"),
-                  }}
-                >
-                  <Layers size={10} />
-                  <span className="uppercase">
-                    Agrupamento:
-                  </span>
-                  <span className="font-normal ml-0.5">
-                    {groupingArr.length > 1
-                      ? `${groupingArr.length} níveis`
-                      : getAttributeLabel(groupingArr[0])}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-slate-200 w-[250px] animate-in zoom-in-95"
-                  sideOffset={5}
-                >
-                  <h4 className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide border-b border-slate-100 pb-1 flex items-center justify-between">
-                    <span>Níveis de Agrupamento</span>
-                    <span className="text-[10px] opacity-70 bg-white/50 px-1.5 py-0.5 rounded-full">
-                      {groupingArr.length}
-                    </span>
-                  </h4>
-                  <div className="space-y-1">
-                    {groupingArr.map(
-                      (gId: string, gIdx: number) => {
-                        const GIcon = getAttributeIcon(gId);
-                        return (
-                          <div
-                            key={gId}
-                            className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-center gap-2"
-                          >
-                            <span className="text-[10px] text-slate-400 w-4 text-center shrink-0">
-                              {gIdx + 1}.
-                            </span>
-                            <GIcon
-                              size={12}
-                              className="text-slate-400 shrink-0"
-                            />
-                            <span className="uppercase">
-                              {getAttributeLabel(gId)}
-                            </span>
-                          </div>
-                        );
-                      },
-                    )}
-                  </div>
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          )}
-
-          {/* Selections / Exclusions */}
-          {activeFilters.map((filter: any) => (
-            <Popover.Root
-              key={`hdr-${filter.type}-${filter.key}`}
-            >
-              <Popover.Trigger asChild>
-                <button
-                  className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                  style={{
-                    backgroundColor:
-                      filter.type === "include"
-                        ? "#f1f5f9"
-                        : "#FFF6F4",
-                    color:
-                      filter.type === "include"
-                        ? "#314158"
-                        : "#B83232",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc(
-                      filter.type === "include"
-                        ? "#cbd5e1"
-                        : "#F5A090",
-                    ),
-                  }}
-                >
-                  {filter.type === "include" ? (
-                    <Filter size={10} />
-                  ) : (
-                    <Ban size={10} />
-                  )}
-                  <span className="uppercase">
-                    {filter.key}:
-                  </span>
-                  <span className="font-normal ml-0.5">
-                    {filter.vals.length > 1
-                      ? `${filter.vals.length} itens`
-                      : filter.vals[0]}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-slate-200 w-[250px] animate-in zoom-in-95"
-                  sideOffset={5}
-                >
-                  <h4
-                    className={cn(
-                      "text-xs font-bold mb-2 uppercase tracking-wide border-b pb-1 flex items-center justify-between",
-                      filter.type === "include"
-                        ? "text-[#314158] border-[#cbd5e1]"
-                        : "text-[#B83232] border-[#F5A090]",
-                    )}
-                  >
-                    <span>
-                      {filter.key} (
-                      {filter.type === "include"
-                        ? "Inclusão"
-                        : "Exclusão"}
-                      )
-                    </span>
-                    <span className="text-[10px] opacity-70 bg-white/50 px-1.5 py-0.5 rounded-full">
-                      {filter.vals.length}
-                    </span>
-                  </h4>
-                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
-                    {filter.vals.map(
-                      (val: string, idx: number) => (
-                        <div
-                          key={idx}
-                          className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2 leading-relaxed"
-                        >
-                          <div
-                            className={cn(
-                              "w-1.5 h-1.5 rounded-full mt-1 shrink-0",
-                              filter.type === "include"
-                                ? "bg-[#314158]"
-                                : "bg-[#B83232]",
-                            )}
-                          />
-                          {val}
-                        </div>
-                      ),
-                    )}
-                  </div>
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          ))}
-        </div>
 
         {/* Current time info - mostrar em todas análises que incluem dia atual */}
         {(() => {
