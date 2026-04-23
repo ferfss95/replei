@@ -317,6 +317,7 @@ export default function App() {
                     setAnalysisMode={handleAnalysisModeChange}
                     currentModule={currentModule}
                     handleModuleChange={handleModuleChange}
+                    moduleColors={moduleColors}
                     periodType={periodType}
                     setPeriodType={setPeriodType}
                     dailySubType={dailySubType}

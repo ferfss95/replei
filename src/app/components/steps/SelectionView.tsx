@@ -23,6 +23,25 @@ import { Calendar } from "../ui/calendar";
 import { MdsaaToggle } from "../MdsaaToggle";
 import { LockedTooltip } from "../LockedTooltip";
 import type { AnalysisMode } from "../../types/wizard";
+import { NEUTRAL_PALETTE, type ModuleColors } from "../../constants/moduleColors";
+
+const PERIOD_GRANULARITY_LABELS: Record<
+  (typeof PERIOD_OPTIONS)[number],
+  string
+> = {
+  Diário: "Dia",
+  Mensal: "Mês",
+  Anual: "Ano",
+};
+
+const PERIOD_GRANULARITY_DESCRIPTIONS: Record<
+  (typeof PERIOD_OPTIONS)[number],
+  string
+> = {
+  Diário: "Seleção livre de datas",
+  Mensal: "Meses completos",
+  Anual: "Anos completos",
+};
 
 interface SelectionViewProps {
   // UI state
@@ -32,6 +51,7 @@ interface SelectionViewProps {
   // Module
   currentModule: Module;
   handleModuleChange: (module: Module) => void;
+  moduleColors: ModuleColors;
   // Period type
   periodType: (typeof PERIOD_OPTIONS)[number];
   setPeriodType: React.Dispatch<React.SetStateAction<(typeof PERIOD_OPTIONS)[number]>>;
@@ -83,6 +103,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
   setAnalysisMode,
   currentModule,
   handleModuleChange,
+  moduleColors,
   periodType,
   setPeriodType,
   dailySubType,
@@ -122,6 +143,9 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
   handleManualP2YearsChange,
 }: SelectionViewProps) {
   const weeklyOverLimit = selectedSpecificDays.length > MAX_WEEKLY_DAYS;
+  const [hoveredPeriodOption, setHoveredPeriodOption] = React.useState<
+    (typeof PERIOD_OPTIONS)[number] | null
+  >(null);
 
   return (
                       <div className="mb-5 flex gap-5 items-stretch">
@@ -271,34 +295,48 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                 </p>
                                 <div className="flex flex-col gap-2">
                                   {PERIOD_OPTIONS.map((opt) => {
-                                    const labels: Record<
-                                      string,
-                                      string
-                                    > = {
-                                      Diário: "Dia",
-                                      Mensal: "Mês",
-                                      Anual: "Ano",
-                                    };
-                                    const descriptions: Record<
-                                      string,
-                                      string
-                                    > = {
-                                      Diário:
-                                        "Seleção livre de datas",
-                                      Mensal: "Meses completos",
-                                      Anual: "Anos completos",
-                                    };
+                                    const isSelected = periodType === opt;
+                                    const isHovered =
+                                      isPeriodEditable &&
+                                      hoveredPeriodOption === opt;
+                                    const borderColor = !isPeriodEditable
+                                      ? isSelected
+                                        ? moduleColors.primaryColor
+                                        : NEUTRAL_PALETTE.border
+                                      : isHovered
+                                        ? NEUTRAL_PALETTE.title
+                                        : isSelected
+                                          ? moduleColors.primaryColor
+                                          : NEUTRAL_PALETTE.border;
+                                    const boxShadow =
+                                      isPeriodEditable && isHovered
+                                        ? "0 0 0 3px rgba(86, 104, 120, 0.3), 0 2px 6px rgba(0, 0, 0, 0.06)"
+                                        : undefined;
+                                    const textColor = isSelected
+                                      ? moduleColors.iconColor
+                                      : NEUTRAL_PALETTE.muted;
                                     return (
                                       <label
                                         key={opt}
+                                        onMouseEnter={() =>
+                                          isPeriodEditable &&
+                                          setHoveredPeriodOption(opt)
+                                        }
+                                        onMouseLeave={() =>
+                                          setHoveredPeriodOption(null)
+                                        }
                                         className={cn(
-                                          "flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer select-none transition-all duration-200 group",
-                                          periodType === opt
-                                            ? "bg-[#f1f5f9]"
-                                            : "hover:bg-slate-50",
+                                          "flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer select-none transition-all duration-200 border border-solid",
                                           !isPeriodEditable &&
                                             "cursor-not-allowed opacity-50",
                                         )}
+                                        style={{
+                                          backgroundColor: isSelected
+                                            ? moduleColors.backgroundColor
+                                            : "transparent",
+                                          borderColor,
+                                          boxShadow,
+                                        }}
                                       >
                                         <input
                                           type="radio"
@@ -316,37 +354,43 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                           className="sr-only"
                                         />
                                         <div
-                                          className={cn(
-                                            "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0",
-                                            periodType === opt
-                                              ? "border-[#314158] bg-white"
-                                              : "border-slate-300 group-hover:border-slate-400",
-                                          )}
+                                          className="w-4 h-4 rounded-full border-2 border-solid flex items-center justify-center transition-all shrink-0 bg-white"
+                                          style={{
+                                            borderColor: isSelected
+                                              ? moduleColors.iconColor
+                                              : "rgba(217, 217, 217, 0.5)",
+                                          }}
                                         >
-                                          {periodType === opt && (
-                                            <div className="w-2 h-2 rounded-full bg-[#314158]" />
+                                          {isSelected && (
+                                            <div
+                                              className="w-2 h-2 rounded-full shrink-0"
+                                              style={{
+                                                backgroundColor:
+                                                  moduleColors.iconColor,
+                                              }}
+                                            />
                                           )}
                                         </div>
                                         <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                                           <span
-                                            className={cn(
-                                              "text-[13px] font-bold",
-                                              periodType === opt
-                                                ? "text-[#314158]"
-                                                : "text-[#62748e]",
-                                            )}
+                                            className="text-[13px] font-bold"
+                                            style={{ color: textColor }}
                                           >
-                                            {labels[opt]}
+                                            {
+                                              PERIOD_GRANULARITY_LABELS[
+                                                opt
+                                              ]
+                                            }
                                           </span>
                                           <span
-                                            className={cn(
-                                              "text-[10px] font-normal leading-tight",
-                                              periodType === opt
-                                                ? "text-[#314158]"
-                                                : "text-[#90a1b9]",
-                                            )}
+                                            className="text-[10px] font-normal leading-tight"
+                                            style={{ color: textColor }}
                                           >
-                                            {descriptions[opt]}
+                                            {
+                                              PERIOD_GRANULARITY_DESCRIPTIONS[
+                                                opt
+                                              ]
+                                            }
                                           </span>
                                         </div>
                                       </label>
