@@ -283,7 +283,7 @@ export default function App() {
         />
 
         <motion.div
-          className="relative flex min-h-0 flex-1 overflow-hidden"
+          className="flex-1 flex overflow-hidden relative"
           key={moduleTransitionKey}
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -291,11 +291,11 @@ export default function App() {
         >
           <main
             className={cn(
-              "flex min-h-0 flex-1 flex-col overflow-hidden",
+              "flex-1 flex flex-col overflow-hidden",
               metricsCollapsed ? "mr-12" : "mr-72",
             )}
           >
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden">
               {/* ── Secondary Header: padding 24px, fora da área de scroll ── */}
               <SecondaryHeader
                 currentStep={currentStep}
@@ -306,7 +306,7 @@ export default function App() {
 
               <div
                 className={cn(
-                  "px-6 pb-6 w-full flex-1 flex min-h-0 flex-col gap-4 overflow-y-auto overflow-x-auto",
+                  "px-6 pb-6 w-full flex-1 flex flex-col gap-4 overflow-y-auto",
                 )}
               >
                 {/* Config Panel - Modo de Análise + Período */}
