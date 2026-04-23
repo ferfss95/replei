@@ -714,38 +714,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     return renderMetricValue(value, mId);
   };
 
-  // Scroll shadow state
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-  const [scrollShadows, setScrollShadows] = React.useState({
-    left: false,
-    right: false,
-  });
-
-  const updateScrollShadows = React.useCallback(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    setScrollShadows({
-      left: scrollLeft > 5,
-      right: scrollLeft + clientWidth < scrollWidth - 5,
-    });
-  }, []);
-
-  React.useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    updateScrollShadows();
-    el.addEventListener("scroll", updateScrollShadows, {
-      passive: true,
-    });
-    const ro = new ResizeObserver(updateScrollShadows);
-    ro.observe(el);
-    return () => {
-      el.removeEventListener("scroll", updateScrollShadows);
-      ro.disconnect();
-    };
-  }, [updateScrollShadows]);
-
   // Resize Handlers — each mousedown creates a self-contained closure so
   // event listener references are always correct (no stale-reference leak).
   const handleMouseDown = (
@@ -2772,18 +2740,19 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   );
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in duration-500">
-      {/* ═══════════════ RESUMO DA ANÁLISE ═══════════════ */}
-      <div
-        className="flex-none bg-white rounded-[14px] px-5 py-4"
-        style={{
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor: "#D9D9D9",
-          boxShadow:
-            "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
-        }}
-      >
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 animate-in fade-in duration-500">
+      <div className="sticky top-0 z-30 -mx-6 shrink-0 bg-[#F1F1F1] px-6 pb-1">
+        {/* ═══════════════ RESUMO DA ANÁLISE ═══════════════ */}
+        <div
+          className="flex-none bg-white rounded-[14px] px-5 py-4"
+          style={{
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: "#D9D9D9",
+            boxShadow:
+              "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
+          }}
+        >
         <h3 className="text-[14px] font-bold uppercase tracking-wide text-[#314158] mb-3">
           Resumo da análise
         </h3>
@@ -3338,8 +3307,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             </Popover.Root>
           ))}
         </div>
+        </div>
       </div>
 
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
       {/* ═══════════════ HEADER CARD: Title + Ações + Info tempo ═══════════════ */}
       <div
         className="flex-none bg-white rounded-[14px] px-5 py-4"
@@ -3960,7 +3931,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       {/* ═══════════════ GRÁFICO Section ═══════════════ */}
       {showChartSection && finalRows.length > 0 && (
         <div
-          className="flex-none bg-white rounded-[14px] overflow-hidden"
+          className="min-w-0 flex-none overflow-hidden rounded-[14px] bg-white"
           style={{
             borderWidth: 1,
             borderStyle: "solid",
@@ -5650,43 +5621,25 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
       {/* ═══════════════ TABELA Section ═══════════════ */}
       <div
-        className="flex flex-col bg-white rounded-[14px] overflow-hidden"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[14px] bg-white"
         style={{
           borderWidth: 1,
           borderStyle: "solid",
           ...bc("#d5dbe3"),
           boxShadow:
             "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
-          minHeight: 500,
         }}
       >
         {/* ── Toggle Header ── */}
 
         {showTable && (
-          <div className="flex flex-col">
-            {/* ── Table Scroll Area ── */}
+          <div className="flex min-h-0 flex-1 flex-col">
+            {/* Área da tabela: altura acompanha linhas exibidas; footer permanece ao final do espaço flex */}
             <div
-              className="flex flex-col relative"
+              className="relative flex min-h-0 flex-1 flex-col"
               ref={tableContainerRef}
-              style={{
-                maxHeight: "calc(100vh - 300px)",
-                minHeight: 450,
-              }}
             >
-              {/* Scroll shadow indicators */}
-              {scrollShadows.right && (
-                <div
-                  className="absolute right-0 top-0 bottom-0 w-6 pointer-events-none z-[20]"
-                  style={{
-                    background:
-                      "linear-gradient(to left, rgba(0,0,0,0.06), transparent)",
-                  }}
-                />
-              )}
-              <div
-                ref={scrollContainerRef}
-                className="overflow-x-auto overflow-y-auto relative"
-              >
+              <div className="relative w-full min-w-0 shrink-0">
                 {/* ─── PIVOT TABLE ─── */}
                 {isPivot ? (
                   <table
@@ -8134,7 +8087,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               {/* Table Footer — Pagination */}
               {finalRows.length > 0 && (
                 <div
-                  className="flex-none flex items-center justify-between px-4 py-2 bg-slate-50 text-xs text-slate-500 select-none flex-wrap gap-y-2"
+                  className="mt-auto flex flex-none flex-wrap items-center justify-between gap-y-2 border-t border-solid bg-slate-50 px-4 py-2 text-xs text-slate-500 select-none"
                   style={{
                     ...bc("#e2e8f0"),
                     borderTopWidth: 1,
@@ -8231,6 +8184,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
