@@ -310,5 +310,6 @@ export const produtoModule: ModuleConfig = {
     padrao:      'Análise Geral de Venda e Estoque',
     evolucao:    'Análise Evolutiva de Venda e Estoque',
     comparativo: 'Análise Comparativa de Venda e Estoque',
+    horaahora:   'Análise hora a hora de Venda e Estoque',
   },
 };

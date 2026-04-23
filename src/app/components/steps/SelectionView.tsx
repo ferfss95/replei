@@ -181,7 +181,8 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                               }
                               supportsHoraAHora={
                                 currentModule === "LOJA" ||
-                                currentModule === "INDICADORES"
+                                currentModule === "INDICADORES" ||
+                                currentModule === "PRODUTO"
                               }
                               disabled={!isPeriodEditable}
                             />
