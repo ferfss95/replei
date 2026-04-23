@@ -177,7 +177,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const EVOL_TOTAL_COLUMN_BG = "#A9BDD1";
   const DEFAULT_TOTAL_COLUMN_BG = "#F8FAFC";
   const totalColumnBg =
-    analysisMode === "evolucao"
+    analysisMode === "evolucao" ||
+    analysisMode === "horaahora"
       ? EVOL_TOTAL_COLUMN_BG
       : DEFAULT_TOTAL_COLUMN_BG;
 
