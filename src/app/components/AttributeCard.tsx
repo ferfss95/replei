@@ -1,24 +1,24 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Check, 
-  Search, 
-  Filter, 
-  Trash2, 
-  Anchor, 
-  X,
-} from 'lucide-react';
-import * as Popover from '@radix-ui/react-popover';
-import * as RadixTooltip from '@radix-ui/react-tooltip';
-import { cn } from '../utils';
-import type { ModuleColors } from '../constants/moduleColors';
+import React, { useState, useMemo } from "react";
+import { Check, Search, Filter, Trash2, Anchor } from "lucide-react";
+import * as Popover from "@radix-ui/react-popover";
+import * as RadixTooltip from "@radix-ui/react-tooltip";
+import { cn } from "../utils";
+import type { ModuleColors } from "../constants/moduleColors";
 
 function hexToRgba(hex: string, alpha: number): string {
-  const cleaned = hex.replace('#', '');
+  const cleaned = hex.replace("#", "");
   const r = parseInt(cleaned.slice(0, 2), 16);
   const g = parseInt(cleaned.slice(2, 4), 16);
   const b = parseInt(cleaned.slice(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+/** Paleta neutra — default / hover / desativado agrupamento */
+const NEUTRAL_TEXT = "#808080";
+const NEUTRAL_BORDER = "#D9D9D9";
+const HOVER_BORDER = "#314158";
+const HOVER_SHADOW =
+  "0 0 0 3px rgba(86, 104, 120, 0.3), 0 1px 3px rgba(0, 0, 0, 0.08)";
 
 interface Attribute {
   id: string;
@@ -27,12 +27,14 @@ interface Attribute {
   options: string[];
 }
 
-type Step = 'selection' | 'grouping' | 'exclusion' | 'analysis';
+type Step = "selection" | "grouping" | "exclusion" | "analysis";
 
 interface AttributeCardProps {
   attribute: Attribute;
   step: Step;
   moduleColors: ModuleColors;
+  /** Agrupamento: quando já há 3 atributos, demais botões ficam desativados */
+  groupingLimitReached?: boolean;
   selectionCount: number;
   isGrouped: boolean;
   groupLevel: number;
@@ -45,12 +47,15 @@ interface AttributeCardProps {
   tooltip?: string;
 }
 
-export function AttributeCard({ 
-  attribute, 
+const BTN_DIM = "w-[140px] h-[50px] shrink-0 rounded-xl border transition-all duration-200 outline-none";
+
+export function AttributeCard({
+  attribute,
   step,
   moduleColors,
-  selectionCount, 
-  isGrouped, 
+  groupingLimitReached = false,
+  selectionCount,
+  isGrouped,
   groupLevel,
   exclusionCount,
   onToggleGroup,
@@ -58,26 +63,25 @@ export function AttributeCard({
   onUpdateExclusion,
   currentSelection,
   currentExclusion,
-  tooltip
+  tooltip,
 }: AttributeCardProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [isHover, setIsHover] = useState(false);
 
-  // Filter options based on search
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return attribute.options;
-    return attribute.options.filter(opt => 
-      opt.toLowerCase().includes(searchTerm.toLowerCase())
+    return attribute.options.filter((opt) =>
+      opt.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [attribute.options, searchTerm]);
 
-  // Handlers
   const handleToggleOption = (value: string, isSelection: boolean) => {
     const currentList = isSelection ? currentSelection : currentExclusion;
     const updateFn = isSelection ? onUpdateSelection : onUpdateExclusion;
-    
+
     if (currentList.includes(value)) {
-      updateFn(currentList.filter(v => v !== value));
+      updateFn(currentList.filter((v) => v !== value));
     } else {
       updateFn([...currentList, value]);
     }
@@ -88,12 +92,15 @@ export function AttributeCard({
     else onUpdateExclusion([]);
   };
 
-  // Visual State Helpers
-  const isActive = (step === 'selection' && selectionCount > 0) || 
-                   (step === 'grouping' && isGrouped) || 
-                   (step === 'exclusion' && exclusionCount > 0);
+  const isSelected1 =
+    (step === "selection" && selectionCount > 0) ||
+    (step === "exclusion" && exclusionCount > 0);
+  const isSelected2 = step === "grouping" && isGrouped;
+  const isGroupingDisabled = step === "grouping" && groupingLimitReached && !isGrouped;
 
-  // Shared tooltip content (rendered via portal)
+  const showHoverChrome =
+    (isHover || isOpen) && !isGroupingDisabled;
+
   const tooltipContent = tooltip ? (
     <RadixTooltip.Portal>
       <RadixTooltip.Content
@@ -106,52 +113,81 @@ export function AttributeCard({
     </RadixTooltip.Portal>
   ) : null;
 
-  // ─── 1. Grouping Mode (Direct Toggle) ───────────────────────────────────────
-  if (step === 'grouping') {
+  // ─── 1. Agrupamento (toggle direto) ───────────────────────────────────────
+  if (step === "grouping") {
     const btn = (
       <button
+        type="button"
+        disabled={isGroupingDisabled}
         onClick={onToggleGroup}
+        onMouseEnter={() => setIsHover(true)}
+        onMouseLeave={() => setIsHover(false)}
         className={cn(
-          "relative w-[140px] h-[68px] shrink-0 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center group outline-none",
-          isGrouped 
-            ? "shadow-sm" 
-            : "bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm"
+          BTN_DIM,
+          "relative flex flex-col items-center justify-center group",
+          isGroupingDisabled && "cursor-not-allowed",
+          !isGroupingDisabled && "cursor-pointer",
         )}
-        style={
-          isGrouped
+        style={{
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderStyle: "solid",
+          ...(isGroupingDisabled
             ? {
-                backgroundColor: moduleColors.backgroundColor,
-                borderColor: moduleColors.primaryColor,
-                borderWidth: 1,
+                borderColor: "rgba(217, 217, 217, 0.5)",
+                color: "rgba(128, 128, 128, 0.5)",
               }
-            : undefined
-        }
+            : isSelected2
+              ? {
+                  backgroundColor: moduleColors.backgroundColor,
+                  borderColor: moduleColors.primaryColor,
+                  boxShadow: showHoverChrome ? HOVER_SHADOW : undefined,
+                  ...(showHoverChrome ? { borderColor: HOVER_BORDER } : {}),
+                }
+              : {
+                  borderColor: NEUTRAL_BORDER,
+                  color: NEUTRAL_TEXT,
+                  boxShadow: showHoverChrome ? HOVER_SHADOW : undefined,
+                  ...(showHoverChrome ? { borderColor: HOVER_BORDER } : {}),
+                }),
+        }}
       >
-        <span
-          className={cn(
-            "text-[12px] font-bold uppercase tracking-wide transition-colors",
-            isGrouped ? "" : "text-slate-500 group-hover:text-slate-700",
-          )}
-          style={isGrouped ? { color: moduleColors.primaryColor } : undefined}
-        >
-          {attribute.label}
-        </span>
-        
-        {isGrouped && (
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <div
-              className="w-7 h-7 rounded-full text-white flex items-center justify-center text-xs font-bold"
-              style={{ backgroundColor: moduleColors.primaryColor }}
+        {isSelected2 ? (
+          <span className="flex items-center justify-center gap-1.5 px-2">
+            <Anchor
+              size={14}
+              className="shrink-0"
+              style={{ color: moduleColors.iconColor }}
+              strokeWidth={2.25}
+            />
+            <span
+              className="text-[12px] font-bold uppercase tracking-wide truncate"
+              style={{ color: moduleColors.iconColor }}
             >
-              {groupLevel}
-            </div>
-          </div>
+              {attribute.label}
+            </span>
+          </span>
+        ) : (
+          <span
+            className="text-[12px] font-bold uppercase tracking-wide px-2 truncate"
+            style={{ color: isGroupingDisabled ? "rgba(128, 128, 128, 0.5)" : NEUTRAL_TEXT }}
+          >
+            {attribute.label}
+          </span>
         )}
-        
-        {isGrouped && (
-          <div className="absolute top-2 right-2">
-            <Anchor size={12} style={{ color: moduleColors.primaryColor }} />
-          </div>
+
+        {isSelected2 && (
+          <span
+            className="absolute z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-bold text-white"
+            style={{
+              top: -11,
+              right: -11,
+              backgroundColor: moduleColors.primaryColor,
+            }}
+            aria-hidden
+          >
+            {groupLevel}
+          </span>
         )}
       </button>
     );
@@ -169,61 +205,59 @@ export function AttributeCard({
     return btn;
   }
 
-  // ─── 2. Selection & Exclusion Modes (Popover) ───────────────────────────────
-  const isSelectionMode = step === 'selection';
+  // ─── 2. Seleção & exclusão (Popover) ─────────────────────────────────────
+  const isSelectionMode = step === "selection";
   const count = isSelectionMode ? selectionCount : exclusionCount;
   const currentValues = isSelectionMode ? currentSelection : currentExclusion;
 
-  // The actual card button JSX (shared between tooltip and non-tooltip variants)
-  const activeBorder = moduleColors.primaryColor;
-  const activeBg = hexToRgba(moduleColors.highlightColor, 0.45);
   const cardButton = (
     <button
-      className={cn(
-        "relative w-[140px] h-[68px] shrink-0 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center group outline-none",
-        !isActive && "bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm",
-        isActive && "shadow-sm",
-        isOpen && "ring-2 ring-offset-2",
-      )}
-      style={
-        isActive
+      type="button"
+      onMouseEnter={() => setIsHover(true)}
+      onMouseLeave={() => setIsHover(false)}
+      className={cn(BTN_DIM, "flex flex-col items-center justify-center group cursor-pointer")}
+      style={{
+        backgroundColor: "transparent",
+        borderWidth: 1,
+        borderStyle: "solid",
+        ...(isSelected1
           ? {
-              borderColor: activeBorder,
-              backgroundColor: activeBg,
-              ...(isOpen
-                ? { boxShadow: `0 0 0 2px ${hexToRgba(moduleColors.highlightColor, 0.9)}` }
-                : {}),
+              backgroundColor: moduleColors.backgroundColor,
+              borderColor: moduleColors.primaryColor,
+              boxShadow: showHoverChrome ? HOVER_SHADOW : undefined,
+              ...(showHoverChrome ? { borderColor: HOVER_BORDER } : {}),
             }
-          : isOpen
-            ? { boxShadow: "0 0 0 2px rgba(148, 163, 184, 0.35)" }
-            : undefined
-      }
+          : {
+              borderColor: NEUTRAL_BORDER,
+              boxShadow: showHoverChrome ? HOVER_SHADOW : undefined,
+              ...(showHoverChrome ? { borderColor: HOVER_BORDER } : {}),
+            }),
+      }}
     >
       <span
-        className={cn(
-          "font-bold uppercase tracking-wide transition-colors text-[12px]",
-          isActive ? "" : "text-slate-500 group-hover:text-slate-700",
-        )}
-        style={isActive ? { color: moduleColors.primaryColor } : undefined}
+        className="text-[12px] font-bold uppercase tracking-wide px-2 truncate"
+        style={{
+          color: isSelected1 ? moduleColors.iconColor : NEUTRAL_TEXT,
+        }}
       >
         {attribute.label}
       </span>
     </button>
   );
 
-  // Popover content (shared)
   const popoverContent = (
     <Popover.Portal>
-      <Popover.Content 
-        className="w-[280px] bg-white rounded-xl shadow-xl border border-slate-200 animate-in zoom-in-95 duration-200 z-50 flex flex-col overflow-hidden" 
+      <Popover.Content
+        className="z-50 flex w-[280px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl duration-200 animate-in zoom-in-95"
         sideOffset={8}
         side="top"
       >
-        {/* Header */}
-        <div className={cn(
-          "px-4 py-3 border-b flex items-center justify-between bg-slate-50/50",
-          isSelectionMode ? "border-slate-100" : "border-slate-100"
-        )}>
+        <div
+          className={cn(
+            "flex items-center justify-between border-b bg-slate-50/50 px-4 py-3",
+            isSelectionMode ? "border-slate-100" : "border-slate-100",
+          )}
+        >
           <div className="flex items-center gap-2">
             {isSelectionMode ? (
               <Filter size={14} style={{ color: moduleColors.primaryColor }} />
@@ -231,49 +265,47 @@ export function AttributeCard({
               <Trash2 size={14} className="text-red-600" />
             )}
             <span className="text-[14px] font-bold uppercase tracking-wide text-slate-700">
-              {isSelectionMode ? 'Filtrar' : 'Excluir'} {attribute.label}
+              {isSelectionMode ? "Filtrar" : "Excluir"} {attribute.label}
             </span>
           </div>
           {count > 0 && (
-            <button 
+            <button
+              type="button"
               onClick={() => handleClear(isSelectionMode)}
-              className="text-[10px] font-medium text-slate-500 hover:text-slate-800 underline transition-colors"
+              className="text-[10px] font-medium text-slate-500 underline transition-colors hover:text-slate-800"
             >
               Limpar
             </button>
           )}
         </div>
 
-        {/* Search */}
-        <div className="p-2 border-b border-slate-100">
+        <div className="border-b border-slate-100 p-2">
           <div className="relative">
             <Search size={13} className="absolute left-3 top-2.5 text-slate-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={`Buscar em ${attribute.label.toLowerCase()}...`}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 focus:bg-white transition-all placeholder:text-slate-400"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs transition-all placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-200"
               autoFocus
             />
           </div>
         </div>
 
-        {/* List */}
-        <div className="max-h-[240px] overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+        <div className="scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent max-h-[240px] overflow-y-auto p-1.5">
           {filteredOptions.length > 0 ? (
             <div className="space-y-0.5">
               {filteredOptions.map((opt) => {
                 const isChecked = currentValues.includes(opt);
                 return (
                   <button
+                    type="button"
                     key={opt}
                     onClick={() => handleToggleOption(opt, isSelectionMode)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all group",
-                      isChecked
-                        ? "text-slate-800"
-                        : "hover:bg-slate-50 text-slate-600",
+                      "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all",
+                      isChecked ? "text-slate-800" : "text-slate-600 hover:bg-slate-50",
                     )}
                     style={
                       isChecked
@@ -283,7 +315,7 @@ export function AttributeCard({
                   >
                     <div
                       className={cn(
-                        "w-4 h-4 rounded border flex items-center justify-center transition-all flex-shrink-0",
+                        "flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-all",
                         !isChecked && "border-slate-300 bg-white group-hover:border-slate-400",
                       )}
                       style={
@@ -297,10 +329,7 @@ export function AttributeCard({
                     >
                       {isChecked && <Check size={11} className="text-white" strokeWidth={3} />}
                     </div>
-                    <span className={cn(
-                      "text-xs font-medium truncate",
-                       isChecked && "font-bold"
-                    )}>
+                    <span className={cn("truncate text-xs font-medium", isChecked && "font-bold")}>
                       {opt}
                     </span>
                   </button>
@@ -314,17 +343,19 @@ export function AttributeCard({
           )}
         </div>
 
-        {/* Summary Footer if items selected */}
         {count > 0 && (
-          <div className="px-3 py-2 bg-slate-50 border-t border-slate-100">
+          <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
             <div className="flex flex-wrap gap-1">
-              {currentValues.slice(0, 3).map(val => (
-                <span key={val} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-white border border-slate-200 text-slate-600 max-w-[80px] truncate">
+              {currentValues.slice(0, 3).map((val) => (
+                <span
+                  key={val}
+                  className="inline-flex max-w-[80px] items-center truncate rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-600"
+                >
                   {val}
                 </span>
               ))}
               {count > 3 && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-slate-200 text-slate-600">
+                <span className="inline-flex items-center rounded bg-slate-200 px-1.5 py-0.5 text-[10px] text-slate-600">
                   +{count - 3}
                 </span>
               )}
@@ -335,17 +366,13 @@ export function AttributeCard({
     </Popover.Portal>
   );
 
-  // With tooltip: RadixTooltip.Trigger asChild → span wrapper → Popover inside
-  // (avoids nested asChild which leaks Figma inspector props to the button DOM element)
   if (tooltip) {
     return (
       <RadixTooltip.Root delayDuration={300} open={isOpen ? false : undefined}>
         <RadixTooltip.Trigger asChild>
           <span className="inline-flex">
             <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
-              <Popover.Trigger asChild>
-                {cardButton}
-              </Popover.Trigger>
+              <Popover.Trigger asChild>{cardButton}</Popover.Trigger>
               {popoverContent}
             </Popover.Root>
           </span>
@@ -355,12 +382,9 @@ export function AttributeCard({
     );
   }
 
-  // Without tooltip: plain Popover
   return (
     <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
-      <Popover.Trigger asChild>
-        {cardButton}
-      </Popover.Trigger>
+      <Popover.Trigger asChild>{cardButton}</Popover.Trigger>
       {popoverContent}
     </Popover.Root>
   );

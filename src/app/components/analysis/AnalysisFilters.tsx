@@ -60,6 +60,7 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
   handleAttributeClick,
 }) => {
   const colors = moduleColors ?? getModuleColors(currentModule);
+  const groupingLimitReached = currentStep === "grouping" && grouping.length >= 3;
   return (
     <div className="px-6 py-6">
       <div className="space-y-8">
@@ -83,6 +84,7 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
                 }}
                 step={currentStep}
                 moduleColors={colors}
+                groupingLimitReached={groupingLimitReached}
                 selectionCount={selections[attr.id]?.length || 0}
                 isGrouped={grouping.includes(attr.id)}
                 groupLevel={grouping.indexOf(attr.id) + 1}
@@ -126,6 +128,7 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
                   }}
                   step={currentStep}
                   moduleColors={colors}
+                  groupingLimitReached={groupingLimitReached}
                   selectionCount={selections[attr.id]?.length || 0}
                   isGrouped={grouping.includes(attr.id)}
                   groupLevel={grouping.indexOf(attr.id) + 1}

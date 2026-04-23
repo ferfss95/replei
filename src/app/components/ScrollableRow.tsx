@@ -122,7 +122,7 @@ export function ScrollableRow({ children, className }: ScrollableRowProps) {
         onMouseLeave={handleMouseLeave}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        className="flex gap-4 overflow-x-auto scrollbar-hide px-1 py-1 cursor-grab"
+        className="flex gap-4 overflow-x-auto overflow-y-visible scrollbar-hide px-1 pt-3 pb-2 cursor-grab"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {children}

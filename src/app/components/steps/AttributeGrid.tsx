@@ -37,7 +37,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
   return (
     <div className="bg-white rounded-xl border border-[#D9D9D9] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden shrink-0">
       {/* Header */}
-      <div className="bg-white px-6 py-3 flex items-center gap-3 flex-none">
+      <div className="bg-white px-6 py-3 flex items-center gap-3 flex-none flex-wrap">
         {currentStep === "selection" && (
           <Filter size={16} className="text-[#90A1B9]" />
         )}
@@ -52,6 +52,14 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
           {currentStep === "grouping" && "Agrupar Atributos"}
           {currentStep === "exclusion" && "Excluir Atributos"}
         </span>
+        {currentStep === "grouping" && (
+          <span
+            className="text-[14px] font-semibold tabular-nums text-[#314158] ml-2"
+            aria-live="polite"
+          >
+            {grouping.length}/3
+          </span>
+        )}
       </div>
 
       {/* Content with ScrollableRow */}
@@ -74,6 +82,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
                   attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
                   step={currentStep}
                   moduleColors={moduleColors}
+                  groupingLimitReached={currentStep === "grouping" && grouping.length >= 3}
                   selectionCount={selections[attr.id]?.length || 0}
                   isGrouped={grouping.includes(attr.id)}
                   groupLevel={grouping.indexOf(attr.id) + 1}
@@ -108,6 +117,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
                     attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
                     step={currentStep}
                     moduleColors={moduleColors}
+                    groupingLimitReached={currentStep === "grouping" && grouping.length >= 3}
                     selectionCount={selections[attr.id]?.length || 0}
                     isGrouped={grouping.includes(attr.id)}
                     groupLevel={grouping.indexOf(attr.id) + 1}
