@@ -5,14 +5,6 @@ import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { cn } from "../utils";
 import type { ModuleColors } from "../constants/moduleColors";
 
-function hexToRgba(hex: string, alpha: number): string {
-  const cleaned = hex.replace("#", "");
-  const r = parseInt(cleaned.slice(0, 2), 16);
-  const g = parseInt(cleaned.slice(2, 4), 16);
-  const b = parseInt(cleaned.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 /** Paleta neutra — default / hover / desativado agrupamento */
 const NEUTRAL_TEXT = "#808080";
 const NEUTRAL_BORDER = "#D9D9D9";
@@ -262,7 +254,7 @@ export function AttributeCard({
             {isSelectionMode ? (
               <Filter size={14} style={{ color: moduleColors.primaryColor }} />
             ) : (
-              <Trash2 size={14} className="text-red-600" />
+              <Trash2 size={14} style={{ color: moduleColors.primaryColor }} />
             )}
             <span className="text-[14px] font-bold uppercase tracking-wide text-slate-700">
               {isSelectionMode ? "Filtrar" : "Excluir"} {attribute.label}
@@ -305,11 +297,14 @@ export function AttributeCard({
                     onClick={() => handleToggleOption(opt, isSelectionMode)}
                     className={cn(
                       "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all",
-                      isChecked ? "text-slate-800" : "text-slate-600 hover:bg-slate-50",
+                      !isChecked && "text-slate-600 hover:bg-slate-50",
                     )}
                     style={
                       isChecked
-                        ? { backgroundColor: hexToRgba(moduleColors.highlightColor, 0.35) }
+                        ? {
+                            backgroundColor: moduleColors.backgroundColor,
+                            color: moduleColors.iconColor,
+                          }
                         : undefined
                     }
                   >
@@ -329,7 +324,10 @@ export function AttributeCard({
                     >
                       {isChecked && <Check size={11} className="text-white" strokeWidth={3} />}
                     </div>
-                    <span className={cn("truncate text-xs font-medium", isChecked && "font-bold")}>
+                    <span
+                      className={cn("truncate text-xs font-medium", isChecked && "font-bold")}
+                      style={isChecked ? { color: moduleColors.iconColor } : undefined}
+                    >
                       {opt}
                     </span>
                   </button>
