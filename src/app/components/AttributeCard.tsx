@@ -4,6 +4,7 @@ import * as Popover from "@radix-ui/react-popover";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { cn } from "../utils";
 import type { ModuleColors } from "../constants/moduleColors";
+import { LOCALIZACAO_OPTION_GROUPS } from "../referenceData";
 
 /** Paleta neutra — default / hover / desativado agrupamento */
 const NEUTRAL_TEXT = "#808080";
@@ -67,6 +68,18 @@ export function AttributeCard({
       opt.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [attribute.options, searchTerm]);
+
+  /** Cluster visual STATUS / CD / CDS — opções filtradas por busca */
+  const localizacaoGroupsFiltered = useMemo(() => {
+    if (attribute.id !== "localizacao") return [];
+    const q = searchTerm.trim().toLowerCase();
+    return LOCALIZACAO_OPTION_GROUPS.map((g) => ({
+      ...g,
+      options: q
+        ? g.options.filter((o) => o.toLowerCase().includes(q))
+        : [...g.options],
+    })).filter((g) => g.options.length > 0);
+  }, [attribute.id, searchTerm]);
 
   const handleToggleOption = (value: string, isSelection: boolean) => {
     const currentList = isSelection ? currentSelection : currentExclusion;
@@ -237,6 +250,52 @@ export function AttributeCard({
     </button>
   );
 
+  const renderOptionRow = (opt: string) => {
+    const isChecked = currentValues.includes(opt);
+    return (
+      <button
+        type="button"
+        key={opt}
+        onClick={() => handleToggleOption(opt, isSelectionMode)}
+        className={cn(
+          "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all",
+          !isChecked && "text-slate-600 hover:bg-slate-50",
+        )}
+        style={
+          isChecked
+            ? {
+                backgroundColor: moduleColors.backgroundColor,
+                color: moduleColors.iconColor,
+              }
+            : undefined
+        }
+      >
+        <div
+          className={cn(
+            "flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-all",
+            !isChecked && "border-slate-300 bg-white group-hover:border-slate-400",
+          )}
+          style={
+            isChecked
+              ? {
+                  backgroundColor: moduleColors.primaryColor,
+                  borderColor: moduleColors.primaryColor,
+                }
+              : undefined
+          }
+        >
+          {isChecked && <Check size={11} className="text-white" strokeWidth={3} />}
+        </div>
+        <span
+          className={cn("truncate text-xs font-medium", isChecked && "font-bold")}
+          style={isChecked ? { color: moduleColors.iconColor } : undefined}
+        >
+          {opt}
+        </span>
+      </button>
+    );
+  };
+
   const popoverContent = (
     <Popover.Portal>
       <Popover.Content
@@ -286,53 +345,35 @@ export function AttributeCard({
         </div>
 
         <div className="scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent max-h-[240px] overflow-y-auto p-1.5">
-          {filteredOptions.length > 0 ? (
-            <div className="space-y-0.5">
-              {filteredOptions.map((opt) => {
-                const isChecked = currentValues.includes(opt);
-                return (
-                  <button
-                    type="button"
-                    key={opt}
-                    onClick={() => handleToggleOption(opt, isSelectionMode)}
-                    className={cn(
-                      "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all",
-                      !isChecked && "text-slate-600 hover:bg-slate-50",
+          {attribute.id === "localizacao" ? (
+            localizacaoGroupsFiltered.length > 0 ? (
+              <div>
+                {localizacaoGroupsFiltered.map((group, idx) => (
+                  <div key={group.id}>
+                    {idx > 0 && (
+                      <div
+                        className="mx-1 my-1 h-px bg-slate-200"
+                        role="separator"
+                        aria-hidden
+                      />
                     )}
-                    style={
-                      isChecked
-                        ? {
-                            backgroundColor: moduleColors.backgroundColor,
-                            color: moduleColors.iconColor,
-                          }
-                        : undefined
-                    }
-                  >
-                    <div
-                      className={cn(
-                        "flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-all",
-                        !isChecked && "border-slate-300 bg-white group-hover:border-slate-400",
-                      )}
-                      style={
-                        isChecked
-                          ? {
-                              backgroundColor: moduleColors.primaryColor,
-                              borderColor: moduleColors.primaryColor,
-                            }
-                          : undefined
-                      }
-                    >
-                      {isChecked && <Check size={11} className="text-white" strokeWidth={3} />}
+                    <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-[#808080]">
+                      {group.label}
+                    </p>
+                    <div className="space-y-0.5 pb-2">
+                      {group.options.map((opt) => renderOptionRow(opt))}
                     </div>
-                    <span
-                      className={cn("truncate text-xs font-medium", isChecked && "font-bold")}
-                      style={isChecked ? { color: moduleColors.iconColor } : undefined}
-                    >
-                      {opt}
-                    </span>
-                  </button>
-                );
-              })}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-slate-400">
+                <p className="text-xs">Nenhum resultado encontrado</p>
+              </div>
+            )
+          ) : filteredOptions.length > 0 ? (
+            <div className="space-y-0.5">
+              {filteredOptions.map((opt) => renderOptionRow(opt))}
             </div>
           ) : (
             <div className="py-8 text-center text-slate-400">

@@ -62,11 +62,16 @@ export const REGIONAL_OPTIONS = [
   "Ultra Hight"
 ];
 
-export const CD_OPTIONS = [
+/** Centros CD (apenas CD, sem CDS) — usado no cluster de localização */
+export const LOCALIZACAO_CD_OPTIONS = [
   "CD Jarinu - SP",
   "CD Extrema - MG",
+];
+
+/** Centros CDS — usado no cluster de localização */
+export const LOCALIZACAO_CDS_OPTIONS = [
   "CDS Lapa - SP",
-  "CDS João Pessoa - PB"
+  "CDS João Pessoa - PB",
 ];
 
 export const STATUS_OPTIONS = [
@@ -76,9 +81,24 @@ export const STATUS_OPTIONS = [
   "Separado",
 ];
 
+/** Lista plana (valores persistidos em seleção / exclusão) — sem prefixo "STATUS:" */
 export const LOCALIZACAO_OPTIONS = [
-  ...STATUS_OPTIONS.map((s) => `STATUS: ${s}`),
-  ...CD_OPTIONS,
+  ...STATUS_OPTIONS,
+  ...LOCALIZACAO_CD_OPTIONS,
+  ...LOCALIZACAO_CDS_OPTIONS,
+];
+
+/** Grupos apenas visuais no dropdown de LOCALIZAÇÃO (STATUS / CD / CDS) */
+export interface LocalizacaoOptionGroup {
+  id: "status" | "cd" | "cds";
+  label: string;
+  options: readonly string[];
+}
+
+export const LOCALIZACAO_OPTION_GROUPS: LocalizacaoOptionGroup[] = [
+  { id: "status", label: "STATUS", options: STATUS_OPTIONS },
+  { id: "cd", label: "CD", options: LOCALIZACAO_CD_OPTIONS },
+  { id: "cds", label: "CDS", options: LOCALIZACAO_CDS_OPTIONS },
 ];
 
 export const VENDEDOR_OPTIONS = [
