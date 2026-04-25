@@ -27,19 +27,27 @@ import { SecondaryHeader } from "./components/SecondaryHeader";
 import { AnalysisSummarySection } from "./components/AnalysisSummarySection";
 import { getModuleColors } from "./constants/moduleColors";
 import { useDateRange } from "./hooks/useDateRange";
-import { useModuleNavigator } from "./hooks/useModuleNavigator";
+import {
+  getDefaultSelectedMetricsForModule,
+  useModuleNavigator,
+} from "./hooks/useModuleNavigator";
 import { useAttributeFilters } from "./hooks/useAttributeFilters";
 import type { AnalysisMode, AveragePeriodType } from "./types/wizard";
+
+/** Estado inicial dos accordions do menu lateral de métricas (alinhado a MetricsSidebar). */
+const DEFAULT_METRICS_SIDEBAR_GROUPS: Record<string, boolean> = {
+  venda_estoque: true,
+  planejamento: false,
+  exposicao_produtos: true,
+};
 
 export default function App() {
   // ─── UI/Step State ─────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState<Step>("selection");
   const [metricsCollapsed, setMetricsCollapsed] = useState(false);
-  const [metricsGroupExpanded, setMetricsGroupExpanded] = useState<Record<string, boolean>>({
-    venda_estoque: true,
-    planejamento: false,
-    exposicao_produtos: true,
-  });
+  const [metricsGroupExpanded, setMetricsGroupExpanded] = useState<Record<string, boolean>>(() => ({
+    ...DEFAULT_METRICS_SIDEBAR_GROUPS,
+  }));
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("padrao");
   const [averagePeriodType, setAveragePeriodType] = useState<AveragePeriodType>(null);
   const [averageDropdownOpen, setAverageDropdownOpen] = useState(false);
@@ -237,6 +245,12 @@ export default function App() {
       setExclusions({});
       setCurrentStep("selection");
       setAnalysisMode("padrao");
+      setSelectedMetrics(getDefaultSelectedMetricsForModule(currentModule));
+      setMetricsCollapsed(false);
+      setMetricsGroupExpanded({ ...DEFAULT_METRICS_SIDEBAR_GROUPS });
+      setAveragePeriodType(null);
+      setAverageDropdownOpen(false);
+      setShowSharePct(false);
 
       const resetDefaults = getDefaultsForPeriodType("Diário");
       const fallbackRange = {
