@@ -1,14 +1,12 @@
 export const REDE_OPTIONS = [
   "Centauro",
-  "Fisía"
+  "Fisia"
 ];
 
 export const CANAL_OPTIONS = [
-  "Loja Física Centauro",
-  "Digital Centauro",
-  "NVS",
+  "Loja F\u00edsica Centauro",
   "NDIS",
-  "Digital Nike"
+  "NVS"
 ];
 
 export const FATURAMENTO_OPTIONS = [
@@ -45,21 +43,25 @@ export const MD_ENTREGA_OPTIONS = [
 ];
 
 export const REGIONAL_OPTIONS = [
-  "Águias de Elite",
-  "Águias do Cerrado",
-  "Esquadrão 40 graus",
-  "Esquadrão Valente",
+  "D1",
+  "D2",
+  "D3",
+  "D4",
+  "Esquadr\u00e3o 40 graus",
+  "Esquadr\u00e3o Valente",
   "Flechas do Norte",
-  "Furacão Sul I",
-  "Fúria do Interior",
+  "Furac\u00e3o Sul I",
+  "F\u00faria do Interior",
   "Gigante Paulista",
-  "Guadiões da Fronteira",
-  "Guerreiros do Cangaço",
-  "Legião Mineira",
+  "Guadi\u00f5es da Fronteira",
+  "Guerreiros do Canga\u00e7o",
+  "Legi\u00e3o Mineira",
   "Lobos SP",
   "SULcesso",
-  "Titãs SP-MG",
-  "Ultra Hight"
+  "Tit\u00e3s SP-MG",
+  "Ultra High",
+  "\u00c1guias de Elite",
+  "\u00c1guias do Cerrado"
 ];
 
 /** Centros CD (apenas CD, sem CDS) — usado no cluster de localização */
@@ -138,84 +140,316 @@ export const TIPO_OPTIONS = [
 ];
 
 export const LOJAS_LIST = [
-  "CE20 - RIO SUL", "CE23 - BRASILIA SHOPPING", "CE25 - PARK SHOPPING BRASILIA", "CE32 - BARRA SHOPPING 32", 
-  "CE34 - MORUMBI", "CE35 - CENTER NORTE", "CE37 - PÁTIO BRASIL BRASÍLIA", "CE38 - BARRA SALVADOR", 
-  "CE39 - DOM PEDRO", "CE41 - METRÔ TATUAPÉ", "CE43 - BH SHOPPING", "CE44 - SP MARKET", 
-  "CE45 - RIBEIRÃO SHOPPING", "CE46 - ELDORADO", "CE47 - IGUATEMI FORTALEZA", "CE48 - ARICANDUVA", 
-  "CE50 - BARIGUI", "CE52 - TAMBORÉ", "CE53 - SHOPPING RECIFE", "CE54 - ESTAÇÃO CURITIBA", 
-  "CE55 - PÁTIO SAVASSI", "CE56 - MIDWAY NATAL", "CE57 - JARDIM SUL", "CE59 - OSASCO SUPER SHOPPING", 
-  "CE60 - SHOPPING DA BAHIA", "CE62 - METRÔ SANTA CRUZ", "CE63 - JARDINS ARACAJÚ", "CE64 - FLORIPA", 
-  "CE66 - LEBLON", "CE67 - SALVADOR SHOPPING", "CE68 - MAUÁ", "CE69 - BALNEÁRIO CAMBORIÚ", 
-  "CE70 - PIRACICABA", "CE71 - BOURBON SP", "CE72 - CASA FORTE", "CE73 - ITAÚ POWER", 
-  "CE75 - SANTANA PARK", "CE76 - BANGÚ", "CE77 - LITORAL PLAZA", "CE80 - CENTRAL PLAZA", 
-  "CE81 - NOVO SHOPPING RIBEIRÃO", "CE82 - JUIZ DE FORA INDEPENDÊNCIA", "CE84 - PALLADIUM CURITIBA", 
-  "CE85 - CENTER VALE", "CE86 - NORTE SHOPPING RIO", "CE87 - BOURBON SÃO LEOPOLDO", 
-  "CE88 - BOUGAINVILLE GOIÂNIA", "CE89 - BLUMENAU NEUMARKT", "CE90 - SÃO JOSDÉ DOS PINHAIS", 
-  "CE91 - CATUAÍ LONDRINA", "CE92 - ANÁPOLIS BRASIL PARK", "CE94 - APARECIDA DE GOIANIA", 
-  "CE95 - GRANDE RIO", "CE96 - NORTH SHOPPING FORTALEZA", "CE97 - VIA SUL FORTALEZA", 
-  "CE98 - UNIÃO OSASCO", "CE99 - GOIÂNIA SHOPPING", "CE100 - TACARUNA", "CE101 - SUZANO", 
-  "CE102 - DIADEMA", "CE103 - IGUATEMI CAXIAS", "CE105 - PARALELA", "CE106 - BOULEVARD BRASÍLIA", 
-  "CE107 - BOURBON PORTO ALEGRE", "CE108 - GUARARAPES", "CE109 - TAGUATIGA SHOPPING", 
-  "CE112 - BOULEVARD BELÉM", "CE114 - ILHA PLAZA RJ", "CE115 - PRUDENTE SHOPPING", 
-  "CE116 - BEIRAMAR FLORIANÓPOLIS", "CE117 - ANÁLIA FRANCO", "CE118 - OUTLET EXTREMA", 
-  "CE119 - MUELLER CURITIBA", "CE120 - BOURBON NOVO HAMBURGO", "CE121 - BONSUCESSO GUARULHOS", 
-  "CE122 - MARÍLIA", "CE123 - VIA SHOPPING BARREIRO", "CE124 - RIO MAR ARACAJÚ", 
-  "CE125 - BAURU SHOPPING", "CE128 - BOTAFOGO", "CE129 - CENTER SHOPPING UBERLÂNDIA", 
-  "CE130 - JOINVILLE GARTEN", "CE131 - BOULEVARD BH", "CE133 - GRANJA VIANNA", "CE135 - RIO CLARO", 
-  "CE138 - RIO ANIL SÃO LUÍS", "CE139 - CAPIM DOURADO PALMAS", "CE141 - TABOÃO DA SERRA", 
-  "CE142 - FRANCA", "CE143 - SÃO GONÇALO SHOPPING", "CE144 - PENHA SP", "CE145 - CATUAÍ MARINGÁ", 
-  "CE146 - NORTE SUL PLAZA", "CE147 - HIGIENÓPOLIS", "CE149 - WEST SHOPPING RIO", 
-  "CE150 - SALVADOR NORTE", "CE151 - MINAS SHOPPING", "CE152 - SETE LAGOAS", "CE153 - SÃO GONÇALO PARTAGE", 
-  "CE156 - ITAPETININGA", "CE157 - INDAIATUBA POLO", "CE158 - BLUMENAU NORTE SHOPPING", 
-  "CE159 - PÁTIO RESENDE", "CE161 - UBERLÂNDIA SHOPPING", "CE162 - SHOPPING DA ILHA", 
-  "CE164 - PARQUE BARUERI", "CE165 - PARK SHOPPING SÃO CAETANO", "CE167 - GOLDEN SQUARE", 
-  "CE168 - POÇOS DE CALDAS", "CE169 - CAMPOS DOS GOYTACAZES", "CE170 - PÁTIO LIMEIRA", 
-  "CE171 - ITÚ PLAZA", "CE173 - ITABUNA", "CE174 - CAMPO GRANDE SHOPPING", "CE175 - FEIRA DE SANTANA", 
-  "CE176 - PLAZA NITERÓI", "CE177 - MACAÉ", "CE178 - PETROLINA RIVER", "CE179 - PATIO CHAPECÓ", 
-  "CE180 - MOOCA PLAZA", "CE181 - MONTES CLAROS", "CE182 - VALPARAISO SHOPPING SUL", 
-  "CE183 - RIO BRANCO", "CE184 - PALLADIUM PONTE GROSSA", "CE185 - MANAUARA", 
-  "CE186 - JOÃO PESSOA MANAIRA", "CE187 - INTERNACIONAL GUARULHOS", "CE188 - CARAGUATATUBA", 
-  "CE190 - PARK SHOPPING BELÉM", "CE192 - BELA VISTA SALVADOR", "CE193 - IMPERATRIZ", 
-  "CE194 - PARQUE DAS BANDEIRAS", "CE195 - JUNDIAÍ SHOPPING", "CE196 - SANTO ANDRÉ GRAN PLAZA", 
-  "CE197 - PÁTIO BATEL", "CE198 - RIOMAR RECIFE", "CE199 - JUAZEIRO DO NORTE", "CE200 - ESTAÇÃO BH", 
-  "CE202 - CONTINENTE PARK SC", "CE203 - BOULEVARD LONDRINA", "CE205 - MARABÁ", 
-  "CE206 - CAMPO GRANDE RIO", "CE207 - MOGI SHOPPING", "CE208 - SÃO BERNARDO PLAZA", 
-  "CE209 - AMAZONAS SHOPPING", "CE217 - BETIM", "CE218 - CIDADE SOROCABA", "CE219 - PELOTAS SHOPPING", 
-  "CE220 - TIETÊ PLAZA", "CE221 - PARANGABA", "CE222 - NATAL SHOPPING", "CE223 - ARAPIRACA GARDEN", 
-  "CE224 - METROPOLITANO BARRA", "CE225 - PARQUE SHOPPING MACEIÓ", "CE226 - RIOMAR FORTALEZA", 
-  "CE227 - JOÃO PESSOA MANGABEIRA", "CE229 - CAMPINAS SHOPPING", "CE230 - ANANINDEUA", 
-  "CE234 - PANTANAL CUIABÁ", "CE235 - RIOMAR KENNEDY", "CE236 - PARK SHOPPING CANOAS", 
-  "CE237 - ESTAÇÃO CUIABÁ", "CE238 - IGUATEMI PORTO ALEGRE", "CE239 - NOVA IGUAÇU", 
-  "CE240 - BARRA SUL", "CE241 - BARRA SHOPPING 241", "CE242 - JOCKEY PLAZA", "CE243 - TIJUCA", 
-  "CE245 - JÓQUEI FORTALEZA", "CE246 - CARIOCA SHOPPING", "CE247 - AMÉRICAS RIO", 
-  "CE248 - PÁTIO BELÉM", "CE249 - CAMPINA GRANDE", "CE250 - BOSQUE GRÃO-PARÁ", 
-  "CE251 - BOSQUE DOS IPÊS", "CE252 - PARQUE MAIA GUARULHOS", "CE253 - PARQUE SHOPPING BAHIA", 
-  "CE254 - BOULEVARD BAURU", "CE255 - PAULISTA", "CE256 - VITÓRIA DA CONQUISTA", 
-  "CE258 - IBIRAPUERA", "CE259 - CRICIÚMA", "CE260 - PARTAGE RIO GRANDE", "CE262 - ITAGUAÇU SC", 
-  "CE263 - CAMARAGIBE", "CE264 - PÁTIO RORAIMA", "CE266 - PASSEIO DAS ÁGUAS GOIÂNIA", 
-  "CE267 - TERESINA RIO POTY", "CE269 - IGUATEMI RIO PRETO", "CE270 - IGUATEMI CAMPINAS", 
-  "CE272 - SANTA BÁRBARA D'OESTE", "CE273 - FLABOYANT SHOPPING", "CE274 - DEL REY", 
-  "CE275 - PATIO CIANÊ", "CE276 - TRIMAIS", "CE277 - MARINGÁ PARK", "CE278 - CANTAREIRA", 
-  "CE279 - IGUATEMI PRAIA DE BELAS", "CE280 - IGUATEMI BRASILIA", "CE281 - IGUATEMI RIBEIRÃO PRETO", 
-  "CE283 - PALLADIUM UMUARAMA", "CE284 - PATTEO OLINDA", "CE285 - POUSO ALEGRE", 
-  "CE286 - PASSO FUNDO", "CE287 - JK IGUATEMI", "CE288 - IGUATEMI SÃO PAULO", 
-  "CE291 - SINOP SHOPPING", "CE292 - ARAÇATUBA PRAÇA NOVA", "CE294 - PORTO VELHO", 
-  "CE295 - METRÔ TUCURUVI", "CE296 - CONJUNTO NACIONAL", "CE297 - INTERLAGOS", 
-  "CE298 - VITÓRIA", "CE299 - ITAQUERA", "CE300 - CURITIBA SHOPPING", "CE301 - PATO BRANCO", 
-  "CE303 - PÁTIO MACEIÓ", "CE304 - NOVA AMÉRICA", "CE305 - MADUREIRA SHOPPING", 
-  "CE306 - SANTO ANDRÉ ABC", "CE307 - IGUATEMI ALPHAVILLE", "CE308 - MUELLER JOINVILLE", 
-  "CE310 - VALE SUL", "CE311 - PLAZA SUL", "CE312 - RIO PRETO SHOPPING", "CE313 - CIDADE BH", 
-  "CE314 - MAXI JUNDIAÍ", "CE315 - CARUARU SHOPPING", "CE316 - CATUAÍ CASCAVEL", 
-  "CE1101 - ARARAS"
+  "2029 - Shopping Vit\u00f3ria",
+  "2030 - Litoral Plaza",
+  "2032 - Catarina Fashion Outlet",
+  "2033 - Outlet Premium Fortaleza",
+  "2034 - Outlet Premium Rio De Janeiro",
+  "2035 - Shopping Barra Salvador",
+  "2036 - Shopping Aricanduva",
+  "2050 - Shopping Vale Sul",
+  "2050 - Vale Sul Shopping",
+  "2052 - Ananindeua",
+  "2054 - Shopping Da Ilha",
+  "2055 - Shopping Metr\u00f4 Itaquera",
+  "2056 - Passeio Das \u00c1guas",
+  "2057 - City Center Outlet",
+  "2058 - Ibirapuera",
+  "2070 - I Fashion Outlet Santa Catarina",
+  "2071 - Iguatemi Fortaleza",
+  "2072 - Nike Curitiba",
+  "2075 - Araguaia Shopping",
+  "2076 - Boulevard Shopping Vila Velha",
+  "2077 - Outlet Premium Salvador",
+  "2078 - Iguatemi Porto Alegre",
+  "2079 - Mangabeira",
+  "2083 - Bh Outlet",
+  "2084 - Place Outlet - Extra Anchieta",
+  "2085 - Outlet Premium Grande S\u00e3o Paulo",
+  "2086 - Shopping Nova Am\u00e9rica",
+  "2087 - S\u00e3o Gon\u00e7alo Shopping",
+  "2088 - Carrefour Osasco",
+  "2089 - Sp Market",
+  "2090 - S\u00f3 Marcas Outlet Guarulhos",
+  "2091 - Outlet Premium Itupeva",
+  "2092 - S\u00f3 Marcas Outlet Contagem",
+  "2093 - Shopping Flamboyant",
+  "2094 - Shopping Center Norte",
+  "2095 - Shopping Light",
+  "2097 - Nike Santo Andr\u00e9",
+  "2098 - Outlet Premium Bras\u00edlia",
+  "2099 - I Fashion Outlet Novo Hamburgo",
+  "2100 - Shopping Barra Sul",
+  "2101 - Barra Rio",
+  "2102 - Shopping Uni\u00e3o Osasco",
+  "2104 - Iguatemi SP",
+  "2105 - Outlet Premium Imigrantes",
+  "2106 - Balne\u00e1rio Shopping",
+  "2107 - Continente Shopping",
+  "2108 - Shopping Rio Sul",
+  "2109 - Outlet Santa Maria",
+  "2110 - Praia de Belas",
+  "2111 - Shopping Iguatemi Campinas",
+  "2112 - Park Shopping Barigui",
+  "CE100 - TACARUNA",
+  "CE101 - SUZANO",
+  "CE102 - DIADEMA",
+  "CE103 - IGUATEMI CAXIAS",
+  "CE105 - PARALELA",
+  "CE106 - BOULEVARD BRAS\u00cdLIA",
+  "CE107 - BOURBON PORTO ALEGRE",
+  "CE108 - GUARARAPES",
+  "CE109 - TAGUATINGA SHOPPING",
+  "CE1101 - ARARAS",
+  "CE112 - BOULEVARD BEL\u00c9M",
+  "CE114 - ILHA PLAZA RJ",
+  "CE115 - PRUDENTE SHOPPING",
+  "CE116 - BEIRAMAR FLORIAN\u00d3POLIS",
+  "CE117 - AN\u00c1LIA FRANCO",
+  "CE118 - OUTLET EXTREMA",
+  "CE119 - MUELLER CURITIBA",
+  "CE120 - BOURBON NOVO HAMBURGO",
+  "CE121 - BONSUCESSO GUARULHOS",
+  "CE122 - MAR\u00cdLIA",
+  "CE123 - VIA SHOPPING BARREIRO",
+  "CE124 - RIO MAR ARACAJ\u00da",
+  "CE125 - BAURU SHOPPING",
+  "CE128 - BOTAFOGO",
+  "CE129 - CENTER SHOPPING UBERL\u00c2NDIA",
+  "CE130 - JOINVILLE GARTEN",
+  "CE131 - BOULEVARD BH",
+  "CE133 - GRANJA VIANNA",
+  "CE135 - RIO CLARO",
+  "CE138 - RIO ANIL S\u00c3O LU\u00cdS",
+  "CE139 - CAPIM DOURADO PALMAS",
+  "CE141 - TABO\u00c3O DA SERRA",
+  "CE142 - FRANCA",
+  "CE143 - S\u00c3O GON\u00c7ALO SHOPPING",
+  "CE144 - PENHA SP",
+  "CE145 - CATUA\u00cd MARING\u00c1",
+  "CE146 - NORTE SUL PLAZA",
+  "CE147 - HIGIEN\u00d3POLIS",
+  "CE149 - WEST SHOPPING RIO",
+  "CE150 - SALVADOR NORTE",
+  "CE151 - MINAS SHOPPING",
+  "CE152 - SETE LAGOAS",
+  "CE153 - S\u00c3O GON\u00c7ALO PARTAGE",
+  "CE156 - ITAPETININGA",
+  "CE157 - INDAIATUBA POLO",
+  "CE158 - BLUMENAU NORTE SHOPPING",
+  "CE159 - P\u00c1TIO RESENDE",
+  "CE161 - UBERL\u00c2NDIA SHOPPING",
+  "CE162 - SHOPPING DA ILHA",
+  "CE164 - PARQUE BARUERI",
+  "CE165 - PARK SHOPPING S\u00c3O CAETANO",
+  "CE167 - GOLDEN SQUARE",
+  "CE168 - PO\u00c7OS DE CALDAS",
+  "CE169 - CAMPOS DOS GOYTACAZES",
+  "CE170 - P\u00c1TIO LIMEIRA",
+  "CE171 - IT\u00da PLAZA",
+  "CE173 - ITABUNA",
+  "CE174 - CAMPO GRANDE SHOPPING",
+  "CE175 - FEIRA DE SANTANA",
+  "CE176 - PLAZA NITER\u00d3I",
+  "CE177 - MACA\u00c9",
+  "CE179 - PATIO CHAPEC\u00d3",
+  "CE180 - MOOCA PLAZA",
+  "CE181 - MONTES CLAROS",
+  "CE182 - VALPARAISO SHOPPING SUL",
+  "CE183 - RIO BRANCO",
+  "CE184 - PALLADIUM PONTA GROSSA",
+  "CE185 - MANAUARA",
+  "CE186 - JO\u00c3O PESSOA MANAIRA",
+  "CE187 - INTERNACIONAL GUARULHOS",
+  "CE188 - CARAGUATATUBA",
+  "CE190 - PARK SHOPPING BEL\u00c9M",
+  "CE192 - BELA VISTA SALVADOR",
+  "CE193 - IMPERATRIZ",
+  "CE194 - PARQUE DAS BANDEIRAS",
+  "CE195 - JUNDIA\u00cd SHOPPING",
+  "CE196 - SANTO ANDR\u00c9 GRAN PLAZA",
+  "CE197 - P\u00c1TIO BATEL",
+  "CE198 - RIOMAR RECIFE",
+  "CE199 - JUAZEIRO DO NORTE",
+  "CE20 - RIO SUL",
+  "CE200 - ESTA\u00c7\u00c3O BH",
+  "CE202 - CONTINENTE PARK SC",
+  "CE203 - BOULEVARD LONDRINA",
+  "CE205 - MARAB\u00c1",
+  "CE206 - CAMPO GRANDE RIO",
+  "CE207 - MOGI SHOPPING",
+  "CE208 - S\u00c3O BERNARDO PLAZA",
+  "CE209 - AMAZONAS SHOPPING",
+  "CE217 - BETIM",
+  "CE218 - CIDADE SOROCABA",
+  "CE219 - PELOTAS SHOPPING",
+  "CE220 - TIET\u00ca PLAZA",
+  "CE221 - PARANGABA",
+  "CE222 - NATAL SHOPPING",
+  "CE223 - ARAPIRACA GARDEN",
+  "CE224 - METROPOLITANO BARRA",
+  "CE225 - PARQUE SHOPPING MACEI\u00d3",
+  "CE226 - RIOMAR FORTALEZA",
+  "CE227 - JO\u00c3O PESSOA MANGABEIRA",
+  "CE229 - CAMPINAS SHOPPING",
+  "CE23 - BRASILIA SHOPPING",
+  "CE230 - ANANINDEUA",
+  "CE234 - PANTANAL CUIAB\u00c1",
+  "CE235 - RIOMAR KENNEDY",
+  "CE236 - PARK SHOPPING CANOAS",
+  "CE237 - ESTA\u00c7\u00c3O CUIAB\u00c1",
+  "CE238 - IGUATEMI PORTO ALEGRE",
+  "CE239 - NOVA IGUA\u00c7U",
+  "CE240 - BARRA SUL",
+  "CE241 - BARRA SHOPPING 241",
+  "CE242 - JOCKEY PLAZA",
+  "CE243 - TIJUCA",
+  "CE245 - J\u00d3QUEI FORTALEZA",
+  "CE246 - CARIOCA SHOPPING",
+  "CE247 - AM\u00c9RICAS RIO",
+  "CE248 - P\u00c1TIO BEL\u00c9M",
+  "CE249 - CAMPINA GRANDE",
+  "CE25 - PARK SHOPPING BRASILIA",
+  "CE250 - BOSQUE GR\u00c3O-PAR\u00c1",
+  "CE251 - BOSQUE DOS IP\u00caS",
+  "CE252 - PARQUE MAIA GUARULHOS",
+  "CE253 - PARQUE SHOPPING BAHIA",
+  "CE254 - BOULEVARD BAURU",
+  "CE255 - PAULISTA",
+  "CE256 - VIT\u00d3RIA DA CONQUISTA",
+  "CE258 - IBIRAPUERA",
+  "CE259 - CRICI\u00daMA",
+  "CE260 - PARTAGE RIO GRANDE",
+  "CE262 - ITAGUA\u00c7U SC",
+  "CE263 - CAMARAGIBE",
+  "CE264 - P\u00c1TIO RORAIMA",
+  "CE266 - PASSEIO DAS \u00c1GUAS GOI\u00c2NIA",
+  "CE267 - TERESINA RIO POTY",
+  "CE269 - IGUATEMI RIO PRETO",
+  "CE270 - IGUATEMI CAMPINAS",
+  "CE272 - SANTA B\u00c1RBARA D'OESTE",
+  "CE273 - FLAMBOYANT SHOPPING",
+  "CE274 - DEL REY",
+  "CE275 - PATIO CIAN\u00ca",
+  "CE276 - TRIMAIS",
+  "CE277 - MARING\u00c1 PARK",
+  "CE278 - CANTAREIRA",
+  "CE279 - IGUATEMI PRAIA DE BELAS",
+  "CE280 - IGUATEMI BRASILIA",
+  "CE281 - IGUATEMI RIBEIR\u00c3O PRETO",
+  "CE283 - PALLADIUM UMUARAMA",
+  "CE284 - PATTEO OLINDA",
+  "CE285 - POUSO ALEGRE",
+  "CE286 - PASSO FUNDO",
+  "CE287 - JK IGUATEMI",
+  "CE288 - IGUATEMI S\u00c3O PAULO",
+  "CE291 - SINOP SHOPPING",
+  "CE292 - ARA\u00c7ATUBA PRA\u00c7A NOVA",
+  "CE294 - PORTO VELHO",
+  "CE295 - METR\u00d4 TUCURUVI",
+  "CE296 - CONJUNTO NACIONAL",
+  "CE297 - INTERLAGOS",
+  "CE298 - VIT\u00d3RIA",
+  "CE299 - ITAQUERA",
+  "CE300 - CURITIBA SHOPPING",
+  "CE301 - PATO BRANCO",
+  "CE303 - P\u00c1TIO MACEI\u00d3",
+  "CE304 - NOVA AM\u00c9RICA",
+  "CE305 - MADUREIRA SHOPPING",
+  "CE306 - SANTO ANDR\u00c9 ABC",
+  "CE307 - IGUATEMI ALPHAVILLE",
+  "CE308 - MUELLER JOINVILLE",
+  "CE310 - VALE SUL",
+  "CE311 - PLAZA SUL",
+  "CE312 - RIO PRETO SHOPPING",
+  "CE313 - CIDADE BH",
+  "CE314 - MAXI JUNDIA\u00cd",
+  "CE315 - CARUARU SHOPPING",
+  "CE316 - CATUA\u00cd CASCAVEL",
+  "CE32 - BARRA SHOPPING 32",
+  "CE34 - MORUMBI",
+  "CE35 - CENTER NORTE",
+  "CE37 - P\u00c1TIO BRASIL BRAS\u00cdLIA",
+  "CE38 - BARRA SALVADOR",
+  "CE39 - DOM PEDRO",
+  "CE41 - METR\u00d4 TATUAP\u00c9",
+  "CE43 - BH SHOPPING",
+  "CE44 - SP MARKET",
+  "CE45 - RIBEIR\u00c3O SHOPPING",
+  "CE46 - ELDORADO",
+  "CE47 - IGUATEMI FORTALEZA",
+  "CE48 - ARICANDUVA",
+  "CE50 - BARIGUI",
+  "CE52 - TAMBOR\u00c9",
+  "CE53 - SHOPPING RECIFE",
+  "CE54 - ESTA\u00c7\u00c3O CURITIBA",
+  "CE55 - P\u00c1TIO SAVASSI",
+  "CE56 - MIDWAY NATAL",
+  "CE57 - JARDIM SUL",
+  "CE59 - OSASCO SUPER SHOPPING",
+  "CE60 - SHOPPING DA BAHIA",
+  "CE62 - METR\u00d4 SANTA CRUZ",
+  "CE63 - JARDINS ARACAJ\u00da",
+  "CE64 - FLORIPA",
+  "CE66 - LEBLON",
+  "CE67 - SALVADOR SHOPPING",
+  "CE68 - MAU\u00c1",
+  "CE69 - BALNE\u00c1RIO CAMBORI\u00da",
+  "CE70 - PIRACICABA",
+  "CE71 - BOURBON SP",
+  "CE72 - CASA FORTE",
+  "CE73 - ITA\u00da POWER",
+  "CE75 - SANTANA PARK",
+  "CE76 - BANG\u00da",
+  "CE77 - LITORAL PLAZA",
+  "CE80 - CENTRAL PLAZA",
+  "CE81 - NOVO SHOPPING RIBEIR\u00c3O",
+  "CE82 - JUIZ DE FORA INDEPEND\u00caNCIA",
+  "CE84 - PALLADIUM CURITIBA",
+  "CE85 - CENTER VALE",
+  "CE86 - NORTE SHOPPING RIO",
+  "CE87 - BOURBON S\u00c3O LEOPOLDO",
+  "CE88 - BOUGAINVILLE GOI\u00c2NIA",
+  "CE89 - BLUMENAU NEUMARKT",
+  "CE90 - S\u00c3O JOS\u00c9 DOS PINHAIS",
+  "CE91 - CATUA\u00cd LONDRINA",
+  "CE92 - AN\u00c1POLIS BRASIL PARK",
+  "CE94 - APARECIDA DE GOIANIA",
+  "CE95 - GRANDE RIO",
+  "CE96 - NORTH SHOPPING FORTALEZA",
+  "CE97 - VIA SUL FORTALEZA",
+  "CE98 - UNI\u00c3O OSASCO",
+  "CE99 - GOI\u00c2NIA SHOPPING"
 ];
 
 // Data for Estados/Cidades filtering
 export const ESTADOS_LIST = [
-  "Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", "Distrito Federal", 
-  "Espírito Santo", "Goiás", "Maranhão", "Mato Grosso", "Mato Grosso do Sul", 
-  "Minas Gerais", "Pará", "Paraíba", "Paraná", "Pernambuco", "Piauí", 
-  "Rio de Janeiro", "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", 
-  "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"
+  "Acre",
+  "Alagoas",
+  "Amazonas",
+  "Bahia",
+  "Cear\u00e1",
+  "Distrito Federal",
+  "Esp\u00edrito Santo",
+  "Goi\u00e1s",
+  "Maranh\u00e3o",
+  "Mato Grosso",
+  "Mato Grosso do Sul",
+  "Minas Gerais",
+  "Par\u00e1",
+  "Para\u00edba",
+  "Paran\u00e1",
+  "Pernambuco",
+  "Piau\u00ed",
+  "Rio de Janeiro",
+  "Rio Grande do Norte",
+  "Rio Grande do Sul",
+  "Rond\u00f4nia",
+  "Roraima",
+  "Santa Catarina",
+  "Sergipe",
+  "S\u00e3o Paulo",
+  "Tocantins"
 ];
 
 export const STATE_TO_UF: Record<string, string> = {
@@ -229,259 +463,711 @@ export const STATE_TO_UF: Record<string, string> = {
 };
 
 export const CIDADES_BY_ESTADO: Record<string, string[]> = {
-  "São Paulo": [
-    "São Paulo", "Guarulhos", "Campinas", "São Bernardo do Campo", "São José dos Campos", 
-    "Santo André", "Ribeirão Preto", "Osasco", "Sorocaba", "Mauá", "São José do Rio Preto", 
-    "Mogi das Cruzes", "Santos", "Diadema", "Jundiaí", "Piracicaba", "Carapicuíba", "Bauru", 
-    "Itaquaquecetuba", "São Vicente", "Franca", "Praia Grande", "Guarujá", "Taubaté", "Limeira", 
-    "Suzano", "Taboão da Serra", "Sumaré", "Barueri", "Embu das Artes", "Indaiatuba", "Cotia", 
-    "São Carlos", "Americana", "Marília", "Jacareí", "Araraquara", "Presidente Prudente", 
-    "Hortolândia", "Rio Claro", "Araçatuba", "Santa Bárbara d'Oeste", "Ferraz de Vasconcelos", 
-    "Francisco Morato", "Itapecerica da Serra", "Itu", "Bragança Paulista", "Pindamonhangaba", 
-    "Itapetininga", "São Caetano do Sul", "Franco da Rocha", "Mogi Guaçu", "Jaú", "Botucatu", 
-    "Atibaia", "Santana de Parnaíba", "Araras", "Cubatão", "Valinhos", "Sertãozinho", 
-    "Jandira", "Ribeirão Pires", "Birigui", "Votorantim", "Barretos", "Catanduva", "Várzea Paulista", 
-    "Guaratinguetá", "Tatuí", "Caraguatatuba", "Itatiba", "Salto", "Poá", "Ourinhos", "Paulínia", 
-    "Assis", "Leme", "Itanhaém", "Caieiras", "Mairiporã", "Itapevi", "Votuporanga", "Caçapava",
-    "Ubatuba", "São Roque", "São Sebastião", "Peruíbe", "Avaré", "Lorena", "Batatais", "Mirassol"
-  ],
-  "Rio de Janeiro": [
-    "Rio de Janeiro", "São Gonçalo", "Duque de Caxias", "Nova Iguaçu", "Niterói", "Belford Roxo", 
-    "Campos dos Goytacazes", "São João de Meriti", "Petrópolis", "Volta Redonda", "Magé", "Macaé", 
-    "Itaboraí", "Cabo Frio", "Angra dos Reis", "Nova Friburgo", "Barra Mansa", "Teresópolis", 
-    "Mesquita", "Nilópolis", "Maricá", "Queimados", "Rio das Ostras", "Resende", "Araruama", 
-    "Itaguaí", "Japeri", "São Pedro da Aldeia", "Itaperuna", "Barra do Piraí", "Saquarema", 
-    "Seropédica", "Três Rios", "Valença", "Rio Bonito", "Guapimirim", "Cachoeiras de Macacu", 
-    "Paracambi", "Paraíba do Sul"
-  ],
-  "Minas Gerais": [
-    "Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim", "Montes Claros", 
-    "Ribeirão das Neves", "Uberaba", "Governador Valadares", "Ipatinga", "Sete Lagoas", 
-    "Divinópolis", "Santa Luzia", "Ibirité", "Poços de Caldas", "Patos de Minas", "Pouso Alegre", 
-    "Teófilo Otoni", "Barbacena", "Sabará", "Varginha", "Conselheiro Lafaiete", "Vespasiano", 
-    "Itabira", "Araguari", "Ubá", "Passos", "Coronel Fabriciano", "Muriaé", "Ituiutaba", 
-    "Araxá", "Lavras", "Itajubá", "Itaúna", "Pará de Minas", "Paracatu", "Caratinga", 
-    "Nova Serrana", "Patrocínio", "Manhuaçu", "Timóteo", "São João del Rei", "Unaí", "Curvelo", 
-    "Alfenas", "João Monlevade", "Três Corações", "Viçosa", "Cataguases", "Ouro Preto", "Janaúba", 
-    "São Sebastião do Paraíso", "Januária", "Formiga", "Esmeraldas", "Pedro Leopoldo", "Ponte Nova"
-  ],
-  "Rio Grande do Sul": [
-    "Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria", "Gravataí", "Viamão", 
-    "Novo Hamburgo", "São Leopoldo", "Rio Grande", "Alvorada", "Passo Fundo", "Sapucaia do Sul", 
-    "Uruguaiana", "Santa Cruz do Sul", "Cachoeirinha", "Bagé", "Bento Gonçalves", "Erechim", 
-    "Guaíba", "Cachoeira do Sul", "Esteio", "Santana do Livramento", "Ijuí", "Sapiranga", 
-    "Santo Ângelo", "Alegrete", "Lajeado", "Farroupilha", "Venâncio Aires", "Vacaria", "Cap��o da Canoa",
-    "Santa Rosa", "Campo Bom", "Cruz Alta", "Montenegro", "São Borja", "Taquara", "Camaquã"
-  ],
-  "Paraná": [
-    "Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel", "São José dos Pinhais", 
-    "Foz do Iguaçu", "Colombo", "Guarapuava", "Paranaguá", "Araucária", "Toledo", "Apucarana", 
-    "Pinhais", "Campo Largo", "Arapongas", "Almirante Tamandaré", "Piraquara", "Umuarama", 
-    "Cambé", "Fazenda Rio Grande", "Sarandi", "Campo Mourão", "Francisco Beltrão", "Paranavaí", 
-    "Pato Branco", "Cianorte", "Telêmaco Borba", "Castro", "Rolândia", "Irati", "União da Vitória"
-  ],
-  "Santa Catarina": [
-    "Joinville", "Florianópolis", "Blumenau", "São José", "Chapecó", "Itajaí", "Criciúma", 
-    "Jaraguá do Sul", "Palhoça", "Lages", "Balneário Camboriú", "Brusque", "Tubarão", 
-    "São Bento do Sul", "Camboriú", "Caçador", "Navegantes", "Concórdia", "Rio do Sul", 
-    "Araranguá", "Gaspar", "Biguaçu", "Indaial", "Itapema", "Mafra", "Canoinhas", "Içara"
-  ],
-  "Bahia": [
-    "Salvador", "Feira de Santana", "Vitória da Conquista", "Camaçari", "Itabuna", "Juazeiro", 
-    "Lauro de Freitas", "Ilhéus", "Jequié", "Teixeira de Freitas", "Alagoinhas", "Barreiras", 
-    "Porto Seguro", "Simões Filho", "Paulo Afonso", "Eunápolis", "Santo Antônio de Jesus", 
-    "Valença", "Candeias", "Guanambi", "Jacobina", "Serrinha", "Senhor do Bonfim", "Dias d'Ávila"
-  ],
-  "Pernambuco": [
-    "Recife", "Jaboatão dos Guararapes", "Olinda", "Caruaru", "Petrolina", "Paulista", 
-    "Cabo de Santo Agostinho", "Camaragibe", "Garanhuns", "Vitória de Santo Antão", 
-    "Igarassu", "São Lourenço da Mata", "Abreu e Lima", "Santa Cruz do Capibaribe", 
-    "Ipojuca", "Serra Talhada", "Araripina", "Gravatá", "Carpina", "Goiana", "Belo Jardim"
-  ],
-  "Ceará": [
-    "Fortaleza", "Caucaia", "Juazeiro do Norte", "Maracanaú", "Sobral", "Crato", "Itapipoca", 
-    "Maranguape", "Iguatu", "Quixadá", "Pacatuba", "Aquiraz", "Quixeramobim", "Canindé", 
-    "Russas", "Crateús", "Tianguá", "Aracati", "Cascavel", "Pacajus", "Icó", "Horizonte"
-  ],
-  "Goiás": [
-    "Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Luziânia", "Águas Lindas de Goiás", 
-    "Valparaíso de Goiás", "Trindade", "Formosa", "Novo Gama", "Senador Canedo", "Itumbiara", 
-    "Catalão", "Jataí", "Planaltina", "Caldas Novas", "Santo Antônio do Descoberto", "Goianésia"
-  ],
-  "Distrito Federal": [
-    "Brasília", "Ceilândia", "Samambaia", "Taguatinga", "Plano Piloto", "Planaltina", "Águas Claras",
-    "Recanto das Emas", "Gama", "Guará", "Santa Maria", "Sobradinho", "São Sebastião", "Vicente Pires",
-    "Itapoã", "Paranoá", "Sudoeste/Octogonal", "Brazlândia", "Riacho Fundo", "Lago Norte", "Lago Sul"
-  ],
-  "Espírito Santo": [
-    "Serra", "Vila Velha", "Cariacica", "Vitória", "Cachoeiro de Itapemirim", "Linhares", 
-    "São Mateus", "Colatina", "Guarapari", "Aracruz", "Viana", "Nova Venécia", "Barra de São Francisco"
-  ],
-  "Pará": [
-    "Belém", "Ananindeua", "Santarém", "Marabá", "Parauapebas", "Castanhal", "Abaetetuba", 
-    "Cametá", "Marituba", "São Félix do Xingu", "Barcarena", "Altamira", "Tucuruí", "Paragominas"
-  ],
-  "Amazonas": [
-    "Manaus", "Parintins", "Itacoatiara", "Manacapuru", "Coari", "Tabatinga", "Maués", "Tefé"
-  ],
-  "Mato Grosso": [
-    "Cuiabá", "Várzea Grande", "Rondonópolis", "Sinop", "Tangará da Serra", "Cáceres", 
-    "Sorriso", "Lucas do Rio Verde", "Primavera do Leste", "Barra do Garças"
-  ],
-  "Mato Grosso do Sul": [
-    "Campo Grande", "Dourados", "Três Lagoas", "Corumbá", "Ponta Porã", "Sidrolândia", "Naviraí"
-  ],
-  "Paraíba": [
-    "João Pessoa", "Campina Grande", "Santa Rita", "Patos", "Bayeux", "Sousa", "Cabedelo", "Cajazeiras"
-  ],
-  "Rio Grande do Norte": [
-    "Natal", "Mossoró", "Parnamirim", "São Gonçalo do Amarante", "Macaíba", "Ceará-Mirim"
+  "Acre": [
+    "Rio Branco"
   ],
   "Alagoas": [
-    "Maceió", "Arapiraca", "Rio Largo", "Palmeira dos Índios", "União dos Palmares", "Penedo"
+    "Arapiraca",
+    "Macei\u00f3"
   ],
-  "Sergipe": [
-    "Aracaju", "Nossa Senhora do Socorro", "Lagarto", "Itabaiana", "São Cristóvão", "Estância"
+  "Amazonas": [
+    "Manaus"
   ],
-  "Maranhão": [
-    "São Luís", "Imperatriz", "São José de Ribamar", "Timon", "Caxias", "Codó", "Paço do Lumiar"
+  "Bahia": [
+    "Feira de Santana",
+    "Itabuna",
+    "Lauro de Freitas",
+    "Salvador",
+    "Vit\u00f3ria da Conquista"
   ],
-  "Piauí": [
-    "Teresina", "Parnaíba", "Picos", "Piripiri", "Floriano", "Barras", "Campo Maior"
+  "Cear\u00e1": [
+    "Caucaia",
+    "Fortaleza",
+    "Juazeiro do Norte"
   ],
-  "Tocantins": [
-    "Palmas", "Araguaína", "Gurupi", "Porto Nacional", "Paraíso do Tocantins"
+  "Distrito Federal": [
+    "Bras\u00edlia",
+    "Taguatinga"
   ],
-  "Rondônia": [
-    "Porto Velho", "Ji-Paraná", "Ariquemes", "Vilhena", "Cacoal"
+  "Esp\u00edrito Santo": [
+    "Vila Velha",
+    "Vit\u00f3ria"
   ],
-  "Acre": [
-    "Rio Branco", "Cruzeiro do Sul", "Sena Madureira", "Tarauacá"
+  "Goi\u00e1s": [
+    "Alex\u00e2nia",
+    "An\u00e1polis",
+    "Aparecida de Goi\u00e2nia",
+    "Goi\u00e2nia",
+    "Valpara\u00edso de Goi\u00e1s"
   ],
-  "Amapá": [
-    "Macapá", "Santana", "Laranjal do Jari"
+  "Maranh\u00e3o": [
+    "Imperatriz",
+    "S\u00e3o Lu\u00eds"
+  ],
+  "Mato Grosso": [
+    "Cuiab\u00e1",
+    "Sinop"
+  ],
+  "Mato Grosso do Sul": [
+    "Campo Grande"
+  ],
+  "Minas Gerais": [
+    "Belo Horizonte",
+    "Betim",
+    "Contagem",
+    "Extrema",
+    "Ju\u00edz de Fora",
+    "Montes Claros",
+    "Pouso Alegre",
+    "Po\u00e7os de Caldas",
+    "Sete Lagoas",
+    "Uberl\u00e2ndia"
+  ],
+  "Par\u00e1": [
+    "Ananindeua",
+    "Bel\u00e9m",
+    "Marab\u00e1"
+  ],
+  "Para\u00edba": [
+    "Campina Grande",
+    "Jo\u00e3o Pessoa"
+  ],
+  "Paran\u00e1": [
+    "Campo Largo",
+    "Cascavel",
+    "Curitiba",
+    "Londrina",
+    "Maring\u00e1",
+    "Pato Branco",
+    "Ponta Grossa",
+    "S\u00e3o Jos\u00e9 dos Pinhais",
+    "Umuarama"
+  ],
+  "Pernambuco": [
+    "Camaragibe",
+    "Caruaru",
+    "Jaboat\u00e3o dos Guararapes",
+    "Olinda",
+    "Recife"
+  ],
+  "Piau\u00ed": [
+    "Teresina"
+  ],
+  "Rio de Janeiro": [
+    "Campo dos Goytacazes",
+    "Duque de Caxias",
+    "Maca\u00e9",
+    "Niter\u00f3i",
+    "Nova Igua\u00e7u",
+    "Resende",
+    "Rio de Janeiro",
+    "S\u00e3o Gon\u00e7alo",
+    "S\u00e3o Jo\u00e3o de Meriti"
+  ],
+  "Rio Grande do Norte": [
+    "Natal"
+  ],
+  "Rio Grande do Sul": [
+    "Canoas",
+    "Caxias do Sul",
+    "Novo Hamburgo",
+    "Passo Fundo",
+    "Pelotas",
+    "Porto Alegre",
+    "Rio Grande",
+    "S\u00e3o Leopoldo"
+  ],
+  "Rond\u00f4nia": [
+    "Porto Velho"
   ],
   "Roraima": [
-    "Boa Vista", "Rorainópolis"
+    "Boa Vista"
+  ],
+  "Santa Catarina": [
+    "Balne\u00e1rio Cambori\u00fa",
+    "Blumenau",
+    "Chapec\u00f3",
+    "Crici\u00fama",
+    "Florian\u00f3polis",
+    "Joinville",
+    "S\u00e3o Jos\u00e9",
+    "Tijucas"
+  ],
+  "Sergipe": [
+    "Aracaju"
+  ],
+  "S\u00e3o Paulo": [
+    "Araras",
+    "Ara\u00e7atuba",
+    "Barueri",
+    "Bauru",
+    "Campinas",
+    "Caraguatatuba",
+    "Cotia",
+    "Cravinhos",
+    "Diadema",
+    "Franca",
+    "Guarulhos",
+    "Indaiatuba",
+    "Itapetininga",
+    "Itupeva",
+    "It\u00fa",
+    "Jundia\u00ed",
+    "Limeira",
+    "Mar\u00edlia",
+    "Mau\u00e1",
+    "Mogi das Cruzes",
+    "Osasco",
+    "Piracicaba",
+    "Praia Grande",
+    "Presidente Prudente",
+    "Ribeir\u00e3o Preto",
+    "Rio Claro",
+    "Santa B\u00e1rbara D'Oeste",
+    "Santo Andr\u00e9",
+    "Sorocaba",
+    "Suzano",
+    "S\u00e3o Bernardo do Campo",
+    "S\u00e3o Caetano do Sul",
+    "S\u00e3o Jos\u00e9 do Rio Preto",
+    "S\u00e3o Jos\u00e9 dos Campos",
+    "S\u00e3o Paulo",
+    "S\u00e3o Roque",
+    "Tabo\u00e3o da Serra"
+  ],
+  "Tocantins": [
+    "Palmas"
   ]
 };
 
 // City → Store mapping (each store belongs to a city)
 export const LOJAS_BY_CIDADE: Record<string, string[]> = {
-  "Belo Horizonte": ["CE43 - BH SHOPPING", "CE55 - PÁTIO SAVASSI", "CE123 - VIA SHOPPING BARREIRO", "CE131 - BOULEVARD BH", "CE151 - MINAS SHOPPING", "CE200 - ESTAÇÃO BH", "CE274 - DEL REY", "CE313 - CIDADE BH"],
-  "São Paulo": ["CE34 - MORUMBI", "CE35 - CENTER NORTE", "CE41 - METRÔ TATUAPÉ", "CE44 - SP MARKET", "CE46 - ELDORADO", "CE48 - ARICANDUVA", "CE57 - JARDIM SUL", "CE62 - METRÔ SANTA CRUZ", "CE71 - BOURBON SP", "CE75 - SANTANA PARK", "CE80 - CENTRAL PLAZA", "CE117 - ANÁLIA FRANCO", "CE144 - PENHA SP", "CE147 - HIGIENÓPOLIS", "CE180 - MOOCA PLAZA", "CE220 - TIETÊ PLAZA", "CE258 - IBIRAPUERA", "CE278 - CANTAREIRA", "CE287 - JK IGUATEMI", "CE288 - IGUATEMI SÃO PAULO", "CE295 - METRÔ TUCURUVI", "CE297 - INTERLAGOS", "CE299 - ITAQUERA", "CE311 - PLAZA SUL"],
-  "Rio de Janeiro": ["CE20 - RIO SUL", "CE32 - BARRA SHOPPING 32", "CE66 - LEBLON", "CE76 - BANGÚ", "CE86 - NORTE SHOPPING RIO", "CE114 - ILHA PLAZA RJ", "CE128 - BOTAFOGO", "CE149 - WEST SHOPPING RIO", "CE206 - CAMPO GRANDE RIO", "CE224 - METROPOLITANO BARRA", "CE241 - BARRA SHOPPING 241", "CE243 - TIJUCA", "CE246 - CARIOCA SHOPPING", "CE247 - AMÉRICAS RIO", "CE304 - NOVA AMÉRICA", "CE305 - MADUREIRA SHOPPING"],
-  "Curitiba": ["CE50 - BARIGUI", "CE54 - ESTAÇÃO CURITIBA", "CE84 - PALLADIUM CURITIBA", "CE119 - MUELLER CURITIBA", "CE197 - PÁTIO BATEL", "CE242 - JOCKEY PLAZA", "CE300 - CURITIBA SHOPPING"],
-  "Salvador": ["CE38 - BARRA SALVADOR", "CE60 - SHOPPING DA BAHIA", "CE67 - SALVADOR SHOPPING", "CE105 - PARALELA", "CE150 - SALVADOR NORTE", "CE192 - BELA VISTA SALVADOR"],
-  "Fortaleza": ["CE47 - IGUATEMI FORTALEZA", "CE96 - NORTH SHOPPING FORTALEZA", "CE97 - VIA SUL FORTALEZA", "CE108 - GUARARAPES", "CE221 - PARANGABA", "CE226 - RIOMAR FORTALEZA", "CE235 - RIOMAR KENNEDY", "CE245 - JÓQUEI FORTALEZA"],
-  "Recife": ["CE53 - SHOPPING RECIFE", "CE72 - CASA FORTE", "CE100 - TACARUNA", "CE198 - RIOMAR RECIFE"],
-  "Porto Alegre": ["CE107 - BOURBON PORTO ALEGRE", "CE238 - IGUATEMI PORTO ALEGRE", "CE279 - IGUATEMI PRAIA DE BELAS"],
-  "Goiânia": ["CE88 - BOUGAINVILLE GOIÂNIA", "CE99 - GOIÂNIA SHOPPING", "CE266 - PASSEIO DAS ÁGUAS GOIÂNIA", "CE273 - FLABOYANT SHOPPING"],
-  "Brasília": ["CE23 - BRASILIA SHOPPING", "CE25 - PARK SHOPPING BRASILIA", "CE37 - PÁTIO BRASIL BRASÍLIA", "CE106 - BOULEVARD BRASÍLIA", "CE109 - TAGUATIGA SHOPPING", "CE280 - IGUATEMI BRASILIA", "CE296 - CONJUNTO NACIONAL"],
-  "Campinas": ["CE39 - DOM PEDRO", "CE194 - PARQUE DAS BANDEIRAS", "CE229 - CAMPINAS SHOPPING", "CE270 - IGUATEMI CAMPINAS"],
-  "Florianópolis": ["CE64 - FLORIPA", "CE116 - BEIRAMAR FLORIANÓPOLIS", "CE202 - CONTINENTE PARK SC"],
-  "Belém": ["CE112 - BOULEVARD BELÉM", "CE190 - PARK SHOPPING BELÉM", "CE248 - PÁTIO BELÉM", "CE250 - BOSQUE GRÃO-PARÁ"],
-  "Manaus": ["CE185 - MANAUARA", "CE209 - AMAZONAS SHOPPING"],
-  "Natal": ["CE56 - MIDWAY NATAL", "CE222 - NATAL SHOPPING"],
-  "Aracaju": ["CE63 - JARDINS ARACAJÚ", "CE124 - RIO MAR ARACAJÚ"],
-  "Maceió": ["CE225 - PARQUE SHOPPING MACEIÓ", "CE303 - PÁTIO MACEIÓ"],
-  "João Pessoa": ["CE186 - JOÃO PESSOA MANAIRA", "CE227 - JOÃO PESSOA MANGABEIRA"],
-  "Cuiabá": ["CE234 - PANTANAL CUIABÁ", "CE237 - ESTAÇÃO CUIABÁ"],
-  "Londrina": ["CE91 - CATUAÍ LONDRINA", "CE203 - BOULEVARD LONDRINA"],
-  "Maringá": ["CE145 - CATUAÍ MARINGÁ", "CE277 - MARINGÁ PARK"],
-  "Ribeirão Preto": ["CE45 - RIBEIRÃO SHOPPING", "CE81 - NOVO SHOPPING RIBEIRÃO", "CE281 - IGUATEMI RIBEIRÃO PRETO"],
-  "São José do Rio Preto": ["CE269 - IGUATEMI RIO PRETO", "CE312 - RIO PRETO SHOPPING"],
-  "Uberlândia": ["CE129 - CENTER SHOPPING UBERLÂNDIA", "CE161 - UBERLÂNDIA SHOPPING"],
-  "Blumenau": ["CE89 - BLUMENAU NEUMARKT", "CE158 - BLUMENAU NORTE SHOPPING"],
-  "Joinville": ["CE130 - JOINVILLE GARTEN", "CE308 - MUELLER JOINVILLE"],
-  "Bauru": ["CE125 - BAURU SHOPPING", "CE254 - BOULEVARD BAURU"],
-  "Jundiaí": ["CE195 - JUNDIAÍ SHOPPING", "CE314 - MAXI JUNDIAÍ"],
-  "Guarulhos": ["CE121 - BONSUCESSO GUARULHOS", "CE187 - INTERNACIONAL GUARULHOS", "CE252 - PARQUE MAIA GUARULHOS"],
-  "Osasco": ["CE59 - OSASCO SUPER SHOPPING", "CE98 - UNIÃO OSASCO"],
-  "Santo André": ["CE196 - SANTO ANDRÉ GRAN PLAZA", "CE306 - SANTO ANDRÉ ABC"],
-  "São Bernardo do Campo": ["CE167 - GOLDEN SQUARE", "CE208 - SÃO BERNARDO PLAZA"],
-  "São José dos Campos": ["CE85 - CENTER VALE", "CE310 - VALE SUL"],
-  "São Gonçalo": ["CE143 - SÃO GONÇALO SHOPPING", "CE153 - SÃO GONÇALO PARTAGE"],
-  "Sorocaba": ["CE218 - CIDADE SOROCABA", "CE275 - PATIO CIANÊ"],
-  "Campo Grande": ["CE174 - CAMPO GRANDE SHOPPING", "CE251 - BOSQUE DOS IPÊS"],
-  "São Luís": ["CE138 - RIO ANIL SÃO LUÍS", "CE162 - SHOPPING DA ILHA"],
-  "Barueri": ["CE52 - TAMBORÉ", "CE164 - PARQUE BARUERI", "CE307 - IGUATEMI ALPHAVILLE"],
-  "Balneário Camboriú": ["CE69 - BALNEÁRIO CAMBORIÚ"],
-  "Mauá": ["CE68 - MAUÁ"],
-  "Piracicaba": ["CE70 - PIRACICABA"],
-  "Contagem": ["CE73 - ITAÚ POWER"],
-  "Praia Grande": ["CE77 - LITORAL PLAZA"],
-  "Juiz de Fora": ["CE82 - JUIZ DE FORA INDEPENDÊNCIA"],
-  "São Leopoldo": ["CE87 - BOURBON SÃO LEOPOLDO"],
-  "São José dos Pinhais": ["CE90 - SÃO JOSDÉ DOS PINHAIS"],
-  "Anápolis": ["CE92 - ANÁPOLIS BRASIL PARK"],
-  "Aparecida de Goiânia": ["CE94 - APARECIDA DE GOIANIA"],
-  "Duque de Caxias": ["CE95 - GRANDE RIO"],
-  "Suzano": ["CE101 - SUZANO"],
-  "Diadema": ["CE102 - DIADEMA"],
-  "Caxias do Sul": ["CE103 - IGUATEMI CAXIAS"],
-  "Presidente Prudente": ["CE115 - PRUDENTE SHOPPING"],
-  "Novo Hamburgo": ["CE120 - BOURBON NOVO HAMBURGO"],
-  "Marília": ["CE122 - MARÍLIA"],
-  "Cotia": ["CE133 - GRANJA VIANNA"],
-  "Rio Claro": ["CE135 - RIO CLARO"],
-  "Palmas": ["CE139 - CAPIM DOURADO PALMAS"],
-  "Taboão da Serra": ["CE141 - TABOÃO DA SERRA"],
-  "Franca": ["CE142 - FRANCA"],
-  "Sete Lagoas": ["CE152 - SETE LAGOAS"],
-  "Itapetininga": ["CE156 - ITAPETININGA"],
-  "Indaiatuba": ["CE157 - INDAIATUBA POLO"],
-  "Resende": ["CE159 - PÁTIO RESENDE"],
-  "São Caetano do Sul": ["CE165 - PARK SHOPPING SÃO CAETANO"],
-  "Poços de Caldas": ["CE168 - POÇOS DE CALDAS"],
-  "Campos dos Goytacazes": ["CE169 - CAMPOS DOS GOYTACAZES"],
-  "Limeira": ["CE170 - PÁTIO LIMEIRA"],
-  "Itu": ["CE171 - ITÚ PLAZA"],
-  "Itabuna": ["CE173 - ITABUNA"],
-  "Feira de Santana": ["CE175 - FEIRA DE SANTANA"],
-  "Niterói": ["CE176 - PLAZA NITERÓI"],
-  "Macaé": ["CE177 - MACAÉ"],
-  "Petrolina": ["CE178 - PETROLINA RIVER"],
-  "Chapecó": ["CE179 - PATIO CHAPECÓ"],
-  "Montes Claros": ["CE181 - MONTES CLAROS"],
-  "Valparaíso de Goiás": ["CE182 - VALPARAISO SHOPPING SUL"],
-  "Rio Branco": ["CE183 - RIO BRANCO"],
-  "Ponta Grossa": ["CE184 - PALLADIUM PONTE GROSSA"],
-  "Caraguatatuba": ["CE188 - CARAGUATATUBA"],
-  "Imperatriz": ["CE193 - IMPERATRIZ"],
-  "Juazeiro do Norte": ["CE199 - JUAZEIRO DO NORTE"],
-  "Marabá": ["CE205 - MARABÁ"],
-  "Mogi das Cruzes": ["CE207 - MOGI SHOPPING"],
-  "Betim": ["CE217 - BETIM"],
-  "Pelotas": ["CE219 - PELOTAS SHOPPING"],
-  "Arapiraca": ["CE223 - ARAPIRACA GARDEN"],
-  "Campina Grande": ["CE249 - CAMPINA GRANDE"],
-  "Ananindeua": ["CE230 - ANANINDEUA"],
-  "Canoas": ["CE236 - PARK SHOPPING CANOAS"],
-  "Nova Iguaçu": ["CE239 - NOVA IGUAÇU"],
-  "Lauro de Freitas": ["CE253 - PARQUE SHOPPING BAHIA"],
-  "Paulista": ["CE255 - PAULISTA"],
-  "Vitória da Conquista": ["CE256 - VITÓRIA DA CONQUISTA"],
-  "Criciúma": ["CE259 - CRICIÚMA"],
-  "Rio Grande": ["CE260 - PARTAGE RIO GRANDE"],
-  "São José": ["CE262 - ITAGUAÇU SC"],
-  "Camaragibe": ["CE263 - CAMARAGIBE"],
-  "Boa Vista": ["CE264 - PÁTIO RORAIMA"],
-  "Teresina": ["CE267 - TERESINA RIO POTY"],
-  "Santa Bárbara d'Oeste": ["CE272 - SANTA BÁRBARA D'OESTE"],
-  "Olinda": ["CE284 - PATTEO OLINDA"],
-  "Pouso Alegre": ["CE285 - POUSO ALEGRE"],
-  "Passo Fundo": ["CE286 - PASSO FUNDO"],
-  "Umuarama": ["CE283 - PALLADIUM UMUARAMA"],
-  "Sinop": ["CE291 - SINOP SHOPPING"],
-  "Araçatuba": ["CE292 - ARAÇATUBA PRAÇA NOVA"],
-  "Porto Velho": ["CE294 - PORTO VELHO"],
-  "Vitória": ["CE298 - VITÓRIA"],
-  "Pato Branco": ["CE301 - PATO BRANCO"],
-  "Caruaru": ["CE315 - CARUARU SHOPPING"],
-  "Cascavel": ["CE316 - CATUAÍ CASCAVEL"],
-  "Araras": ["CE1101 - ARARAS"],
-  "Extrema": ["CE118 - OUTLET EXTREMA"],
+  "Alex\u00e2nia": [
+    "2098 - Outlet Premium Bras\u00edlia"
+  ],
+  "Ananindeua": [
+    "2052 - Ananindeua",
+    "CE230 - ANANINDEUA"
+  ],
+  "An\u00e1polis": [
+    "CE92 - AN\u00c1POLIS BRASIL PARK"
+  ],
+  "Aparecida de Goi\u00e2nia": [
+    "CE94 - APARECIDA DE GOIANIA"
+  ],
+  "Aracaju": [
+    "CE124 - RIO MAR ARACAJ\u00da",
+    "CE63 - JARDINS ARACAJ\u00da"
+  ],
+  "Arapiraca": [
+    "CE223 - ARAPIRACA GARDEN"
+  ],
+  "Araras": [
+    "CE1101 - ARARAS"
+  ],
+  "Ara\u00e7atuba": [
+    "CE292 - ARA\u00c7ATUBA PRA\u00c7A NOVA"
+  ],
+  "Balne\u00e1rio Cambori\u00fa": [
+    "2106 - Balne\u00e1rio Shopping",
+    "CE69 - BALNE\u00c1RIO CAMBORI\u00da"
+  ],
+  "Barueri": [
+    "CE164 - PARQUE BARUERI",
+    "CE307 - IGUATEMI ALPHAVILLE",
+    "CE52 - TAMBOR\u00c9"
+  ],
+  "Bauru": [
+    "CE125 - BAURU SHOPPING",
+    "CE254 - BOULEVARD BAURU"
+  ],
+  "Belo Horizonte": [
+    "2083 - Bh Outlet",
+    "CE123 - VIA SHOPPING BARREIRO",
+    "CE131 - BOULEVARD BH",
+    "CE151 - MINAS SHOPPING",
+    "CE200 - ESTA\u00c7\u00c3O BH",
+    "CE274 - DEL REY",
+    "CE313 - CIDADE BH",
+    "CE43 - BH SHOPPING",
+    "CE55 - P\u00c1TIO SAVASSI"
+  ],
+  "Bel\u00e9m": [
+    "CE112 - BOULEVARD BEL\u00c9M",
+    "CE190 - PARK SHOPPING BEL\u00c9M",
+    "CE248 - P\u00c1TIO BEL\u00c9M",
+    "CE250 - BOSQUE GR\u00c3O-PAR\u00c1"
+  ],
+  "Betim": [
+    "CE217 - BETIM"
+  ],
+  "Blumenau": [
+    "CE158 - BLUMENAU NORTE SHOPPING",
+    "CE89 - BLUMENAU NEUMARKT"
+  ],
+  "Boa Vista": [
+    "CE264 - P\u00c1TIO RORAIMA"
+  ],
+  "Bras\u00edlia": [
+    "CE106 - BOULEVARD BRAS\u00cdLIA",
+    "CE23 - BRASILIA SHOPPING",
+    "CE25 - PARK SHOPPING BRASILIA",
+    "CE280 - IGUATEMI BRASILIA",
+    "CE296 - CONJUNTO NACIONAL",
+    "CE37 - P\u00c1TIO BRASIL BRAS\u00cdLIA"
+  ],
+  "Camaragibe": [
+    "CE263 - CAMARAGIBE"
+  ],
+  "Campina Grande": [
+    "CE249 - CAMPINA GRANDE"
+  ],
+  "Campinas": [
+    "2111 - Shopping Iguatemi Campinas",
+    "CE194 - PARQUE DAS BANDEIRAS",
+    "CE229 - CAMPINAS SHOPPING",
+    "CE270 - IGUATEMI CAMPINAS",
+    "CE39 - DOM PEDRO"
+  ],
+  "Campo Grande": [
+    "CE146 - NORTE SUL PLAZA",
+    "CE174 - CAMPO GRANDE SHOPPING",
+    "CE251 - BOSQUE DOS IP\u00caS"
+  ],
+  "Campo Largo": [
+    "2057 - City Center Outlet"
+  ],
+  "Campo dos Goytacazes": [
+    "CE169 - CAMPOS DOS GOYTACAZES"
+  ],
+  "Canoas": [
+    "CE236 - PARK SHOPPING CANOAS"
+  ],
+  "Caraguatatuba": [
+    "CE188 - CARAGUATATUBA"
+  ],
+  "Caruaru": [
+    "CE315 - CARUARU SHOPPING"
+  ],
+  "Cascavel": [
+    "CE316 - CATUA\u00cd CASCAVEL"
+  ],
+  "Caucaia": [
+    "2033 - Outlet Premium Fortaleza"
+  ],
+  "Caxias do Sul": [
+    "CE103 - IGUATEMI CAXIAS"
+  ],
+  "Chapec\u00f3": [
+    "CE179 - PATIO CHAPEC\u00d3"
+  ],
+  "Contagem": [
+    "2092 - S\u00f3 Marcas Outlet Contagem",
+    "CE73 - ITA\u00da POWER"
+  ],
+  "Cotia": [
+    "CE133 - GRANJA VIANNA"
+  ],
+  "Cravinhos": [
+    "2109 - Outlet Santa Maria"
+  ],
+  "Crici\u00fama": [
+    "CE259 - CRICI\u00daMA"
+  ],
+  "Cuiab\u00e1": [
+    "CE234 - PANTANAL CUIAB\u00c1",
+    "CE237 - ESTA\u00c7\u00c3O CUIAB\u00c1"
+  ],
+  "Curitiba": [
+    "2072 - Nike Curitiba",
+    "2112 - Park Shopping Barigui",
+    "CE119 - MUELLER CURITIBA",
+    "CE197 - P\u00c1TIO BATEL",
+    "CE242 - JOCKEY PLAZA",
+    "CE300 - CURITIBA SHOPPING",
+    "CE50 - BARIGUI",
+    "CE54 - ESTA\u00c7\u00c3O CURITIBA",
+    "CE84 - PALLADIUM CURITIBA"
+  ],
+  "Diadema": [
+    "CE102 - DIADEMA"
+  ],
+  "Duque de Caxias": [
+    "2034 - Outlet Premium Rio De Janeiro"
+  ],
+  "Extrema": [
+    "CE118 - OUTLET EXTREMA"
+  ],
+  "Feira de Santana": [
+    "CE175 - FEIRA DE SANTANA"
+  ],
+  "Florian\u00f3polis": [
+    "CE116 - BEIRAMAR FLORIAN\u00d3POLIS",
+    "CE64 - FLORIPA"
+  ],
+  "Fortaleza": [
+    "2071 - Iguatemi Fortaleza",
+    "CE221 - PARANGABA",
+    "CE226 - RIOMAR FORTALEZA",
+    "CE235 - RIOMAR KENNEDY",
+    "CE245 - J\u00d3QUEI FORTALEZA",
+    "CE47 - IGUATEMI FORTALEZA",
+    "CE96 - NORTH SHOPPING FORTALEZA",
+    "CE97 - VIA SUL FORTALEZA"
+  ],
+  "Franca": [
+    "CE142 - FRANCA"
+  ],
+  "Goi\u00e2nia": [
+    "2056 - Passeio Das \u00c1guas",
+    "2075 - Araguaia Shopping",
+    "2093 - Shopping Flamboyant",
+    "CE266 - PASSEIO DAS \u00c1GUAS GOI\u00c2NIA",
+    "CE273 - FLAMBOYANT SHOPPING",
+    "CE88 - BOUGAINVILLE GOI\u00c2NIA",
+    "CE99 - GOI\u00c2NIA SHOPPING"
+  ],
+  "Guarulhos": [
+    "2090 - S\u00f3 Marcas Outlet Guarulhos",
+    "CE121 - BONSUCESSO GUARULHOS",
+    "CE187 - INTERNACIONAL GUARULHOS",
+    "CE252 - PARQUE MAIA GUARULHOS"
+  ],
+  "Imperatriz": [
+    "CE193 - IMPERATRIZ"
+  ],
+  "Indaiatuba": [
+    "CE157 - INDAIATUBA POLO"
+  ],
+  "Itabuna": [
+    "CE173 - ITABUNA"
+  ],
+  "Itapetininga": [
+    "CE156 - ITAPETININGA"
+  ],
+  "Itupeva": [
+    "2091 - Outlet Premium Itupeva"
+  ],
+  "It\u00fa": [
+    "CE171 - IT\u00da PLAZA"
+  ],
+  "Jaboat\u00e3o dos Guararapes": [
+    "CE108 - GUARARAPES"
+  ],
+  "Joinville": [
+    "CE130 - JOINVILLE GARTEN",
+    "CE308 - MUELLER JOINVILLE"
+  ],
+  "Jo\u00e3o Pessoa": [
+    "2079 - Mangabeira",
+    "CE186 - JO\u00c3O PESSOA MANAIRA",
+    "CE227 - JO\u00c3O PESSOA MANGABEIRA"
+  ],
+  "Juazeiro do Norte": [
+    "CE199 - JUAZEIRO DO NORTE"
+  ],
+  "Jundia\u00ed": [
+    "CE195 - JUNDIA\u00cd SHOPPING",
+    "CE314 - MAXI JUNDIA\u00cd"
+  ],
+  "Ju\u00edz de Fora": [
+    "CE82 - JUIZ DE FORA INDEPEND\u00caNCIA"
+  ],
+  "Lauro de Freitas": [
+    "CE253 - PARQUE SHOPPING BAHIA"
+  ],
+  "Limeira": [
+    "CE170 - P\u00c1TIO LIMEIRA"
+  ],
+  "Londrina": [
+    "CE203 - BOULEVARD LONDRINA",
+    "CE91 - CATUA\u00cd LONDRINA"
+  ],
+  "Maca\u00e9": [
+    "CE177 - MACA\u00c9"
+  ],
+  "Macei\u00f3": [
+    "CE225 - PARQUE SHOPPING MACEI\u00d3",
+    "CE303 - P\u00c1TIO MACEI\u00d3"
+  ],
+  "Manaus": [
+    "CE185 - MANAUARA",
+    "CE209 - AMAZONAS SHOPPING"
+  ],
+  "Marab\u00e1": [
+    "CE205 - MARAB\u00c1"
+  ],
+  "Maring\u00e1": [
+    "CE145 - CATUA\u00cd MARING\u00c1",
+    "CE277 - MARING\u00c1 PARK"
+  ],
+  "Mar\u00edlia": [
+    "CE122 - MAR\u00cdLIA"
+  ],
+  "Mau\u00e1": [
+    "CE68 - MAU\u00c1"
+  ],
+  "Mogi das Cruzes": [
+    "CE207 - MOGI SHOPPING"
+  ],
+  "Montes Claros": [
+    "CE181 - MONTES CLAROS"
+  ],
+  "Natal": [
+    "CE222 - NATAL SHOPPING",
+    "CE56 - MIDWAY NATAL"
+  ],
+  "Niter\u00f3i": [
+    "CE176 - PLAZA NITER\u00d3I"
+  ],
+  "Nova Igua\u00e7u": [
+    "CE239 - NOVA IGUA\u00c7U"
+  ],
+  "Novo Hamburgo": [
+    "2099 - I Fashion Outlet Novo Hamburgo",
+    "CE120 - BOURBON NOVO HAMBURGO"
+  ],
+  "Olinda": [
+    "CE284 - PATTEO OLINDA"
+  ],
+  "Osasco": [
+    "2088 - Carrefour Osasco",
+    "2102 - Shopping Uni\u00e3o Osasco",
+    "CE59 - OSASCO SUPER SHOPPING",
+    "CE98 - UNI\u00c3O OSASCO"
+  ],
+  "Palmas": [
+    "CE139 - CAPIM DOURADO PALMAS"
+  ],
+  "Passo Fundo": [
+    "CE286 - PASSO FUNDO"
+  ],
+  "Pato Branco": [
+    "CE301 - PATO BRANCO"
+  ],
+  "Pelotas": [
+    "CE219 - PELOTAS SHOPPING"
+  ],
+  "Piracicaba": [
+    "CE70 - PIRACICABA"
+  ],
+  "Ponta Grossa": [
+    "CE184 - PALLADIUM PONTA GROSSA"
+  ],
+  "Porto Alegre": [
+    "2078 - Iguatemi Porto Alegre",
+    "2100 - Shopping Barra Sul",
+    "2110 - Praia de Belas",
+    "CE107 - BOURBON PORTO ALEGRE",
+    "CE238 - IGUATEMI PORTO ALEGRE",
+    "CE240 - BARRA SUL",
+    "CE279 - IGUATEMI PRAIA DE BELAS"
+  ],
+  "Porto Velho": [
+    "CE294 - PORTO VELHO"
+  ],
+  "Pouso Alegre": [
+    "CE285 - POUSO ALEGRE"
+  ],
+  "Po\u00e7os de Caldas": [
+    "CE168 - PO\u00c7OS DE CALDAS"
+  ],
+  "Praia Grande": [
+    "2030 - Litoral Plaza",
+    "CE77 - LITORAL PLAZA"
+  ],
+  "Presidente Prudente": [
+    "CE115 - PRUDENTE SHOPPING"
+  ],
+  "Recife": [
+    "CE100 - TACARUNA",
+    "CE198 - RIOMAR RECIFE",
+    "CE53 - SHOPPING RECIFE",
+    "CE72 - CASA FORTE"
+  ],
+  "Resende": [
+    "CE159 - P\u00c1TIO RESENDE"
+  ],
+  "Ribeir\u00e3o Preto": [
+    "CE281 - IGUATEMI RIBEIR\u00c3O PRETO",
+    "CE45 - RIBEIR\u00c3O SHOPPING",
+    "CE81 - NOVO SHOPPING RIBEIR\u00c3O"
+  ],
+  "Rio Branco": [
+    "CE183 - RIO BRANCO"
+  ],
+  "Rio Claro": [
+    "CE135 - RIO CLARO"
+  ],
+  "Rio Grande": [
+    "CE260 - PARTAGE RIO GRANDE"
+  ],
+  "Rio de Janeiro": [
+    "2086 - Shopping Nova Am\u00e9rica",
+    "2101 - Barra Rio",
+    "2108 - Shopping Rio Sul",
+    "CE114 - ILHA PLAZA RJ",
+    "CE128 - BOTAFOGO",
+    "CE149 - WEST SHOPPING RIO",
+    "CE20 - RIO SUL",
+    "CE206 - CAMPO GRANDE RIO",
+    "CE224 - METROPOLITANO BARRA",
+    "CE241 - BARRA SHOPPING 241",
+    "CE243 - TIJUCA",
+    "CE246 - CARIOCA SHOPPING",
+    "CE247 - AM\u00c9RICAS RIO",
+    "CE304 - NOVA AM\u00c9RICA",
+    "CE305 - MADUREIRA SHOPPING",
+    "CE32 - BARRA SHOPPING 32",
+    "CE66 - LEBLON",
+    "CE76 - BANG\u00da",
+    "CE86 - NORTE SHOPPING RIO"
+  ],
+  "Salvador": [
+    "2035 - Shopping Barra Salvador",
+    "2077 - Outlet Premium Salvador",
+    "CE105 - PARALELA",
+    "CE150 - SALVADOR NORTE",
+    "CE192 - BELA VISTA SALVADOR",
+    "CE38 - BARRA SALVADOR",
+    "CE60 - SHOPPING DA BAHIA",
+    "CE67 - SALVADOR SHOPPING"
+  ],
+  "Santa B\u00e1rbara D'Oeste": [
+    "CE272 - SANTA B\u00c1RBARA D'OESTE"
+  ],
+  "Santo Andr\u00e9": [
+    "2097 - Nike Santo Andr\u00e9",
+    "CE196 - SANTO ANDR\u00c9 GRAN PLAZA",
+    "CE306 - SANTO ANDR\u00c9 ABC"
+  ],
+  "Sete Lagoas": [
+    "CE152 - SETE LAGOAS"
+  ],
+  "Sinop": [
+    "CE291 - SINOP SHOPPING"
+  ],
+  "Sorocaba": [
+    "CE218 - CIDADE SOROCABA",
+    "CE275 - PATIO CIAN\u00ca"
+  ],
+  "Suzano": [
+    "CE101 - SUZANO"
+  ],
+  "S\u00e3o Bernardo do Campo": [
+    "2084 - Place Outlet - Extra Anchieta",
+    "2105 - Outlet Premium Imigrantes",
+    "CE167 - GOLDEN SQUARE",
+    "CE208 - S\u00c3O BERNARDO PLAZA"
+  ],
+  "S\u00e3o Caetano do Sul": [
+    "CE165 - PARK SHOPPING S\u00c3O CAETANO"
+  ],
+  "S\u00e3o Gon\u00e7alo": [
+    "2087 - S\u00e3o Gon\u00e7alo Shopping",
+    "CE143 - S\u00c3O GON\u00c7ALO SHOPPING",
+    "CE153 - S\u00c3O GON\u00c7ALO PARTAGE"
+  ],
+  "S\u00e3o Jos\u00e9": [
+    "2107 - Continente Shopping",
+    "CE202 - CONTINENTE PARK SC",
+    "CE262 - ITAGUA\u00c7U SC"
+  ],
+  "S\u00e3o Jos\u00e9 do Rio Preto": [
+    "CE269 - IGUATEMI RIO PRETO",
+    "CE312 - RIO PRETO SHOPPING"
+  ],
+  "S\u00e3o Jos\u00e9 dos Campos": [
+    "2050 - Shopping Vale Sul",
+    "2050 - Vale Sul Shopping",
+    "CE85 - CENTER VALE"
+  ],
+  "S\u00e3o Jos\u00e9 dos Pinhais": [
+    "CE90 - S\u00c3O JOS\u00c9 DOS PINHAIS"
+  ],
+  "S\u00e3o Jo\u00e3o de Meriti": [
+    "CE95 - GRANDE RIO"
+  ],
+  "S\u00e3o Leopoldo": [
+    "CE87 - BOURBON S\u00c3O LEOPOLDO"
+  ],
+  "S\u00e3o Lu\u00eds": [
+    "2054 - Shopping Da Ilha",
+    "CE138 - RIO ANIL S\u00c3O LU\u00cdS",
+    "CE162 - SHOPPING DA ILHA"
+  ],
+  "S\u00e3o Paulo": [
+    "2036 - Shopping Aricanduva",
+    "2055 - Shopping Metr\u00f4 Itaquera",
+    "2058 - Ibirapuera",
+    "2085 - Outlet Premium Grande S\u00e3o Paulo",
+    "2089 - Sp Market",
+    "2094 - Shopping Center Norte",
+    "2095 - Shopping Light",
+    "2104 - Iguatemi SP",
+    "CE117 - AN\u00c1LIA FRANCO",
+    "CE144 - PENHA SP",
+    "CE147 - HIGIEN\u00d3POLIS",
+    "CE180 - MOOCA PLAZA",
+    "CE220 - TIET\u00ca PLAZA",
+    "CE255 - PAULISTA",
+    "CE258 - IBIRAPUERA",
+    "CE276 - TRIMAIS",
+    "CE278 - CANTAREIRA",
+    "CE287 - JK IGUATEMI",
+    "CE288 - IGUATEMI S\u00c3O PAULO",
+    "CE295 - METR\u00d4 TUCURUVI",
+    "CE297 - INTERLAGOS",
+    "CE299 - ITAQUERA",
+    "CE310 - VALE SUL",
+    "CE311 - PLAZA SUL",
+    "CE34 - MORUMBI",
+    "CE35 - CENTER NORTE",
+    "CE41 - METR\u00d4 TATUAP\u00c9",
+    "CE44 - SP MARKET",
+    "CE46 - ELDORADO",
+    "CE48 - ARICANDUVA",
+    "CE57 - JARDIM SUL",
+    "CE62 - METR\u00d4 SANTA CRUZ",
+    "CE71 - BOURBON SP",
+    "CE75 - SANTANA PARK",
+    "CE80 - CENTRAL PLAZA"
+  ],
+  "S\u00e3o Roque": [
+    "2032 - Catarina Fashion Outlet"
+  ],
+  "Tabo\u00e3o da Serra": [
+    "CE141 - TABO\u00c3O DA SERRA"
+  ],
+  "Taguatinga": [
+    "CE109 - TAGUATINGA SHOPPING"
+  ],
+  "Teresina": [
+    "CE267 - TERESINA RIO POTY"
+  ],
+  "Tijucas": [
+    "2070 - I Fashion Outlet Santa Catarina"
+  ],
+  "Uberl\u00e2ndia": [
+    "CE129 - CENTER SHOPPING UBERL\u00c2NDIA",
+    "CE161 - UBERL\u00c2NDIA SHOPPING"
+  ],
+  "Umuarama": [
+    "CE283 - PALLADIUM UMUARAMA"
+  ],
+  "Valpara\u00edso de Goi\u00e1s": [
+    "CE182 - VALPARAISO SHOPPING SUL"
+  ],
+  "Vila Velha": [
+    "2076 - Boulevard Shopping Vila Velha"
+  ],
+  "Vit\u00f3ria": [
+    "2029 - Shopping Vit\u00f3ria",
+    "CE298 - VIT\u00d3RIA"
+  ],
+  "Vit\u00f3ria da Conquista": [
+    "CE256 - VIT\u00d3RIA DA CONQUISTA"
+  ]
 };
 
 export const CATEGORIAS_LIST = [
