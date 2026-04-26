@@ -20,6 +20,9 @@ import {
   CIDADES_BY_ESTADO,
   STATE_TO_UF,
   METRIC_CONFIG,
+  applyParentContextToOptions,
+  filterRegionalsByKnownLinks,
+  filterStatesByKnownLinks,
 } from '../../referenceData';
 import { Tag } from 'lucide-react';
 import {
@@ -207,6 +210,16 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
         }
       }
 
+      // 4.1 Cross-attribute filtering: estado/cidade/loja → regional
+      if (attrId === 'regional') {
+        options = filterRegionalsByKnownLinks(options, selections);
+      }
+
+      // 4.2 Cross-attribute filtering: rede/canal/cidade/loja -> estado
+      if (attrId === 'estado') {
+        options = filterStatesByKnownLinks(options, selections);
+      }
+
       // 5. Module-specific cross-attribute filtering
       if (moduleConfig?.getFilteredGroupOptions) {
         options = moduleConfig.getFilteredGroupOptions(
@@ -222,26 +235,36 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
   );
 
   // ── Build group tree (1ª COLUNA - IMUTÁVEL) ──────────────────────
+  // parentContext acumula { attrId: value } de cada nível pai para restringir
+  // as opções do filho somente aos itens que pertencem ao pai correto.
   const buildGroupTree = useCallback(
     (
       levels: string[],
       levelIndex: number,
       parentId: string,
-      parentSeed: number
+      parentSeed: number,
+      parentContext: Record<string, string> = {}
     ): any[] => {
       if (levelIndex >= levels.length) return [];
 
       const attrId = levels[levelIndex];
-      const options = getFilteredGroupOptions(attrId);
+      // 1. Obtém opções base respeitando seleções/exclusões globais
+      let options = getFilteredGroupOptions(attrId);
+      // 2. Restringe pelo contexto dos níveis pai (ex: loja só da regional acima)
+      if (Object.keys(parentContext).length > 0) {
+        options = applyParentContextToOptions(attrId, parentContext, options);
+      }
       const isLeaf = levelIndex === levels.length - 1;
 
       return options.map((opt: string, idx: number) => {
         const rowId = parentId ? `${parentId}|${opt}` : opt;
         const seed = hashString(opt, parentSeed + idx * 7);
+        // Propaga contexto acumulado + valor deste nível para o próximo
+        const childContext = { ...parentContext, [attrId]: opt };
 
         const children = isLeaf
           ? []
-          : buildGroupTree(levels, levelIndex + 1, rowId, seed);
+          : buildGroupTree(levels, levelIndex + 1, rowId, seed, childContext);
 
         const rowData: any = {
           id: rowId,

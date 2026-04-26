@@ -56,6 +56,46 @@ export const EXPOSICAO_PRODUTO_METRIC_IDS = [
   'exp_nut_geladeiras',
 ] as const;
 
+const FOOD_CATEGORY = 'Alimento';
+const FOOD_GROUP = 'Alimentos';
+
+const applyGroupCategoryCoherence = (
+  attrId: string,
+  options: string[],
+  selections: Record<string, string[]>,
+): string[] => {
+  const selectedGroups = selections['grupo'] || [];
+  const selectedCategories = selections['categoria'] || [];
+
+  // grupo -> categoria
+  if (attrId === 'categoria' && selectedGroups.length > 0) {
+    const hasFoodGroup = selectedGroups.includes(FOOD_GROUP);
+    const hasNonFoodGroup = selectedGroups.some((g) => g !== FOOD_GROUP);
+
+    if (hasFoodGroup && !hasNonFoodGroup) {
+      return options.filter((opt) => opt === FOOD_CATEGORY);
+    }
+    if (!hasFoodGroup && hasNonFoodGroup) {
+      return options.filter((opt) => opt !== FOOD_CATEGORY);
+    }
+  }
+
+  // categoria -> grupo
+  if (attrId === 'grupo' && selectedCategories.length > 0) {
+    const hasFoodCategory = selectedCategories.includes(FOOD_CATEGORY);
+    const hasNonFoodCategory = selectedCategories.some((c) => c !== FOOD_CATEGORY);
+
+    if (hasFoodCategory && !hasNonFoodCategory) {
+      return options.filter((opt) => opt === FOOD_GROUP);
+    }
+    if (!hasFoodCategory && hasNonFoodCategory) {
+      return options.filter((opt) => opt !== FOOD_GROUP);
+    }
+  }
+
+  return options;
+};
+
 // ──────────────────────────────────────────────────────────────
 // PRODUTO module configuration
 // ──────────────────────────────────────────────────────────────
@@ -87,14 +127,20 @@ export const produtoModule: ModuleConfig = {
       case 'sala':         return SALA_OPTIONS;
       case 'categoria': {
         const selectedModalidades = selections['modalidade'] || [];
-        if (selectedModalidades.length === 0) return CATEGORIAS_LIST;
+        if (selectedModalidades.length === 0) {
+          return applyGroupCategoryCoherence('categoria', CATEGORIAS_LIST, selections);
+        }
         const validCategories = new Set<string>();
         selectedModalidades.forEach(mod => {
           Object.entries(MODALIDADES_BY_CATEGORIA).forEach(([cat, mods]) => {
             if (mods.includes(mod)) validCategories.add(cat);
           });
         });
-        return Array.from(validCategories).sort();
+        return applyGroupCategoryCoherence(
+          'categoria',
+          Array.from(validCategories).sort(),
+          selections,
+        );
       }
       case 'modalidade': {
         const selectedCategories = selections['categoria'] || [];
@@ -108,14 +154,20 @@ export const produtoModule: ModuleConfig = {
       }
       case 'grupo': {
         const selectedSub = selections['subgrupo'] || [];
-        if (selectedSub.length === 0) return GRUPOS_LIST;
+        if (selectedSub.length === 0) {
+          return applyGroupCategoryCoherence('grupo', GRUPOS_LIST, selections);
+        }
         const validGroups = new Set<string>();
         selectedSub.forEach(sub => {
           Object.entries(SUBGRUPOS_BY_GRUPO).forEach(([grp, subs]) => {
             if (subs.includes(sub)) validGroups.add(grp);
           });
         });
-        return Array.from(validGroups).sort();
+        return applyGroupCategoryCoherence(
+          'grupo',
+          Array.from(validGroups).sort(),
+          selections,
+        );
       }
       case 'subgrupo': {
         const selectedGroups = selections['grupo'] || [];
@@ -159,6 +211,11 @@ export const produtoModule: ModuleConfig = {
         selectedGroups.forEach(grp => (SUBGRUPOS_BY_GRUPO[grp] || []).forEach(s => allowed.add(s)));
         if (allowed.size > 0) result = result.filter(opt => allowed.has(opt));
       }
+    }
+
+    // grupo ↔ categoria (coerência de domínio)
+    if (attrId === 'categoria' || attrId === 'grupo') {
+      result = applyGroupCategoryCoherence(attrId, result, selections);
     }
 
     return result;

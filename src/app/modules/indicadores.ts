@@ -48,6 +48,10 @@ import {
   CIDADES_BY_ESTADO,
   LOJAS_BY_CIDADE,
   orderStoresByNetwork,
+  filterCitiesByKnownLinks,
+  filterRegionalsByKnownLinks,
+  filterStatesByKnownLinks,
+  filterStoresByKnownLinks,
 } from '../referenceData';
 import type { ModuleConfig } from './types';
 
@@ -106,23 +110,29 @@ export const indicadoresModule: ModuleConfig = {
     switch (attrId) {
       case 'rede':     return REDE_OPTIONS;
       case 'tipo':     return TIPO_OPTIONS;
-      case 'estado':   return ESTADOS_LIST;
-      case 'regional': return REGIONAL_OPTIONS;
+      case 'estado':
+        return filterStatesByKnownLinks(ESTADOS_LIST, selections);
+      case 'regional':
+        return filterRegionalsByKnownLinks(REGIONAL_OPTIONS, selections);
       case 'cidade': {
         const selectedEstados = selections['estado'] || [];
         if (selectedEstados.length === 0) {
           const allCidades = new Set<string>();
           Object.values(CIDADES_BY_ESTADO).flat().forEach((c: string) => allCidades.add(c));
-          return Array.from(allCidades).sort();
+          return filterCitiesByKnownLinks(Array.from(allCidades).sort(), selections);
         }
         const cidades = selectedEstados.flatMap(est => CIDADES_BY_ESTADO[est] || []);
-        return Array.from(new Set(cidades)).sort();
+        return filterCitiesByKnownLinks(Array.from(new Set(cidades)).sort(), selections);
       }
       case 'loja': {
         const selectedCidades = selections['cidade'] || [];
-        if (selectedCidades.length === 0) return orderStoresByNetwork(LOJAS_LIST);
-        const lojas = selectedCidades.flatMap(cid => LOJAS_BY_CIDADE[cid] || []);
-        return orderStoresByNetwork(lojas);
+        const baseLojas =
+          selectedCidades.length === 0
+            ? orderStoresByNetwork(LOJAS_LIST)
+            : orderStoresByNetwork(
+                selectedCidades.flatMap((cid) => LOJAS_BY_CIDADE[cid] || []),
+              );
+        return filterStoresByKnownLinks(baseLojas, selections);
       }
       case 'setor':    return SETOR_OPTIONS_IND;
       case 'vendedor': return VENDEDOR_OPTIONS_IND;

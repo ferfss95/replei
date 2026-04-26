@@ -26,6 +26,10 @@ import {
   STATE_TO_UF,
   CIDADES_BY_ESTADO,
   ESTADOS_LIST,
+  filterCitiesByKnownLinks,
+  filterRegionalsByKnownLinks,
+  filterStatesByKnownLinks,
+  filterStoresByKnownLinks,
 } from '../referenceData';
 
 // ══════════════════════════════════════════════════════════════════
@@ -75,7 +79,7 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
         case 'tipo':
           return TIPO_OPTIONS;
         case 'regional':
-          return REGIONAL_OPTIONS;
+          return filterRegionalsByKnownLinks(REGIONAL_OPTIONS, selections);
         case 'localizacao':
           return LOCALIZACAO_OPTIONS;
         case 'vendedor':
@@ -83,14 +87,15 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
         case 'origem':
           return ORIGEM_OPTIONS;
         case 'loja':
-          return ORDERED_LOJAS_LIST;
+          return filterStoresByKnownLinks(ORDERED_LOJAS_LIST, selections);
         case 'estado': {
           const selectedCities = selections['cidade'] || [];
 
           const formatState = (name: string) => `${name} - ${STATE_TO_UF[name] || ''}`;
 
           if (selectedCities.length === 0) {
-            return ESTADOS_LIST.map(formatState).sort();
+            const allStates = ESTADOS_LIST.map(formatState).sort();
+            return filterStatesByKnownLinks(allStates, selections);
           }
 
           const states = new Set<string>();
@@ -107,7 +112,7 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
               }
             }
           });
-          return Array.from(states).sort();
+          return filterStatesByKnownLinks(Array.from(states).sort(), selections);
         }
         case 'cidade': {
           const selectedStates = selections['estado'] || [];
@@ -130,7 +135,10 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
               }
             });
           }
-          return Array.from(new Set(formattedCities)).sort();
+          return filterCitiesByKnownLinks(
+            Array.from(new Set(formattedCities)).sort(),
+            selections,
+          );
         }
         // Domain-specific attributes — delegated to the active module config
         default:

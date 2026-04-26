@@ -69,12 +69,14 @@ import {
 } from "../../dateUtils";
 import { computePeriodDisplayText } from "../../utils/analysisPeriodSummary";
 import {
-  LOJAS_BY_CIDADE,
-  STATE_TO_UF,
-  CIDADES_BY_ESTADO,
   METRIC_CONFIG,
   METRIC_ABBREVIATIONS,
   formatMetricValue,
+  filterCitiesByKnownLinks,
+  filterRegionalsByKnownLinks,
+  filterStatesByKnownLinks,
+  filterStoresByKnownLinks,
+  applyParentContextToOptions,
 } from "../../referenceData";
 import { bc, shortPeriodLabel } from "../../utils/formatting";
 import { isPlanningMetric, getPlanningBg, generateHourlyValue } from "../../utils/dataGenerators";
@@ -427,6 +429,85 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     return isLeap ? 366 : 365;
   };
 
+  // Resolve divisores (dias/meses/anos) com base no recorte temporal realmente selecionado
+  // para evitar médias idênticas ao valor bruto quando o período inclui múltiplos meses/anos.
+  const getAverageDivisors = (
+    periodStr?: string,
+  ): { days: number; months: number; years: number } => {
+    const safe = (n: number) => (Number.isFinite(n) && n > 0 ? n : 1);
+    const isComparativo = analysisMode === "comparativo";
+
+    if (periodType === "Diário") {
+      const range =
+        isComparativo && periodStr?.includes("P")
+          ? periodStr === "P1"
+            ? compDateRange1
+            : compDateRange2
+          : dateRange;
+      const counts = calculatePeriodCounts(range.start, range.end);
+      return {
+        days: safe(counts.days),
+        months: safe(counts.months),
+        years: safe(counts.years),
+      };
+    }
+
+    if (periodType === "Mensal") {
+      const months =
+        isComparativo && periodStr?.includes("P")
+          ? periodStr === "P1"
+            ? compMonths1.length
+            : compMonths2.length
+          : selectedMonths.length;
+
+      // Base anual para converter meses em dias na média diária
+      const baseYearStr =
+        isComparativo && periodStr?.includes("P")
+          ? periodStr === "P1"
+            ? compYears1[0] || selectedYears[0] || getCurrentYearString()
+            : compYears2[0] || selectedYears[0] || getCurrentYearString()
+          : selectedYears[0] || getCurrentYearString();
+
+      const baseYearDays = calculateDaysInYear(baseYearStr);
+      const days = Math.round((baseYearDays / 12) * safe(months));
+
+      return {
+        days: safe(days),
+        months: safe(months),
+        years: safe(months / 12),
+      };
+    }
+
+    // periodType === "Anual"
+    const years =
+      isComparativo && periodStr?.includes("P")
+        ? periodStr === "P1"
+          ? compYears1.length
+          : compYears2.length
+        : selectedYears.length;
+
+    const yearList =
+      isComparativo && periodStr?.includes("P")
+        ? periodStr === "P1"
+          ? compYears1
+          : compYears2
+        : selectedYears;
+
+    const daysFromYears =
+      yearList.length > 0
+        ? yearList.reduce(
+            (acc, y) => acc + calculateDaysInYear(y),
+            0,
+          )
+        : safe(years) * 365;
+
+    return {
+      days: safe(daysFromYears),
+      months: safe(years) * 12,
+      years: safe(years),
+    };
+  };
+
   // Get available average options based on analysis mode and period
   const getAvailableAverageOptions = (): {
     disabled: boolean;
@@ -438,6 +519,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     }[];
   } => {
     const isEvo = analysisMode === "evolucao";
+    const shortIntervalTooltip =
+      "Intervalo de tempo muito curto, cálculo de média não disponível";
 
     // For evolutiva mode
     if (isEvo) {
@@ -490,21 +573,40 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       }
     }
 
-    // For general, comparative, and intraday modes
-    const range =
-      analysisMode === "comparativo"
-        ? compDateRange1
-        : dateRange;
+    // For geral, comparativo and intraday modes:
+    // availability follows temporal volume, not just calendar boundaries.
+    let hasDays = true;
+    let hasMonths = false;
+    let hasYears = false;
 
-    const { days, months, years } = calculatePeriodCounts(
-      range.start,
-      range.end,
-    );
-
-    // Determine which options should be available based on interval size
-    const hasDays = days >= 1;
-    const hasMonths = months >= 1;
-    const hasYears = years >= 1;
+    if (periodType === "Diário") {
+      const range =
+        analysisMode === "comparativo"
+          ? compDateRange1
+          : dateRange;
+      const { days } = calculatePeriodCounts(range.start, range.end);
+      hasDays = days >= 1;
+      // "Apenas dias": intervalos curtos não habilitam mês/ano
+      hasMonths = days >= 28;
+      hasYears = days >= 365;
+    } else if (periodType === "Mensal") {
+      const monthCount =
+        analysisMode === "comparativo"
+          ? compMonths1.length
+          : selectedMonths.length;
+      hasDays = monthCount > 0;
+      hasMonths = monthCount > 0;
+      // Só habilita anual quando volume mensal representa ao menos 1 ano
+      hasYears = monthCount >= 12;
+    } else if (periodType === "Anual") {
+      const yearCount =
+        analysisMode === "comparativo"
+          ? compYears1.length
+          : selectedYears.length;
+      hasDays = yearCount > 0;
+      hasMonths = yearCount > 0;
+      hasYears = yearCount > 0;
+    }
 
     const options: {
       id: "Dia" | "Mês" | "Ano";
@@ -514,23 +616,17 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       {
         id: "Dia",
         disabled: !hasDays,
-        tooltip: !hasDays
-          ? "Intervalo de tempo muito curto, cálculo de média não disponível"
-          : "",
+        tooltip: !hasDays ? shortIntervalTooltip : "",
       },
       {
         id: "Mês",
         disabled: !hasMonths,
-        tooltip: !hasMonths
-          ? "Intervalo de tempo muito curto, cálculo de média não disponível"
-          : "",
+        tooltip: !hasMonths ? shortIntervalTooltip : "",
       },
       {
         id: "Ano",
         disabled: !hasYears,
-        tooltip: !hasYears
-          ? "Intervalo de tempo muito curto, cálculo de média não disponível"
-          : "",
+        tooltip: !hasYears ? shortIntervalTooltip : "",
       },
     ];
 
@@ -571,17 +667,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     }
 
     // For general, comparative, and intraday modes
-    const range =
-      analysisMode === "comparativo" && periodStr?.includes("P")
-        ? periodStr === "P1"
-          ? compDateRange1
-          : compDateRange2
-        : dateRange;
-
-    const { days, months, years } = calculatePeriodCounts(
-      range.start,
-      range.end,
-    );
+    const { days, months, years } = getAverageDivisors(periodStr);
 
     if (averagePeriodType === "Dia") return value / days;
     if (averagePeriodType === "Mês") return value / months;
@@ -596,14 +682,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   ): number | null => {
     if (!averagePeriodType || value === 0) return null;
 
-    const range =
-      analysisMode === "comparativo"
-        ? compDateRange1
-        : dateRange;
-    const { days, months, years } = calculatePeriodCounts(
-      range.start,
-      range.end,
-    );
+    const { days, months, years } = getAverageDivisors();
 
     if (averagePeriodType === "Dia") return value / days;
     if (averagePeriodType === "Mês") return value / months;
@@ -838,74 +917,24 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         );
       }
 
-      // 3. Cross-attribute filtering: cidade → loja
+      // 3. Cross-attribute filtering: aplica vínculos conhecidos para lojas
       if (attrId === "loja") {
-        const selectedCities = selections["cidade"] || [];
-        if (selectedCities.length > 0) {
-          const allowedStores = new Set<string>();
-          selectedCities.forEach((cityStr: string) => {
-            const cityName = cityStr.split(" - ")[0];
-            const stores = LOJAS_BY_CIDADE[cityName] || [];
-            stores.forEach((s) => allowedStores.add(s));
-          });
-          if (allowedStores.size > 0) {
-            options = options.filter((opt: string) =>
-              allowedStores.has(opt),
-            );
-          }
-        }
-        // Also: estado → loja (via cidades) when no cities explicitly selected
-        const selectedStates = selections["estado"] || [];
-        if (
-          selectedStates.length > 0 &&
-          (selections["cidade"] || []).length === 0
-        ) {
-          const allowedStores = new Set<string>();
-          selectedStates.forEach((stateStr: string) => {
-            const stateName = stateStr.split(" - ")[0];
-            const cities = CIDADES_BY_ESTADO[stateName] || [];
-            cities.forEach((city) => {
-              const stores = LOJAS_BY_CIDADE[city] || [];
-              stores.forEach((s) => allowedStores.add(s));
-            });
-          });
-          if (allowedStores.size > 0) {
-            options = options.filter((opt: string) =>
-              allowedStores.has(opt),
-            );
-          }
-        }
+        options = filterStoresByKnownLinks(options, selections);
       }
 
-      // 4. Cross-attribute filtering: estado → cidade (already handled by getAttributeOptions, but also apply selections filter)
+      // 4. Cross-attribute filtering: aplica vínculos conhecidos para cidades
       if (attrId === "cidade") {
-        const selectedStores = selections["loja"] || [];
-        if (selectedStores.length > 0) {
-          const allowedCities = new Set<string>();
-          selectedStores.forEach((store: string) => {
-            Object.entries(LOJAS_BY_CIDADE).forEach(
-              ([city, stores]) => {
-                if (stores.includes(store)) {
-                  for (const [state, cities] of Object.entries(
-                    CIDADES_BY_ESTADO,
-                  )) {
-                    if (cities.includes(city)) {
-                      allowedCities.add(
-                        `${city} - ${STATE_TO_UF[state]}`,
-                      );
-                      break;
-                    }
-                  }
-                }
-              },
-            );
-          });
-          if (allowedCities.size > 0) {
-            options = options.filter((opt: string) =>
-              allowedCities.has(opt),
-            );
-          }
-        }
+        options = filterCitiesByKnownLinks(options, selections);
+      }
+
+      // 4.1 Cross-attribute filtering: aplica vínculos conhecidos para regionais
+      if (attrId === "regional") {
+        options = filterRegionalsByKnownLinks(options, selections);
+      }
+
+      // 4.2 Cross-attribute filtering: aplica vínculos conhecidos para estados
+      if (attrId === "estado") {
+        options = filterStatesByKnownLinks(options, selections);
       }
 
       // 5. Module-specific cross-attribute filtering (e.g. categoria↔modalidade, grupo↔subgrupo)
@@ -924,25 +953,35 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   );
 
   // Recursive tree builder for multi-level grouping
+  // parentContext acumula { attrId: value } de cada nível pai para restringir
+  // as opções do filho somente aos itens que pertencem ao pai correto.
   const buildGroupTree = (
     levels: string[],
     levelIndex: number,
     parentId: string,
     parentSeed: number,
+    parentContext: Record<string, string> = {},
   ): any[] => {
     if (levelIndex >= levels.length) return [];
 
     const attrId = levels[levelIndex];
-    const options = getFilteredGroupOptions(attrId);
+    // 1. Obtém opções base respeitando seleções/exclusões globais
+    let options = getFilteredGroupOptions(attrId);
+    // 2. Restringe pelo contexto dos níveis pai (ex: loja só da regional acima)
+    if (Object.keys(parentContext).length > 0) {
+      options = applyParentContextToOptions(attrId, parentContext, options);
+    }
     const isLeaf = levelIndex === levels.length - 1;
 
     return options.map((opt: string, idx: number) => {
       const rowId = parentId ? `${parentId}|${opt}` : opt;
       const seed = hashString(opt, parentSeed + idx * 7);
+      // Propaga contexto acumulado + valor deste nível para o próximo
+      const childContext = { ...parentContext, [attrId]: opt };
 
       const children = isLeaf
         ? []
-        : buildGroupTree(levels, levelIndex + 1, rowId, seed);
+        : buildGroupTree(levels, levelIndex + 1, rowId, seed, childContext);
 
       const rowData: any = {
         id: rowId,
