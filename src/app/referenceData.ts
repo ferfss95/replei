@@ -5,8 +5,10 @@ export const REDE_OPTIONS = [
 
 export const CANAL_OPTIONS = [
   "Loja F\u00edsica Centauro",
+  "Digital Centauro",
+  "NVS",
   "NDIS",
-  "NVS"
+  "Digital Nike"
 ];
 
 export const FATURAMENTO_OPTIONS = [
