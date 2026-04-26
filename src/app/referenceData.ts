@@ -43,10 +43,6 @@ export const MD_ENTREGA_OPTIONS = [
 ];
 
 export const REGIONAL_OPTIONS = [
-  "D1",
-  "D2",
-  "D3",
-  "D4",
   "Esquadr\u00e3o 40 graus",
   "Esquadr\u00e3o Valente",
   "Flechas do Norte",
@@ -61,7 +57,11 @@ export const REGIONAL_OPTIONS = [
   "Tit\u00e3s SP-MG",
   "Ultra High",
   "\u00c1guias de Elite",
-  "\u00c1guias do Cerrado"
+  "\u00c1guias do Cerrado",
+  "D1",
+  "D2",
+  "D3",
+  "D4"
 ];
 
 /** Centros CD (apenas CD, sem CDS) — usado no cluster de localização */
@@ -421,6 +421,21 @@ export const LOJAS_LIST = [
   "CE98 - UNI\u00c3O OSASCO",
   "CE99 - GOI\u00c2NIA SHOPPING"
 ];
+
+const isCentauroStore = (store: string) => store.trim().toUpperCase().startsWith("CE");
+
+/**
+ * Mantém ordem de exibição por rede: Centauro primeiro, depois Fisia.
+ * Dentro de cada grupo, preserva a ordem de entrada da fonte.
+ */
+export const orderStoresByNetwork = (stores: string[]): string[] => {
+  const uniqueStores = Array.from(new Set(stores));
+  const centauroStores = uniqueStores.filter(isCentauroStore);
+  const fisiaStores = uniqueStores.filter((store) => !isCentauroStore(store));
+  return [...centauroStores, ...fisiaStores];
+};
+
+export const ORDERED_LOJAS_LIST = orderStoresByNetwork(LOJAS_LIST);
 
 // Data for Estados/Cidades filtering
 export const ESTADOS_LIST = [

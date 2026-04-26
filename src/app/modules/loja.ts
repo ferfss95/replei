@@ -23,6 +23,7 @@ import {
   LOJAS_LIST,
   CIDADES_BY_ESTADO,
   LOJAS_BY_CIDADE,
+  orderStoresByNetwork,
 } from '../referenceData';
 import type { ModuleConfig } from './types';
 
@@ -94,9 +95,9 @@ export const lojaModule: ModuleConfig = {
       case 'loja': {
         // Se há cidades selecionadas, filtrar lojas
         const selectedCidades = selections['cidade'] || [];
-        if (selectedCidades.length === 0) return LOJAS_LIST;
+        if (selectedCidades.length === 0) return orderStoresByNetwork(LOJAS_LIST);
         const lojas = selectedCidades.flatMap(cid => LOJAS_BY_CIDADE[cid] || []);
-        return Array.from(new Set(lojas)).sort();
+        return orderStoresByNetwork(lojas);
       }
       case 'setor':     return SETOR_OPTIONS;
       case 'vendedor':  return VENDEDOR_OPTIONS;

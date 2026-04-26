@@ -22,7 +22,7 @@ import {
   LOCALIZACAO_OPTIONS,
   VENDEDOR_OPTIONS,
   ORIGEM_OPTIONS,
-  LOJAS_LIST,
+  ORDERED_LOJAS_LIST,
   STATE_TO_UF,
   CIDADES_BY_ESTADO,
   ESTADOS_LIST,
@@ -83,7 +83,7 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
         case 'origem':
           return ORIGEM_OPTIONS;
         case 'loja':
-          return LOJAS_LIST;
+          return ORDERED_LOJAS_LIST;
         case 'estado': {
           const selectedCities = selections['cidade'] || [];
 
