@@ -174,12 +174,9 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const TABLE_HEADER_TEXT = "#F1F1F1";
   const PIVOT_DERIVED_HEADER_BG = moduleColors.accentColor;
   const PIVOT_DERIVED_HEADER_TEXT = "#314158";
-  const EVOL_TOTAL_COLUMN_BG = "#A9BDD1";
   const DEFAULT_TOTAL_COLUMN_BG = "#F8FAFC";
   const totalColumnBg =
-    analysisMode === "evolucao"
-      ? EVOL_TOTAL_COLUMN_BG
-      : analysisMode === "horaahora"
+    analysisMode === "evolucao" || analysisMode === "horaahora"
         ? PIVOT_DERIVED_HEADER_BG
         : DEFAULT_TOTAL_COLUMN_BG;
 

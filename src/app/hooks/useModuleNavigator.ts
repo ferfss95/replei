@@ -66,13 +66,13 @@ export const useModuleNavigator = ({
 
     setIsTransitioning(true);
 
-    // Smooth transition with mandala animation (2.5 seconds total)
+    // Smooth transition with mandala animation (1.5 seconds total)
     setTimeout(() => {
       setCurrentModule(module);
       setTimeout(() => {
         setIsTransitioning(false);
       }, 500);
-    }, 2000);
+    }, 1000);
   }, [currentModule]);
 
   return {
