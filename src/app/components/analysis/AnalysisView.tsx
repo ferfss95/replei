@@ -2615,6 +2615,23 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const hasVariation =
     analysisMode === "comparativo" && periods.length >= 2;
 
+  /** Evolutiva: cabeçalho período → métricas (métricas lado a lado em cada período). */
+  const isPeriodFirstPivot =
+    analysisMode === "evolucao" && isPivot;
+
+  const getSubColsForMetricLeaf = (mId: string): number => {
+    let c = 1;
+    if (showAverage) c += 1;
+    if (showSharePct && !PCT_EXCLUDED_METRICS.has(mId)) c += 1;
+    return c;
+  };
+
+  const getSubColsForPeriodBlock = (): number =>
+    orderedMetrics.reduce(
+      (sum, mId) => sum + getSubColsForMetricLeaf(mId),
+      0,
+    );
+
   // Helper function: calcula quantas sub-colunas uma métrica específica terá
   const getSubColsForMetric = (metricId: string): number => {
     const canShowPct =
@@ -2670,6 +2687,338 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     return baseWidth + 30;
   };
 
+  /** Células da linha de dados (evolutiva) com ordem período → métrica. */
+  const renderEvoPeriodFirstPivotDataCells = (
+    row: any,
+    depth: number,
+  ): React.ReactNode => (
+    <>
+      {periods.flatMap((period, pIdx) =>
+        orderedMetrics.flatMap((mId: string, mIdx: number) => {
+          const config = METRIC_CONFIG[mId];
+          const key = `${period}__${mId}`;
+          const colTotal = pivotTotals ? pivotTotals[key] : null;
+          const canShowPct =
+            showSharePct && !PCT_EXCLUDED_METRICS.has(mId);
+          const isLastInPeriod = mIdx === orderedMetrics.length - 1;
+          const isLastPeriod = pIdx === periods.length - 1;
+          const out: React.ReactNode[] = [];
+          out.push(
+            <td
+              key={key}
+              className={cn(
+                "px-2 pr-3 py-2.5 text-right text-[14px] transition-colors group-hover:bg-slate-50/60 whitespace-nowrap",
+                depth === 0
+                  ? "text-slate-700 font-medium"
+                  : "text-slate-600 font-normal",
+              )}
+              style={{
+                width: getPivotMetricWidth(mId),
+                borderBottomWidth: 1,
+                borderBottomStyle: "solid",
+                borderBottomColor: "#e2e8f0",
+                ...(!canShowPct &&
+                !showAverage &&
+                !isLastInPeriod
+                  ? {
+                      borderRightWidth: 1,
+                      borderRightStyle: "dotted",
+                      borderRightColor: "#cbd5e1",
+                    }
+                  : {}),
+                ...(!canShowPct &&
+                !showAverage &&
+                isLastInPeriod &&
+                !isLastPeriod
+                  ? {
+                      borderRightWidth: 2,
+                      borderRightStyle: "dotted",
+                      borderRightColor: "#94a3b8",
+                    }
+                  : {}),
+                ...(!canShowPct &&
+                !showAverage &&
+                isLastInPeriod &&
+                isLastPeriod
+                  ? {
+                      borderRightWidth: 2,
+                      borderRightStyle: "dotted",
+                      borderRightColor: "#94a3b8",
+                    }
+                  : {}),
+              }}
+            >
+              {renderMetricValue(row[key] || 0, mId)}
+            </td>,
+          );
+          if (showAverage) {
+            const avgValue = calculateAverage(row[key] || 0, period);
+            let avgFormatted = "";
+            if (config) {
+              switch (config.format) {
+                case "currency":
+                  avgFormatted = new Intl.NumberFormat("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(avgValue);
+                  break;
+                case "percent":
+                case "percent1":
+                  avgFormatted = new Intl.NumberFormat("pt-BR", {
+                    style: "percent",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(avgValue);
+                  break;
+                case "integer":
+                  avgFormatted = new Intl.NumberFormat("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(avgValue);
+                  break;
+                case "decimal":
+                case "decimal1":
+                  avgFormatted = new Intl.NumberFormat("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(avgValue);
+                  break;
+                case "days":
+                  avgFormatted = `${avgValue.toFixed(2)} dias`;
+                  break;
+                default:
+                  avgFormatted = avgValue.toFixed(2);
+              }
+            } else {
+              avgFormatted = avgValue.toFixed(2);
+            }
+            out.push(
+              <td
+                key={`${key}__avg`}
+                className={cn(
+                  "px-2 pr-3 py-2.5 text-right text-[13px] transition-colors group-hover:bg-slate-50/60 whitespace-nowrap",
+                  depth === 0
+                    ? "text-slate-600 font-medium"
+                    : "text-slate-500 font-normal",
+                )}
+                style={{
+                  width: AVG_COL_WIDTH,
+                  borderBottomWidth: 1,
+                  borderBottomStyle: "solid",
+                  borderBottomColor: "#e2e8f0",
+                  ...(!canShowPct && !isLastInPeriod
+                    ? {
+                        borderRightWidth: 1,
+                        borderRightStyle: "dotted",
+                        borderRightColor: "#cbd5e1",
+                      }
+                    : {}),
+                  ...(canShowPct
+                    ? {}
+                    : isLastInPeriod && !isLastPeriod
+                      ? {
+                          borderRightWidth: 2,
+                          borderRightStyle: "dotted",
+                          borderRightColor: "#94a3b8",
+                        }
+                      : {}),
+                  ...(canShowPct
+                    ? {}
+                    : isLastInPeriod && isLastPeriod
+                      ? {
+                          borderRightWidth: 2,
+                          borderRightStyle: "dotted",
+                          borderRightColor: "#94a3b8",
+                        }
+                      : {}),
+                }}
+              >
+                {avgFormatted}
+              </td>,
+            );
+          }
+          if (canShowPct) {
+            out.push(
+              <td
+                key={`${key}__pct`}
+                className="px-2 py-2.5 text-center text-[12px] text-slate-500 transition-colors group-hover:bg-slate-50/60"
+                style={{
+                  width: PCT_COL_WIDTH,
+                  borderBottomWidth: 1,
+                  borderBottomStyle: "solid",
+                  borderBottomColor: "#e2e8f0",
+                  ...(isLastInPeriod && !isLastPeriod
+                    ? {
+                        borderRightWidth: 2,
+                        borderRightStyle: "dotted",
+                        borderRightColor: "#94a3b8",
+                      }
+                    : {}),
+                  ...(isLastInPeriod && isLastPeriod
+                    ? {
+                        borderRightWidth: 2,
+                        borderRightStyle: "dotted",
+                        borderRightColor: "#94a3b8",
+                      }
+                    : {}),
+                }}
+              >
+                {renderPctValue(row[key] || 0, colTotal)}
+              </td>,
+            );
+          }
+          return out;
+        }),
+      )}
+      {orderedMetrics.flatMap((mId: string, mIdx: number) => {
+        const totalKey = `__total__${mId}`;
+        const config = METRIC_CONFIG[mId];
+        const grandTotal = pivotTotals ? pivotTotals[totalKey] : null;
+        const canShowPct =
+          showSharePct && !PCT_EXCLUDED_METRICS.has(mId);
+        const isLastMetric = mIdx === orderedMetrics.length - 1;
+        const out: React.ReactNode[] = [];
+        out.push(
+          <td
+            key={totalKey}
+            className={cn(
+              "px-2 pr-3 py-2.5 text-right text-[14px] transition-colors whitespace-nowrap",
+              depth === 0
+                ? "text-slate-700 font-medium"
+                : "text-slate-600 font-normal",
+            )}
+            style={{
+              backgroundColor: totalColumnBg,
+              width: getPivotTotalWidth(mId),
+              borderBottomWidth: 1,
+              borderBottomStyle: "solid",
+              borderBottomColor: "#e2e8f0",
+              ...(!canShowPct && !showAverage && !isLastMetric
+                ? {
+                    borderRightWidth: 2,
+                    borderRightStyle: "dotted",
+                    borderRightColor: "#94a3b8",
+                  }
+                : !canShowPct && !showAverage && isLastMetric
+                  ? {
+                      borderRightWidth: 2,
+                      borderRightStyle: "solid",
+                      borderRightColor: "#e2e8f0",
+                    }
+                  : {}),
+            }}
+          >
+            {renderMetricValue(row[totalKey] || 0, mId)}
+          </td>,
+        );
+        if (showAverage) {
+          const avgValue = calculateAverage(row[totalKey] || 0);
+          let avgFormatted = "";
+          if (config) {
+            switch (config.format) {
+              case "currency":
+                avgFormatted = new Intl.NumberFormat("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(avgValue);
+                break;
+              case "percent":
+              case "percent1":
+                avgFormatted = new Intl.NumberFormat("pt-BR", {
+                  style: "percent",
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(avgValue);
+                break;
+              case "integer":
+                avgFormatted = new Intl.NumberFormat("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(avgValue);
+                break;
+              case "decimal":
+              case "decimal1":
+                avgFormatted = new Intl.NumberFormat("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }).format(avgValue);
+                break;
+              case "days":
+                avgFormatted = `${avgValue.toFixed(2)} dias`;
+                break;
+              default:
+                avgFormatted = avgValue.toFixed(2);
+            }
+          } else {
+            avgFormatted = avgValue.toFixed(2);
+          }
+          out.push(
+            <td
+              key={`${totalKey}__avg`}
+              className={cn(
+                "px-2 pr-3 py-2.5 text-right text-[13px] transition-colors whitespace-nowrap",
+                depth === 0
+                  ? "text-slate-600 font-medium"
+                  : "text-slate-500 font-normal",
+              )}
+              style={{
+                backgroundColor: totalColumnBg,
+                width: AVG_COL_WIDTH,
+                borderBottomWidth: 1,
+                borderBottomStyle: "solid",
+                borderBottomColor: "#e2e8f0",
+                ...(!canShowPct && !isLastMetric
+                  ? {
+                      borderRightWidth: 2,
+                      borderRightStyle: "dotted",
+                      borderRightColor: "#94a3b8",
+                    }
+                  : !canShowPct && isLastMetric
+                    ? {
+                        borderRightWidth: 2,
+                        borderRightStyle: "solid",
+                        borderRightColor: "#e2e8f0",
+                      }
+                    : {}),
+              }}
+            >
+              {avgFormatted}
+            </td>,
+          );
+        }
+        if (canShowPct) {
+          out.push(
+            <td
+              key={`${totalKey}__pct`}
+              className="px-2 py-2.5 text-center text-[12px] text-slate-500 transition-colors"
+              style={{
+                backgroundColor: totalColumnBg,
+                width: PCT_COL_WIDTH,
+                borderBottomWidth: 1,
+                borderBottomStyle: "solid",
+                borderBottomColor: "#e2e8f0",
+                ...(!isLastMetric
+                  ? {
+                      borderRightWidth: 2,
+                      borderRightStyle: "dotted",
+                      borderRightColor: "#94a3b8",
+                    }
+                  : {
+                      borderRightWidth: 2,
+                      borderRightStyle: "solid",
+                      borderRightColor: "#e2e8f0",
+                    }),
+              }}
+            >
+              {renderPctValue(row[totalKey] || 0, grandTotal)}
+            </td>,
+          );
+        }
+        return out;
+      })}
+    </>
+  );
+
   // CSV Export
   const handleExportCSV = React.useCallback(() => {
     if (finalRows.length === 0) return;
@@ -2679,6 +3028,84 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       const isComp = analysisMode === "comparativo";
       const showVar = isComp && periods.length >= 2;
 
+      if (isPeriodFirstPivot && !isComp) {
+        const h1 = [groupingLabel];
+        periods.forEach((period) => {
+          orderedMetrics.forEach((_, mi) => {
+            h1.push(
+              mi === 0 ? shortPeriodLabel(period) : "",
+            );
+          });
+        });
+        orderedMetrics.forEach((_, mi) => {
+          h1.push(mi === 0 ? "Total" : "");
+        });
+        rows.push(h1);
+
+        const h2 = [""];
+        periods.forEach(() => {
+          orderedMetrics.forEach((mId: string) => {
+            const m = METRICS_LIST.find((x) => x.id === mId);
+            h2.push(m?.label || mId);
+          });
+        });
+        orderedMetrics.forEach((mId: string) => {
+          const m = METRICS_LIST.find((x) => x.id === mId);
+          h2.push(`Total — ${m?.label || mId}`);
+        });
+        rows.push(h2);
+
+        if (pivotTotals) {
+          const tr = ["Total"];
+          periods.forEach((p) => {
+            orderedMetrics.forEach((mId: string) => {
+              const config = METRIC_CONFIG[mId];
+              tr.push(
+                formatMetricValue(
+                  pivotTotals[`${p}__${mId}`] || 0,
+                  config?.format || "string",
+                ),
+              );
+            });
+          });
+          orderedMetrics.forEach((mId: string) => {
+            const config = METRIC_CONFIG[mId];
+            tr.push(
+              formatMetricValue(
+                pivotTotals[`__total__${mId}`] || 0,
+                config?.format || "string",
+              ),
+            );
+          });
+          rows.push(tr);
+        }
+
+        finalRows.forEach((row: any) => {
+          const indent = "  ".repeat(row.depth || 0);
+          const dr = [`${indent}${row.label}`];
+          periods.forEach((p) => {
+            orderedMetrics.forEach((mId: string) => {
+              const config = METRIC_CONFIG[mId];
+              dr.push(
+                formatMetricValue(
+                  row[`${p}__${mId}`] || 0,
+                  config?.format || "string",
+                ),
+              );
+            });
+          });
+          orderedMetrics.forEach((mId: string) => {
+            const config = METRIC_CONFIG[mId];
+            dr.push(
+              formatMetricValue(
+                row[`__total__${mId}`] || 0,
+                config?.format || "string",
+              ),
+            );
+          });
+          rows.push(dr);
+        });
+      } else {
       // Header row 1: metric groups (metric-first pivot)
       const h1 = [groupingLabel];
       orderedMetrics.forEach((mId: string, i: number) => {
@@ -2812,6 +3239,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         });
         rows.push(dr);
       });
+      }
     } else {
       // Standard mode
       const header = [
@@ -2873,6 +3301,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   }, [
     finalRows,
     isPivot,
+    isPeriodFirstPivot,
     periods,
     selectedMetrics,
     pivotTotals,
@@ -6102,123 +6531,201 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             columnWidths["grouping"] || 350,
                         }}
                       />
-                      {orderedMetrics.map((mId: string) => {
-                        const cols: React.ReactNode[] = [];
-                        const canShowPct =
-                          showSharePct &&
-                          !PCT_EXCLUDED_METRICS.has(mId);
+                      {analysisMode === "comparativo"
+                        ? orderedMetrics.map((mId: string) => {
+                            const cols: React.ReactNode[] = [];
+                            const canShowPct =
+                              showSharePct &&
+                              !PCT_EXCLUDED_METRICS.has(mId);
 
-                        if (analysisMode === "comparativo") {
-                          periods.forEach((p, pIdx) => {
-                            cols.push(
-                              <col
-                                key={`${mId}__p${pIdx}`}
-                                style={{
-                                  width:
-                                    getPivotMetricWidth(mId),
-                                }}
-                              />,
-                            );
-                            if (showAverage) {
+                            periods.forEach((p, pIdx) => {
                               cols.push(
                                 <col
-                                  key={`${mId}__p${pIdx}__avg`}
+                                  key={`${mId}__p${pIdx}`}
                                   style={{
-                                    width: AVG_COL_WIDTH,
+                                    width:
+                                      getPivotMetricWidth(mId),
+                                  }}
+                                />,
+                              );
+                              if (showAverage) {
+                                cols.push(
+                                  <col
+                                    key={`${mId}__p${pIdx}__avg`}
+                                    style={{
+                                      width: AVG_COL_WIDTH,
+                                    }}
+                                  />,
+                                );
+                              }
+                              if (canShowPct) {
+                                cols.push(
+                                  <col
+                                    key={`${mId}__p${pIdx}__pct`}
+                                    style={{
+                                      width: PCT_COL_WIDTH,
+                                    }}
+                                  />,
+                                );
+                              }
+                            });
+                            if (hasVariation) {
+                              cols.push(
+                                <col
+                                  key={`${mId}__var`}
+                                  style={{
+                                    width:
+                                      getPivotMetricWidth(mId),
+                                  }}
+                                />,
+                              );
+                              cols.push(
+                                <col
+                                  key={`${mId}__growth`}
+                                  style={{
+                                    width:
+                                      getPivotMetricWidth(mId),
                                   }}
                                 />,
                               );
                             }
-                            if (canShowPct) {
+                            return cols;
+                          })
+                        : isPeriodFirstPivot
+                          ? [
+                              ...periods.flatMap((p) =>
+                                orderedMetrics.flatMap((mId) => {
+                                  const canShowPctE =
+                                    showSharePct &&
+                                    !PCT_EXCLUDED_METRICS.has(mId);
+                                  const out: React.ReactNode[] = [];
+                                  out.push(
+                                    <col
+                                      key={`evpf__${p}__${mId}`}
+                                      style={{
+                                        width:
+                                          getPivotMetricWidth(mId),
+                                      }}
+                                    />,
+                                  );
+                                  if (showAverage) {
+                                    out.push(
+                                      <col
+                                        key={`evpf__${p}__${mId}__avg`}
+                                        style={{
+                                          width: AVG_COL_WIDTH,
+                                        }}
+                                      />,
+                                    );
+                                  }
+                                  if (canShowPctE) {
+                                    out.push(
+                                      <col
+                                        key={`evpf__${p}__${mId}__pct`}
+                                        style={{
+                                          width: PCT_COL_WIDTH,
+                                        }}
+                                      />,
+                                    );
+                                  }
+                                  return out;
+                                }),
+                              ),
+                              ...orderedMetrics.flatMap((mId) => {
+                                const canShowPctE =
+                                  showSharePct &&
+                                  !PCT_EXCLUDED_METRICS.has(mId);
+                                const out: React.ReactNode[] = [];
+                                out.push(
+                                  <col
+                                    key={`evpf__tot__${mId}`}
+                                    style={{
+                                      width: getPivotTotalWidth(mId),
+                                    }}
+                                  />,
+                                );
+                                if (showAverage) {
+                                  out.push(
+                                    <col
+                                      key={`evpf__tot__${mId}__avg`}
+                                      style={{ width: AVG_COL_WIDTH }}
+                                    />,
+                                  );
+                                }
+                                if (canShowPctE) {
+                                  out.push(
+                                    <col
+                                      key={`evpf__tot__${mId}__pct`}
+                                      style={{ width: PCT_COL_WIDTH }}
+                                    />,
+                                  );
+                                }
+                                return out;
+                              }),
+                            ]
+                          : orderedMetrics.map((mId: string) => {
+                              const cols: React.ReactNode[] = [];
+                              const canShowPct =
+                                showSharePct &&
+                                !PCT_EXCLUDED_METRICS.has(mId);
+
+                              periods.forEach((p) => {
+                                cols.push(
+                                  <col
+                                    key={`${mId}__${p}`}
+                                    style={{
+                                      width:
+                                        getPivotMetricWidth(mId),
+                                    }}
+                                  />,
+                                );
+                                if (showAverage) {
+                                  cols.push(
+                                    <col
+                                      key={`${mId}__${p}__avg`}
+                                      style={{
+                                        width: AVG_COL_WIDTH,
+                                      }}
+                                    />,
+                                  );
+                                }
+                                if (canShowPct) {
+                                  cols.push(
+                                    <col
+                                      key={`${mId}__${p}__pct`}
+                                      style={{
+                                        width: PCT_COL_WIDTH,
+                                      }}
+                                    />,
+                                  );
+                                }
+                              });
                               cols.push(
                                 <col
-                                  key={`${mId}__p${pIdx}__pct`}
+                                  key={`${mId}__total`}
                                   style={{
-                                    width: PCT_COL_WIDTH,
+                                    width: getPivotTotalWidth(mId),
                                   }}
                                 />,
                               );
-                            }
-                          });
-                          if (hasVariation) {
-                            cols.push(
-                              <col
-                                key={`${mId}__var`}
-                                style={{
-                                  width:
-                                    getPivotMetricWidth(mId),
-                                }}
-                              />,
-                            );
-                            cols.push(
-                              <col
-                                key={`${mId}__growth`}
-                                style={{
-                                  width:
-                                    getPivotMetricWidth(mId),
-                                }}
-                              />,
-                            );
-                          }
-                        } else {
-                          periods.forEach((p) => {
-                            cols.push(
-                              <col
-                                key={`${mId}__${p}`}
-                                style={{
-                                  width:
-                                    getPivotMetricWidth(mId),
-                                }}
-                              />,
-                            );
-                            if (showAverage) {
-                              cols.push(
-                                <col
-                                  key={`${mId}__${p}__avg`}
-                                  style={{
-                                    width: AVG_COL_WIDTH,
-                                  }}
-                                />,
-                              );
-                            }
-                            if (canShowPct) {
-                              cols.push(
-                                <col
-                                  key={`${mId}__${p}__pct`}
-                                  style={{
-                                    width: PCT_COL_WIDTH,
-                                  }}
-                                />,
-                              );
-                            }
-                          });
-                          cols.push(
-                            <col
-                              key={`${mId}__total`}
-                              style={{
-                                width: getPivotTotalWidth(mId),
-                              }}
-                            />,
-                          );
-                          if (showAverage) {
-                            cols.push(
-                              <col
-                                key={`${mId}__total__avg`}
-                                style={{ width: AVG_COL_WIDTH }}
-                              />,
-                            );
-                          }
-                          if (canShowPct) {
-                            cols.push(
-                              <col
-                                key={`${mId}__total__pct`}
-                                style={{ width: PCT_COL_WIDTH }}
-                              />,
-                            );
-                          }
-                        }
-                        return cols;
-                      })}
+                              if (showAverage) {
+                                cols.push(
+                                  <col
+                                    key={`${mId}__total__avg`}
+                                    style={{ width: AVG_COL_WIDTH }}
+                                  />,
+                                );
+                              }
+                              if (canShowPct) {
+                                cols.push(
+                                  <col
+                                    key={`${mId}__total__pct`}
+                                    style={{ width: PCT_COL_WIDTH }}
+                                  />,
+                                );
+                              }
+                              return cols;
+                            })}
                     </colgroup>
 
                     <thead className="sticky top-0 z-[40]">
@@ -6256,73 +6763,122 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             }
                           />
                         </th>
-                        {orderedMetrics.map(
-                          (mId: string, mIdx: number) => {
-                            const metric = METRICS_LIST.find(
-                              (m) => m.id === mId,
-                            );
-                            const abbrev =
-                              METRIC_ABBREVIATIONS[mId] ||
-                              metric?.label ||
-                              mId;
-                            const isLastMetric =
-                              mIdx ===
-                              orderedMetrics.length - 1;
-                            return (
-                              <RadixTooltip.Root
-                                key={`metric_group__${mId}`}
-                                delayDuration={300}
-                              >
-                                <RadixTooltip.Trigger asChild>
-                                  <th
-                                    colSpan={getSubColsForMetric(
-                                      mId,
-                                    )}
-                                    className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide select-none"
-                                    style={{
-                                      backgroundColor:
-                                        TABLE_HEADER_BG,
-                                      color: TABLE_HEADER_TEXT,
-                                      borderBottomWidth: 1,
-                                      borderBottomStyle:
-                                        "solid",
-                                      borderBottomColor:
-                                        "rgba(241, 241, 241, 0.25)",
-                                      ...(!isLastMetric
-                                        ? {
-                                            borderRightWidth: 2,
-                                            borderRightStyle:
-                                              "dotted",
-                                            borderRightColor:
-                                              "#94a3b8",
-                                          }
-                                        : {}),
-                                    }}
-                                  >
-                                    <div className="flex items-center justify-center gap-1.5 text-[13px]">
-                                      {abbrev}
-                                    </div>
-                                  </th>
-                                </RadixTooltip.Trigger>
-                                <RadixTooltip.Portal>
-                                  <RadixTooltip.Content
-                                    className="z-50 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded shadow-lg animate-in fade-in zoom-in-95 max-w-[250px]"
-                                    sideOffset={5}
-                                  >
-                                    {metric?.label || mId}
-                                    <RadixTooltip.Arrow className="fill-slate-900" />
-                                  </RadixTooltip.Content>
-                                </RadixTooltip.Portal>
-                              </RadixTooltip.Root>
-                            );
-                          },
+                        {!isPeriodFirstPivot ? (
+                          orderedMetrics.map(
+                            (mId: string, mIdx: number) => {
+                              const metric = METRICS_LIST.find(
+                                (m) => m.id === mId,
+                              );
+                              const abbrev =
+                                METRIC_ABBREVIATIONS[mId] ||
+                                metric?.label ||
+                                mId;
+                              const isLastMetric =
+                                mIdx ===
+                                orderedMetrics.length - 1;
+                              return (
+                                <RadixTooltip.Root
+                                  key={`metric_group__${mId}`}
+                                  delayDuration={300}
+                                >
+                                  <RadixTooltip.Trigger asChild>
+                                    <th
+                                      colSpan={getSubColsForMetric(
+                                        mId,
+                                      )}
+                                      className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide select-none"
+                                      style={{
+                                        backgroundColor:
+                                          TABLE_HEADER_BG,
+                                        color: TABLE_HEADER_TEXT,
+                                        borderBottomWidth: 1,
+                                        borderBottomStyle:
+                                          "solid",
+                                        borderBottomColor:
+                                          "rgba(241, 241, 241, 0.25)",
+                                        ...(!isLastMetric
+                                          ? {
+                                              borderRightWidth: 2,
+                                              borderRightStyle:
+                                                "dotted",
+                                              borderRightColor:
+                                                "#94a3b8",
+                                            }
+                                          : {}),
+                                      }}
+                                    >
+                                      <div className="flex items-center justify-center gap-1.5 text-[13px]">
+                                        {abbrev}
+                                      </div>
+                                    </th>
+                                  </RadixTooltip.Trigger>
+                                  <RadixTooltip.Portal>
+                                    <RadixTooltip.Content
+                                      className="z-50 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded shadow-lg animate-in fade-in zoom-in-95 max-w-[250px]"
+                                      sideOffset={5}
+                                    >
+                                      {metric?.label || mId}
+                                      <RadixTooltip.Arrow className="fill-slate-900" />
+                                    </RadixTooltip.Content>
+                                  </RadixTooltip.Portal>
+                                </RadixTooltip.Root>
+                              );
+                            },
+                          )
+                        ) : (
+                          <>
+                            {periods.map((period, pIdx) => {
+                              const isLastPeriod =
+                                pIdx === periods.length - 1;
+                              return (
+                                <th
+                                  key={`evo_pf_r1_p_${pIdx}`}
+                                  colSpan={getSubColsForPeriodBlock()}
+                                  className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide select-none"
+                                  style={{
+                                    backgroundColor: TABLE_HEADER_BG,
+                                    color: TABLE_HEADER_TEXT,
+                                    borderBottomWidth: 1,
+                                    borderBottomStyle: "solid",
+                                    borderBottomColor:
+                                      "rgba(241, 241, 241, 0.25)",
+                                    ...(!isLastPeriod
+                                      ? {
+                                          borderRightWidth: 2,
+                                          borderRightStyle: "dotted",
+                                          borderRightColor: "#94a3b8",
+                                        }
+                                      : {}),
+                                  }}
+                                >
+                                  {shortPeriodLabel(period)}
+                                </th>
+                              );
+                            })}
+                            <th
+                              key="evo_pf_r1_total"
+                              colSpan={getSubColsForPeriodBlock()}
+                              className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide select-none"
+                              style={{
+                                backgroundColor: TABLE_HEADER_BG,
+                                color: TABLE_HEADER_TEXT,
+                                borderBottomWidth: 1,
+                                borderBottomStyle: "solid",
+                                borderBottomColor:
+                                  "rgba(241, 241, 241, 0.25)",
+                              }}
+                            >
+                              Total
+                            </th>
+                          </>
                         )}
                       </tr>
 
                       {/* HEADER ROW 2: Period/derived sub-headers under each metric */}
                       <tr>
-                        {orderedMetrics.map(
-                          (mId: string, mIdx: number) => {
+                        {!isPeriodFirstPivot ? (
+                          orderedMetrics.map(
+                            (mId: string, mIdx: number) => {
                             const isLastMetric =
                               mIdx ===
                               orderedMetrics.length - 1;
@@ -6829,7 +7385,251 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               }
                             }
                             return subHeaders;
-                          },
+                          })
+                        ) : (
+                          <>
+                            {periods.flatMap((period, pIdx) =>
+                              orderedMetrics.flatMap(
+                                (mId: string, mIdx: number) => {
+                                  const metric = METRICS_LIST.find(
+                                    (m) => m.id === mId,
+                                  );
+                                  const abbrev =
+                                    METRIC_ABBREVIATIONS[mId] ||
+                                    metric?.label ||
+                                    mId;
+                                  const isLastInPeriod =
+                                    mIdx ===
+                                    orderedMetrics.length - 1;
+                                  const isLastPeriod =
+                                    pIdx === periods.length - 1;
+                                  const periodSortKey = `${period}__${mId}`;
+                                  const canShowPct =
+                                    showSharePct &&
+                                    !PCT_EXCLUDED_METRICS.has(
+                                      mId,
+                                    );
+                                  const periodGroupEnd =
+                                    isLastInPeriod && !isLastPeriod
+                                      ? {
+                                          borderRightWidth: 2,
+                                          borderRightStyle:
+                                            "dotted" as const,
+                                          borderRightColor: "#94a3b8",
+                                        }
+                                      : isLastInPeriod &&
+                                          isLastPeriod
+                                        ? {
+                                            borderRightWidth: 2,
+                                            borderRightStyle:
+                                              "dotted" as const,
+                                            borderRightColor: "#94a3b8",
+                                          }
+                                        : {};
+                                  const out: React.ReactNode[] = [];
+                                  out.push(
+                                    <th
+                                      key={`pf2v_${period}_${mId}`}
+                                      className="px-2 pr-3 py-2 text-right font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px] cursor-pointer group hover:brightness-95 transition-colors"
+                                      onClick={() =>
+                                        handleSort(periodSortKey)
+                                      }
+                                      style={{
+                                        backgroundColor:
+                                          PIVOT_DERIVED_HEADER_BG,
+                                        color:
+                                          PIVOT_DERIVED_HEADER_TEXT,
+                                        width:
+                                          getPivotMetricWidth(mId),
+                                        borderBottomWidth: 2,
+                                        borderBottomStyle: "solid",
+                                        borderBottomColor: "#e2e8f0",
+                                        ...(!canShowPct &&
+                                        !showAverage &&
+                                        !isLastInPeriod
+                                          ? {
+                                              borderRightWidth: 1,
+                                              borderRightStyle: "dotted",
+                                              borderRightColor: "#cbd5e1",
+                                            }
+                                          : {}),
+                                        ...(canShowPct ||
+                                        showAverage
+                                          ? {}
+                                          : periodGroupEnd),
+                                      }}
+                                    >
+                                      <div className="flex items-center justify-end gap-2">
+                                        <span>{abbrev}</span>
+                                        <span className="shrink-0 text-slate-900">
+                                          {renderSortIndicator(
+                                            periodSortKey,
+                                          )}
+                                        </span>
+                                      </div>
+                                    </th>,
+                                  );
+                                  if (showAverage) {
+                                    out.push(
+                                      <th
+                                        key={`pf2a_${period}_${mId}`}
+                                        className="px-2 py-2 text-right font-bold uppercase tracking-wider select-none whitespace-nowrap text-[11px]"
+                                        style={{
+                                          backgroundColor:
+                                            PIVOT_DERIVED_HEADER_BG,
+                                          color:
+                                            PIVOT_DERIVED_HEADER_TEXT,
+                                          width: AVG_COL_WIDTH,
+                                          borderBottomWidth: 2,
+                                          borderBottomStyle: "solid",
+                                          borderBottomColor: "#e2e8f0",
+                                          ...(!canShowPct &&
+                                          !isLastInPeriod
+                                            ? {
+                                                borderRightWidth: 1,
+                                                borderRightStyle: "dotted",
+                                                borderRightColor: "#cbd5e1",
+                                              }
+                                            : {}),
+                                          ...(canShowPct
+                                            ? {}
+                                            : periodGroupEnd),
+                                        }}
+                                      >
+                                        {`x̄ ${averagePeriodType}`}
+                                      </th>,
+                                    );
+                                  }
+                                  if (canShowPct) {
+                                    out.push(
+                                      <th
+                                        key={`pf2p_${period}_${mId}`}
+                                        className="px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
+                                        style={{
+                                          backgroundColor:
+                                            PIVOT_DERIVED_HEADER_BG,
+                                          color:
+                                            PIVOT_DERIVED_HEADER_TEXT,
+                                          width: PCT_COL_WIDTH,
+                                          borderBottomWidth: 2,
+                                          borderBottomStyle: "solid",
+                                          borderBottomColor: "#e2e8f0",
+                                          ...periodGroupEnd,
+                                        }}
+                                      >
+                                        %
+                                      </th>,
+                                    );
+                                  }
+                                  return out;
+                                },
+                              ),
+                            )}
+                            {orderedMetrics.flatMap(
+                              (mId: string, mIdx: number) => {
+                                const isLastMetric =
+                                  mIdx ===
+                                  orderedMetrics.length - 1;
+                                const canShowPct =
+                                  showSharePct &&
+                                  !PCT_EXCLUDED_METRICS.has(mId);
+                                const metric = METRICS_LIST.find(
+                                  (m) => m.id === mId,
+                                );
+                                const abbrev =
+                                  METRIC_ABBREVIATIONS[mId] ||
+                                  metric?.label ||
+                                  mId;
+                                const totalSortKey = `__total__${mId}`;
+                                const out: React.ReactNode[] = [];
+                                out.push(
+                                  <th
+                                    key={`pf2t_${mId}`}
+                                    className="px-2 pr-3 py-2 text-right font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[12px] cursor-pointer group hover:brightness-95 transition-colors"
+                                    onClick={() =>
+                                      handleSort(totalSortKey)
+                                    }
+                                    style={{
+                                      backgroundColor: totalColumnBg,
+                                      width:
+                                        getPivotTotalWidth(mId),
+                                      borderBottomWidth: 2,
+                                      borderBottomStyle: "solid",
+                                      borderBottomColor: "#e2e8f0",
+                                      ...(!canShowPct &&
+                                      !showAverage &&
+                                      !isLastMetric
+                                        ? {
+                                            borderRightWidth: 2,
+                                            borderRightStyle: "dotted",
+                                            borderRightColor: "#94a3b8",
+                                          }
+                                        : {}),
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-end gap-2">
+                                      <span>{abbrev}</span>
+                                      <span className="shrink-0 text-slate-900">
+                                        {renderSortIndicator(
+                                          totalSortKey,
+                                        )}
+                                      </span>
+                                    </div>
+                                  </th>,
+                                );
+                                if (showAverage) {
+                                  out.push(
+                                    <th
+                                      key={`pf2ta_${mId}`}
+                                      className="px-2 py-2 text-right font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[11px]"
+                                      style={{
+                                        backgroundColor: totalColumnBg,
+                                        width: AVG_COL_WIDTH,
+                                        borderBottomWidth: 2,
+                                        borderBottomStyle: "solid",
+                                        borderBottomColor: "#e2e8f0",
+                                        ...(!canShowPct &&
+                                        !isLastMetric
+                                          ? {
+                                              borderRightWidth: 2,
+                                              borderRightStyle: "dotted",
+                                              borderRightColor: "#94a3b8",
+                                            }
+                                          : {}),
+                                      }}
+                                    >
+                                      {`x̄ ${averagePeriodType}`}
+                                    </th>,
+                                  );
+                                }
+                                if (canShowPct) {
+                                  out.push(
+                                    <th
+                                      key={`pf2tp_${mId}`}
+                                      className="px-2 py-2 text-center font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
+                                      style={{
+                                        backgroundColor: totalColumnBg,
+                                        width: PCT_COL_WIDTH,
+                                        borderBottomWidth: 2,
+                                        borderBottomStyle: "solid",
+                                        borderBottomColor: "#e2e8f0",
+                                        ...(!isLastMetric
+                                          ? {
+                                              borderRightWidth: 2,
+                                              borderRightStyle: "dotted",
+                                              borderRightColor: "#94a3b8",
+                                            }
+                                          : {}),
+                                      }}
+                                    >
+                                      %
+                                    </th>,
+                                  );
+                                }
+                                return out;
+                              },
+                            )}
+                          </>
                         )}
                       </tr>
                     </thead>
@@ -6862,7 +7662,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                           >
                             Total
                           </td>
-                          {orderedMetrics.map(
+                          {!isPeriodFirstPivot ? (
+                          orderedMetrics.map(
                             (mId: string, mIdx: number) => {
                               const config = METRIC_CONFIG[mId];
                               const isLastMetric =
@@ -7333,7 +8134,365 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 }
                               }
                               return cells;
-                            },
+                            })
+                          ) : (
+                            <>
+                              {periods.flatMap((period, pIdx) =>
+                                orderedMetrics.flatMap(
+                                  (mId: string, mIdx: number) => {
+                                    const config = METRIC_CONFIG[mId];
+                                    const key = `${period}__${mId}`;
+                                    const canShowPct =
+                                      showSharePct &&
+                                      !PCT_EXCLUDED_METRICS.has(mId);
+                                    const isLastInPeriod =
+                                      mIdx ===
+                                      orderedMetrics.length - 1;
+                                    const isLastPeriod =
+                                      pIdx === periods.length - 1;
+                                    const out: React.ReactNode[] = [];
+                                    out.push(
+                                      <td
+                                        key={key}
+                                        className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[13px] bg-slate-50 whitespace-nowrap"
+                                        style={{
+                                          width:
+                                            getPivotMetricWidth(mId),
+                                          borderBottomWidth: 2,
+                                          borderBottomStyle: "solid",
+                                          borderBottomColor: "#e2e8f0",
+                                          ...(!canShowPct &&
+                                          !showAverage &&
+                                          !isLastInPeriod
+                                            ? {
+                                                borderRightWidth: 1,
+                                                borderRightStyle: "dotted",
+                                                borderRightColor: "#cbd5e1",
+                                              }
+                                            : {}),
+                                          ...(!canShowPct &&
+                                          !showAverage &&
+                                          isLastInPeriod &&
+                                          !isLastPeriod
+                                            ? {
+                                                borderRightWidth: 2,
+                                                borderRightStyle: "dotted",
+                                                borderRightColor: "#94a3b8",
+                                              }
+                                            : {}),
+                                          ...(!canShowPct &&
+                                          !showAverage &&
+                                          isLastInPeriod &&
+                                          isLastPeriod
+                                            ? {
+                                                borderRightWidth: 2,
+                                                borderRightStyle: "dotted",
+                                                borderRightColor: "#94a3b8",
+                                              }
+                                            : {}),
+                                        }}
+                                      >
+                                        {renderMetricValue(
+                                          pivotTotals[key] || 0,
+                                          mId,
+                                        )}
+                                      </td>,
+                                    );
+                                    if (showAverage) {
+                                      const avgValue =
+                                        calculateAverage(
+                                          pivotTotals[key] || 0,
+                                          period,
+                                        );
+                                      let avgFormatted = "";
+                                      if (config) {
+                                        switch (config.format) {
+                                          case "currency":
+                                            avgFormatted =
+                                              new Intl.NumberFormat(
+                                                "pt-BR",
+                                                {
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                                },
+                                              ).format(avgValue);
+                                            break;
+                                          case "percent":
+                                          case "percent1":
+                                            avgFormatted =
+                                              new Intl.NumberFormat(
+                                                "pt-BR",
+                                                {
+                                                  style: "percent",
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                                },
+                                              ).format(avgValue);
+                                            break;
+                                          case "integer":
+                                            avgFormatted =
+                                              new Intl.NumberFormat(
+                                                "pt-BR",
+                                                {
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                                },
+                                              ).format(avgValue);
+                                            break;
+                                          case "decimal":
+                                          case "decimal1":
+                                            avgFormatted =
+                                              new Intl.NumberFormat(
+                                                "pt-BR",
+                                                {
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                                },
+                                              ).format(avgValue);
+                                            break;
+                                          case "days":
+                                            avgFormatted = `${avgValue.toFixed(2)} dias`;
+                                            break;
+                                          default:
+                                            avgFormatted =
+                                              avgValue.toFixed(2);
+                                        }
+                                      } else {
+                                        avgFormatted =
+                                          avgValue.toFixed(2);
+                                      }
+                                      out.push(
+                                        <td
+                                          key={`${key}__avg`}
+                                          className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[12px] text-slate-600 bg-slate-50 whitespace-nowrap"
+                                          style={{
+                                            width: AVG_COL_WIDTH,
+                                            borderBottomWidth: 2,
+                                            borderBottomStyle: "solid",
+                                            borderBottomColor: "#e2e8f0",
+                                            ...(!canShowPct &&
+                                            !isLastInPeriod
+                                              ? {
+                                                  borderRightWidth: 1,
+                                                  borderRightStyle: "dotted",
+                                                  borderRightColor: "#cbd5e1",
+                                                }
+                                              : {}),
+                                            ...(canShowPct
+                                              ? {}
+                                              : isLastInPeriod &&
+                                                  !isLastPeriod
+                                                ? {
+                                                    borderRightWidth: 2,
+                                                    borderRightStyle: "dotted",
+                                                    borderRightColor: "#94a3b8",
+                                                  }
+                                                : {}),
+                                            ...(canShowPct
+                                              ? {}
+                                              : isLastInPeriod &&
+                                                  isLastPeriod
+                                                ? {
+                                                    borderRightWidth: 2,
+                                                    borderRightStyle: "dotted",
+                                                    borderRightColor: "#94a3b8",
+                                                  }
+                                                : {}),
+                                          }}
+                                        >
+                                          {avgFormatted}
+                                        </td>,
+                                      );
+                                    }
+                                    if (canShowPct) {
+                                      out.push(
+                                        <td
+                                          key={`${key}__pct`}
+                                          className="h-[46px] px-2 py-2.5 text-center sticky top-[75px] z-[30] text-[12px] text-slate-500 bg-slate-50"
+                                          style={{
+                                            width: PCT_COL_WIDTH,
+                                            borderBottomWidth: 2,
+                                            borderBottomStyle: "solid",
+                                            borderBottomColor: "#e2e8f0",
+                                            ...(isLastInPeriod &&
+                                            !isLastPeriod
+                                              ? {
+                                                  borderRightWidth: 2,
+                                                  borderRightStyle: "dotted",
+                                                  borderRightColor: "#94a3b8",
+                                                }
+                                              : {}),
+                                            ...(isLastInPeriod &&
+                                            isLastPeriod
+                                              ? {
+                                                  borderRightWidth: 2,
+                                                  borderRightStyle: "dotted",
+                                                  borderRightColor: "#94a3b8",
+                                                }
+                                              : {}),
+                                          }}
+                                        >
+                                          100%
+                                        </td>,
+                                      );
+                                    }
+                                    return out;
+                                  },
+                                ),
+                              )}
+                              {orderedMetrics.flatMap(
+                                (mId: string, mIdx: number) => {
+                                  const totalKey = `__total__${mId}`;
+                                  const config = METRIC_CONFIG[mId];
+                                  const isLastMetric =
+                                    mIdx ===
+                                    orderedMetrics.length - 1;
+                                  const canShowPct =
+                                    showSharePct &&
+                                    !PCT_EXCLUDED_METRICS.has(mId);
+                                  const out: React.ReactNode[] = [];
+                                  out.push(
+                                    <td
+                                      key={totalKey}
+                                      className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[13px] whitespace-nowrap"
+                                      style={{
+                                        backgroundColor: totalColumnBg,
+                                        width:
+                                          getPivotTotalWidth(mId),
+                                        borderBottomWidth: 2,
+                                        borderBottomStyle: "solid",
+                                        borderBottomColor: "#e2e8f0",
+                                        ...(!canShowPct &&
+                                        !showAverage &&
+                                        !isLastMetric
+                                          ? {
+                                              borderRightWidth: 2,
+                                              borderRightStyle: "dotted",
+                                              borderRightColor: "#94a3b8",
+                                            }
+                                          : {}),
+                                      }}
+                                    >
+                                      {renderMetricValue(
+                                        pivotTotals[totalKey] || 0,
+                                        mId,
+                                      )}
+                                    </td>,
+                                  );
+                                  if (showAverage) {
+                                    const avgValue =
+                                      calculateAverage(
+                                        pivotTotals[totalKey] || 0,
+                                      );
+                                    let avgFormatted = "";
+                                    if (config) {
+                                      switch (config.format) {
+                                        case "currency":
+                                          avgFormatted =
+                                            new Intl.NumberFormat(
+                                              "pt-BR",
+                                              {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                              },
+                                            ).format(avgValue);
+                                          break;
+                                        case "percent":
+                                        case "percent1":
+                                          avgFormatted =
+                                            new Intl.NumberFormat(
+                                              "pt-BR",
+                                              {
+                                                style: "percent",
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                              },
+                                            ).format(avgValue);
+                                          break;
+                                        case "integer":
+                                          avgFormatted =
+                                            new Intl.NumberFormat(
+                                              "pt-BR",
+                                              {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                              },
+                                            ).format(avgValue);
+                                          break;
+                                        case "decimal":
+                                        case "decimal1":
+                                          avgFormatted =
+                                            new Intl.NumberFormat(
+                                              "pt-BR",
+                                              {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                              },
+                                            ).format(avgValue);
+                                          break;
+                                        case "days":
+                                          avgFormatted = `${avgValue.toFixed(2)} dias`;
+                                          break;
+                                        default:
+                                          avgFormatted =
+                                            avgValue.toFixed(2);
+                                      }
+                                    } else {
+                                      avgFormatted =
+                                        avgValue.toFixed(2);
+                                    }
+                                    out.push(
+                                      <td
+                                        key={`${totalKey}__avg`}
+                                        className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[12px] text-slate-600 whitespace-nowrap"
+                                        style={{
+                                          backgroundColor: totalColumnBg,
+                                          width: AVG_COL_WIDTH,
+                                          borderBottomWidth: 2,
+                                          borderBottomStyle: "solid",
+                                          borderBottomColor: "#e2e8f0",
+                                          ...(!canShowPct &&
+                                          !isLastMetric
+                                            ? {
+                                                borderRightWidth: 2,
+                                                borderRightStyle: "dotted",
+                                                borderRightColor: "#94a3b8",
+                                              }
+                                            : {}),
+                                        }}
+                                      >
+                                        {avgFormatted}
+                                      </td>,
+                                    );
+                                  }
+                                  if (canShowPct) {
+                                    out.push(
+                                      <td
+                                        key={`${totalKey}__pct`}
+                                        className="h-[46px] px-2 py-2.5 text-center sticky top-[75px] z-[30] text-[12px] text-slate-500"
+                                        style={{
+                                          backgroundColor: totalColumnBg,
+                                          width: PCT_COL_WIDTH,
+                                          borderBottomWidth: 2,
+                                          borderBottomStyle: "solid",
+                                          borderBottomColor: "#e2e8f0",
+                                          ...(!isLastMetric
+                                            ? {
+                                                borderRightWidth: 2,
+                                                borderRightStyle: "dotted",
+                                                borderRightColor: "#94a3b8",
+                                              }
+                                            : {}),
+                                        }}
+                                      >
+                                        100%
+                                      </td>,
+                                    );
+                                  }
+                                  return out;
+                                },
+                              )}
+                            </>
                           )}
                         </tr>
                       </tbody>
@@ -7411,7 +8570,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               </div>
                             </td>
 
-                            {orderedMetrics.map(
+                            {!isPeriodFirstPivot ? (
+                              orderedMetrics.map(
                               (mId: string, mIdx: number) => {
                                 const config =
                                   METRIC_CONFIG[mId];
@@ -7972,7 +9132,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   }
                                 }
                                 return cells;
-                              },
+                              })
+                            ) : (
+                              renderEvoPeriodFirstPivotDataCells(
+                                row,
+                                depth,
+                              )
                             )}
                           </tr>
                         );
