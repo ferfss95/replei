@@ -10,17 +10,8 @@ import { MODULE_REGISTRY } from '../modules/index';
 import type { AnalysisMode, AveragePeriodType } from '../types/wizard';
 
 /** Métricas iniciais do menu lateral por módulo (troca de módulo ou Limpar). */
-export function getDefaultSelectedMetricsForModule(module: Module): string[] {
-  switch (module) {
-    case 'LOJA':
-      return ['rob'];
-    case 'INDICADORES':
-      return ['ind_tkm'];
-    case 'PRODUTO':
-    case 'EXTRAVIOS':
-    default:
-      return ['venda'];
-  }
+export function getDefaultSelectedMetricsForModule(_module: Module): string[] {
+  return [];
 }
 
 interface UseModuleNavigatorProps {

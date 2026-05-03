@@ -13,6 +13,7 @@ import {
   Hash,
   MapPin,
   Building2,
+  Store,
   UserCircle,
   Target,
   Megaphone,
@@ -46,13 +47,15 @@ import type { ModuleConfig } from './types';
 
 /** Métricas do bloco "Exposição de produtos" (sidebar + tabela); EXTRAVIOS remove estas da cópia base. */
 export const EXPOSICAO_PRODUTO_METRIC_IDS = [
-  'exp_calc_clicks',
+  'exp_calc_clicks_tenis',
+  'exp_calc_clicks_chuteiras',
   'exp_vest_bracos_araras',
   'exp_vest_mesas',
   'exp_meias_bracos',
   'exp_acc_torres_relogios',
   'exp_acc_torres_oculos',
   'exp_acc_cestos_bolas',
+  'exp_checkstand_modulos',
   'exp_nut_geladeiras',
 ] as const;
 
@@ -258,18 +261,25 @@ export const produtoModule: ModuleConfig = {
     },
     // Exposição de produtos (rótulo menu = spec; tabela = METRIC_ABBREVIATIONS)
     {
-      id: 'exp_calc_clicks',
-      label: 'Qtd de clicks',
+      id: 'exp_calc_clicks_tenis',
+      label: 'Qtd de clicks tênis',
       icon: MousePointerClick,
       tooltip:
-        'Quantidade de posições para expor calçados que a loja possui.',
+        'Quantidade de clicks em posições de exposição de calçados do tipo tênis.',
+    },
+    {
+      id: 'exp_calc_clicks_chuteiras',
+      label: 'Qtd de clicks chuteiras',
+      icon: MousePointerClick,
+      tooltip:
+        'Quantidade de clicks em posições de exposição de calçados do tipo chuteira.',
     },
     {
       id: 'exp_vest_bracos_araras',
-      label: 'Qtd braços de araras',
+      label: 'Qtd braços de exposição',
       icon: Shirt,
       tooltip:
-        'Quantidade de braços de araras para exposição de vestuário que a loja possui.',
+        'Quantidade de braços de exposição para vestuário que a loja possui.',
     },
     {
       id: 'exp_vest_mesas',
@@ -306,6 +316,13 @@ export const produtoModule: ModuleConfig = {
       tooltip: 'Quantidade de cestos para expor bolas que a loja possui.',
     },
     {
+      id: 'exp_checkstand_modulos',
+      label: 'Qtd módulos checkstand',
+      icon: Store,
+      tooltip:
+        'Quantidade de módulos de checkstand que a loja possui no ponto de venda.',
+    },
+    {
       id: 'exp_nut_geladeiras',
       label: 'Qtd geladeiras',
       icon: Refrigerator,
@@ -331,6 +348,7 @@ export const produtoModule: ModuleConfig = {
   metricsSidebarPlanningSubgroupLabel: 'Planejamento',
 
   metricsSidebarExcludeFromVendaEstoque: [
+    'sss',
     ...EXPOSICAO_PRODUTO_METRIC_IDS,
     'ppa',
     'match_preco',
@@ -343,7 +361,10 @@ export const produtoModule: ModuleConfig = {
       title: 'Exposição de produtos',
       sidebarGroupId: 'exposicao_produtos',
       groups: [
-        { subtitle: 'Calçados', metricIds: ['exp_calc_clicks'] },
+        {
+          subtitle: 'Calçados',
+          metricIds: ['exp_calc_clicks_tenis', 'exp_calc_clicks_chuteiras'],
+        },
         {
           subtitle: 'Vestuário',
           metricIds: ['exp_vest_bracos_araras', 'exp_vest_mesas'],
@@ -357,6 +378,7 @@ export const produtoModule: ModuleConfig = {
             'exp_acc_cestos_bolas',
           ],
         },
+        { subtitle: 'Checkstad', metricIds: ['exp_checkstand_modulos'] },
         { subtitle: 'Nutrição', metricIds: ['exp_nut_geladeiras'] },
       ],
     },

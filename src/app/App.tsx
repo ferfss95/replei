@@ -34,20 +34,25 @@ import {
 import { useAttributeFilters } from "./hooks/useAttributeFilters";
 import type { AnalysisMode, AveragePeriodType } from "./types/wizard";
 
-/** Estado inicial dos accordions do menu lateral de métricas (alinhado a MetricsSidebar). */
-const DEFAULT_METRICS_SIDEBAR_GROUPS: Record<string, boolean> = {
-  venda_estoque: true,
-  planejamento: false,
-  exposicao_produtos: true,
-};
+/** Defaults do accordion de métricas (alinhado a MetricsSidebar). Em PRODUTO só "Venda e Estoque" vem aberto. */
+function getMetricsSidebarDefaultsForModule(module: Module): Record<string, boolean> {
+  const base: Record<string, boolean> = {
+    venda_estoque: true,
+    planejamento: false,
+  };
+  if (module === "PRODUTO") {
+    return { ...base, exposicao_produtos: false };
+  }
+  return { ...base };
+}
 
 export default function App() {
   // ─── UI/Step State ─────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState<Step>("selection");
   const [metricsCollapsed, setMetricsCollapsed] = useState(false);
-  const [metricsGroupExpanded, setMetricsGroupExpanded] = useState<Record<string, boolean>>(() => ({
-    ...DEFAULT_METRICS_SIDEBAR_GROUPS,
-  }));
+  const [metricsGroupExpanded, setMetricsGroupExpanded] = useState<Record<string, boolean>>(() =>
+    getMetricsSidebarDefaultsForModule("PRODUTO"),
+  );
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("padrao");
   const [averagePeriodType, setAveragePeriodType] = useState<AveragePeriodType>(null);
   const [averageDropdownOpen, setAverageDropdownOpen] = useState(false);
@@ -125,21 +130,17 @@ export default function App() {
       setExclusions({});
       setGrouping([]);
       setCurrentStep("selection");
+      setMetricsGroupExpanded(getMetricsSidebarDefaultsForModule(currentModule));
     }
 
     previousModuleRef.current = currentModule;
   }, [currentModule, setSelections, setExclusions, setGrouping, setCurrentStep]);
 
-  // Proteção extra: mantém selectedMetrics sempre válidas para o módulo ativo.
+  // Proteção extra: remove métricas inválidas ao trocar de módulo (default = nenhuma selecionada).
   React.useEffect(() => {
     const validMetricIds = new Set(currentModuleConfig.metrics.map((metric) => metric.id));
-    const defaultMetricId = currentModuleConfig.metrics[0]?.id;
 
-    setSelectedMetrics((prev) => {
-      const filtered = prev.filter((metricId) => validMetricIds.has(metricId));
-      if (filtered.length > 0) return filtered;
-      return defaultMetricId ? [defaultMetricId] : [];
-    });
+    setSelectedMetrics((prev) => prev.filter((metricId) => validMetricIds.has(metricId)));
   }, [currentModuleConfig, setSelectedMetrics]);
 
   // ─── Derived State ─────────────────────────────────────────────
@@ -203,8 +204,6 @@ export default function App() {
 
     setSelectedMetrics((prev) => {
       if (prev.includes(metricId)) {
-        // Nunca deixar o módulo sem métrica selecionada (evita análises "vazias").
-        if (prev.length <= 1) return prev;
         return prev.filter((m) => m !== metricId);
       }
       return [...prev, metricId];
@@ -247,7 +246,7 @@ export default function App() {
       setAnalysisMode("padrao");
       setSelectedMetrics(getDefaultSelectedMetricsForModule(currentModule));
       setMetricsCollapsed(false);
-      setMetricsGroupExpanded({ ...DEFAULT_METRICS_SIDEBAR_GROUPS });
+      setMetricsGroupExpanded(getMetricsSidebarDefaultsForModule(currentModule));
       setAveragePeriodType(null);
       setAverageDropdownOpen(false);
       setShowSharePct(false);

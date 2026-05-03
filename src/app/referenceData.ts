@@ -2204,13 +2204,33 @@ export const MOCK_QTD_VENDA = [
 
 // ── Exposição de produtos (PRODUTO) — inteiros, grandeza alinhada aos exemplos do spec
 
-/** Qtd de clicks — ex.: 420, 721, 545… */
-export const MOCK_EXP_CALC_CLICKS = [
+/**
+ * Totais de clicks em calçados (série legada única). Derivamos tênis vs chuteiras:
+ * ~15% chuteiras (arredondado), o restante tênis; a soma por loja/posição coincide com o total.
+ */
+const MOCK_EXP_CALC_CLICKS_TOTALS = [
   420, 721, 545, 668, 545, 512, 598, 634, 702, 481, 390, 655, 720, 540, 660, 430, 745, 525, 675,
   530, 610, 688, 455, 700, 515, 580, 640, 695, 500, 600, 715, 535, 665, 440, 710, 470, 625, 690,
-];
+] as const;
 
-/** Qtd braços de araras — ex.: 320, 465, 650… */
+const MOCK_EXP_CALC_CLICKS_CHUTEIRAS_RAW = MOCK_EXP_CALC_CLICKS_TOTALS.map((T) =>
+  Math.round(0.15 * T),
+);
+
+/** Qtd de clicks — chuteiras (~15% do total histórico por posição). */
+export const MOCK_EXP_CALC_CLICKS_CHUTEIRAS = [...MOCK_EXP_CALC_CLICKS_CHUTEIRAS_RAW];
+
+/** Qtd de clicks — tênis (complemento do total histórico). */
+export const MOCK_EXP_CALC_CLICKS_TENIS = MOCK_EXP_CALC_CLICKS_TOTALS.map(
+  (T, i) => T - MOCK_EXP_CALC_CLICKS_CHUTEIRAS_RAW[i]!,
+);
+
+/** Qtd módulos checkstand por loja — valores entre 3 e 13 (mock). */
+export const MOCK_EXP_CHECKSTAND_MODULOS = MOCK_EXP_CALC_CLICKS_TOTALS.map((_, i) =>
+  3 + ((i * 17 + 11) % 11),
+);
+
+/** Qtd braços de exposição — ex.: 320, 465, 650… */
 export const MOCK_EXP_VEST_BRACOS_ARARAS = [
   320, 465, 650, 487, 710, 340, 450, 620, 500, 690, 380, 470, 640, 495, 705, 315, 480, 655, 475,
   725, 360, 440, 625, 510, 680, 330, 460, 645, 490, 700, 350, 475, 635, 505, 715, 375, 455, 660,
@@ -2300,6 +2320,9 @@ export const MOCK_VALOR_META = [
   265000, 270000, 285000, 280000, 275000, 270000, 260000, 265000, 270000, 275000,
   280000, 285000, 290000, 295000, 300000, 285000, 275000
 ];
+
+/** Meta de venda mensal da loja (mock). Usada exclusivamente no % projeção de venda (mês vigente). */
+export const MOCK_LOJA_META_MENSAL = [...MOCK_VALOR_META];
 
 export const MOCK_DESVIO_META_R = [
   12500, -8200, 15300, -12400, 18700, 9300, -7800, 14200, -5600, 11800,
@@ -2577,18 +2600,25 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'ppa': { data: MOCK_IND_PPA, format: 'percent1' },
   'match_preco': { data: MOCK_IND_MATCH_PRECO, format: 'percent1' },
   // Exposição de produtos (PRODUTO) — format integer (0 casas decimais)
-  'exp_calc_clicks': { data: MOCK_EXP_CALC_CLICKS, format: 'integer' },
+  'exp_calc_clicks_tenis': { data: MOCK_EXP_CALC_CLICKS_TENIS, format: 'integer' },
+  'exp_calc_clicks_chuteiras': { data: MOCK_EXP_CALC_CLICKS_CHUTEIRAS, format: 'integer' },
   'exp_vest_bracos_araras': { data: MOCK_EXP_VEST_BRACOS_ARARAS, format: 'integer' },
   'exp_vest_mesas': { data: MOCK_EXP_VEST_MESAS, format: 'integer' },
   'exp_meias_bracos': { data: MOCK_EXP_MEIAS_BRACOS, format: 'integer' },
   'exp_acc_torres_relogios': { data: MOCK_EXP_ACC_RELOGIOS, format: 'integer' },
   'exp_acc_torres_oculos': { data: MOCK_EXP_ACC_OCULOS, format: 'integer' },
   'exp_acc_cestos_bolas': { data: MOCK_EXP_CESTOS_BOLAS, format: 'integer' },
+  'exp_checkstand_modulos': { data: MOCK_EXP_CHECKSTAND_MODULOS, format: 'integer' },
   'exp_nut_geladeiras': { data: MOCK_EXP_NUT_GELADEIRAS, format: 'integer' },
   // Loja metrics
   'rob': { data: MOCK_ROB, format: 'currency' },
   'qtd_vendas_loja': { data: MOCK_QTD_VENDAS_LOJA, format: 'integer' },
   'valor_meta': { data: MOCK_VALOR_META, format: 'currency' },
+  /** Meta mensal por loja (mock); não é métrica de UI — só denominador do % projeção mês vigente. */
+  'meta_mensal_loja': { data: MOCK_LOJA_META_MENSAL, format: 'currency' },
+  /** Valores calculados em AnalysisView (mock data length só para tipagem). */
+  'vlr_projecao_venda': { data: [0], format: 'currency' },
+  'pct_projecao_venda': { data: [0], format: 'percent1' },
   'desvio_meta_r': { data: MOCK_DESVIO_META_R, format: 'variation' },
   'desvio_meta_p': { data: MOCK_DESVIO_META_P, format: 'variation' },
   'conversao': { data: MOCK_CONVERSAO, format: 'percent' },
@@ -2642,19 +2672,23 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   'vlr_desvio_target': 'Vlr Desv Target',
   'ppa': 'PPA',
   'match_preco': 'Match Preço',
-  'exp_calc_clicks': 'Qtd de clicks',
-  'exp_vest_bracos_araras': 'Qtd braços araras',
+  'exp_calc_clicks_tenis': 'Qtd clicks tênis',
+  'exp_calc_clicks_chuteiras': 'Qtd clicks chuteiras',
+  'exp_vest_bracos_araras': 'Qtd braços exposição',
   'exp_vest_mesas': 'Qtd mesas',
   'exp_meias_bracos': 'Qtd braços meias',
   'exp_acc_torres_relogios': 'Qtd exp. relógios',
   'exp_acc_torres_oculos': 'Qtd exp. óculos',
   'exp_acc_cestos_bolas': 'Qtd cestos de bolas',
+  'exp_checkstand_modulos': 'Qtd mód. checkstand',
   'exp_nut_geladeiras': 'Qtd geladeiras',
   // Loja
   'rob': 'ROB',
   'qtd_vendas_loja': 'Qtd de Vendas',
   'margem_bruta': 'MB',
   'valor_meta': 'Valor Meta',
+  'vlr_projecao_venda': 'Vlr Proj (mês vig.)',
+  'pct_projecao_venda': '% Proj Venda',
   'desvio_meta_r': 'Desvio $',
   'desvio_meta_p': 'Desvio %',
   'conversao': 'Conversão',
@@ -2675,7 +2709,13 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   'ind_conv_click':    'Conversão Click',
 };
 
-export const formatMetricValue = (value: number, format: string): string => {
+export const formatMetricValue = (
+  value: number | null | undefined,
+  format: string,
+): string => {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '—';
+  }
   switch (format) {
     case 'currency':
       return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);

@@ -62,6 +62,7 @@ import {
   WEEKDAY_FULL,
 } from "../../constants";
 import {
+  getToday,
   getTodayFormatted,
   getCurrentMonthString,
   getCurrentYearString,
@@ -81,6 +82,7 @@ import {
 import { bc, shortPeriodLabel } from "../../utils/formatting";
 import { isPlanningMetric, getPlanningBg, generateHourlyValue } from "../../utils/dataGenerators";
 import { hashString } from "../../utils/calculations";
+import { computeLojaVendaProjectionMesVigente } from "../../utils/lojaProjection";
 import type { ModuleConfig } from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
 import type { AnalysisMode, AveragePeriodType } from "../../types/wizard";
@@ -249,9 +251,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const [tableCurrentPage, setTableCurrentPage] = useState(0);
 
   // Chart control states — multi-metric (up to 3)
-  const [chartMetricIds, setChartMetricIds] = useState<
-    string[]
-  >([selectedMetrics[0] || "venda"]);
+  const [chartMetricIds, setChartMetricIds] = useState<string[]>([]);
   const [chartPageSize, setChartPageSize] =
     useState<number>(10);
   const [chartCurrentPage, setChartCurrentPage] = useState(0);
@@ -287,6 +287,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     "sss",
     // Apenas métricas que já são variação % (desvio meta %)
     "desvio_meta_p",
+    "pct_projecao_venda",
     "ppa",
     "match_preco",
     "ind_ppa",
@@ -343,9 +344,9 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       const valid = prev.filter((id) =>
         selectedMetrics.includes(id),
       );
-      if (valid.length === 0)
-        return [selectedMetrics[0] || "venda"];
-      return valid;
+      if (valid.length > 0) return valid;
+      if (selectedMetrics.length === 0) return [];
+      return [selectedMetrics[0]];
     });
   }, [selectedMetrics]);
 
@@ -952,6 +953,86 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     [getAttributeOptions, selections, exclusions, moduleConfig],
   );
 
+  const LOJA_MOCK_VARIACAO_MIN = 0.85;
+  const LOJA_MOCK_VARIACAO_MAX = 1.2;
+
+  const daysInCalendarMonth = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+
+  const lojaMockVariacaoFromSeed = (baseSeed: number) => {
+    const range = LOJA_MOCK_VARIACAO_MAX - LOJA_MOCK_VARIACAO_MIN;
+    return (
+      LOJA_MOCK_VARIACAO_MIN +
+      ((baseSeed % 100) / 100) * range
+    );
+  };
+
+  /** Dias do período selecionado e base de dias do mês (mock ROB proporcional). */
+  const getLojaRobMockPeriodFactors = (): {
+    daysInPeriod: number;
+    monthTotalDays: number;
+  } => {
+    if (periodType === "Diário") {
+      const range =
+        analysisMode === "comparativo" ? compDateRange1 : dateRange;
+      const { days } = calculatePeriodCounts(range.start, range.end);
+      const start = parseBRDate(range.start);
+      const end = parseBRDate(range.end);
+      if (!start || !end || start > end) {
+        return { daysInPeriod: 1, monthTotalDays: 30 };
+      }
+      let monthTotalDays: number;
+      if (
+        start.getMonth() === end.getMonth() &&
+        start.getFullYear() === end.getFullYear()
+      ) {
+        monthTotalDays = daysInCalendarMonth(start);
+      } else {
+        let sum = 0;
+        let cnt = 0;
+        const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+        const lastSlot = end.getFullYear() * 12 + end.getMonth();
+        while (cur.getFullYear() * 12 + cur.getMonth() <= lastSlot) {
+          sum += daysInCalendarMonth(cur);
+          cnt++;
+          cur.setMonth(cur.getMonth() + 1);
+        }
+        monthTotalDays =
+          cnt > 0 ? Math.max(1, Math.round(sum / cnt)) : 30;
+      }
+      return {
+        daysInPeriod: Math.max(1, days),
+        monthTotalDays: Math.max(1, monthTotalDays),
+      };
+    }
+
+    if (periodType === "Mensal") {
+      const months =
+        analysisMode === "comparativo" ? compMonths1 : selectedMonths;
+      if (!months || months.length === 0) {
+        return { daysInPeriod: 30, monthTotalDays: 30 };
+      }
+      let totalDays = 0;
+      for (const my of months) {
+        totalDays += calculateDaysInMonth(my);
+      }
+      const avg = totalDays / months.length;
+      return {
+        daysInPeriod: Math.max(1, totalDays),
+        monthTotalDays: Math.max(1, Math.round(avg)),
+      };
+    }
+
+    const years =
+      analysisMode === "comparativo" ? compYears1 : selectedYears;
+    const yc = Math.max(1, years?.length || 1);
+    const dpy = 365;
+    return {
+      daysInPeriod: Math.max(1, yc * dpy),
+      monthTotalDays: dpy,
+    };
+  };
+
   // Recursive tree builder for multi-level grouping
   // parentContext acumula { attrId: value } de cada nível pai para restringir
   // as opções do filho somente aos itens que pertencem ao pai correto.
@@ -961,6 +1042,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     parentId: string,
     parentSeed: number,
     parentContext: Record<string, string> = {},
+    lastLojaSeed?: number,
   ): any[] => {
     if (levelIndex >= levels.length) return [];
 
@@ -973,15 +1055,25 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     }
     const isLeaf = levelIndex === levels.length - 1;
 
+    const siblingCount = Math.max(1, options.length);
+
     return options.map((opt: string, idx: number) => {
       const rowId = parentId ? `${parentId}|${opt}` : opt;
       const seed = hashString(opt, parentSeed + idx * 7);
       // Propaga contexto acumulado + valor deste nível para o próximo
       const childContext = { ...parentContext, [attrId]: opt };
+      const nextLastLojaSeed = attrId === "loja" ? seed : lastLojaSeed;
 
       const children = isLeaf
         ? []
-        : buildGroupTree(levels, levelIndex + 1, rowId, seed, childContext);
+        : buildGroupTree(
+            levels,
+            levelIndex + 1,
+            rowId,
+            seed,
+            childContext,
+            nextLastLojaSeed,
+          );
 
       const rowData: any = {
         id: rowId,
@@ -995,6 +1087,25 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       if (children.length > 0) {
         // Aggregate metrics from children
         METRICS_LIST.forEach((m) => {
+          if (m.id === "vlr_projecao_venda") {
+            rowData[m.id] = children.reduce(
+              (a: number, c: any) => a + (Number(c[m.id]) || 0),
+              0,
+            );
+            return;
+          }
+          if (m.id === "pct_projecao_venda") {
+            const sumV = children.reduce(
+              (a: number, c: any) => a + (Number(c.vlr_projecao_venda) || 0),
+              0,
+            );
+            const sumG = children.reduce(
+              (a: number, c: any) => a + (Number(c.meta_mensal_loja) || 0),
+              0,
+            );
+            rowData[m.id] = sumG > 0 ? sumV / sumG : null;
+            return;
+          }
           const config = METRIC_CONFIG[m.id];
           const childVals = children.map((c: any) => c[m.id]);
           if (config?.format === "percent") {
@@ -1010,9 +1121,29 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             );
           }
         });
+        if (moduleConfig.id === "LOJA" && children.length > 0) {
+          rowData.meta_mensal_loja = children.reduce(
+            (a: number, c: any) => a + (Number(c.meta_mensal_loja) || 0),
+            0,
+          );
+          const sumMetaCompleta = children.reduce(
+            (a: number, c: any) =>
+              a + (Number(c.meta_mensal_loja_completa) || 0),
+            0,
+          );
+          if (sumMetaCompleta > 0) {
+            rowData.meta_mensal_loja_completa = sumMetaCompleta;
+          }
+        }
       } else {
         // Leaf node: use hash-based mock data
         METRICS_LIST.forEach((m) => {
+          if (
+            moduleConfig.id === "LOJA" &&
+            (m.id === "vlr_projecao_venda" || m.id === "pct_projecao_venda")
+          ) {
+            return;
+          }
           const config = METRIC_CONFIG[m.id];
           if (config) {
             const index = seed % config.data.length;
@@ -1021,6 +1152,103 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             rowData[m.id] = 0;
           }
         });
+        if (moduleConfig.id === "LOJA") {
+          const metaMensalCfg = METRIC_CONFIG["meta_mensal_loja"];
+          const metaLen = Math.max(1, metaMensalCfg?.data?.length ?? 1);
+          const idxMetaSource =
+            (rowData.attrId === "vendedor" || rowData.attrId === "setor") &&
+            lastLojaSeed !== undefined
+              ? lastLojaSeed
+              : seed;
+          const idxMeta = idxMetaSource % metaLen;
+
+          const metaScale =
+            rowData.attrId === "vendedor" || rowData.attrId === "setor"
+              ? 1 / siblingCount
+              : (moduleConfig.metaMensalScaleByAttr?.[rowData.attrId] ?? 1);
+          // Meta mensal cheia do mês vigente (mock) — fonte fixa, nunca proporcional ao período da UI.
+          const metaLojaMesVigenteCheia =
+            Number(metaMensalCfg?.data[idxMeta] ?? 0) || 0;
+          rowData.meta_mensal_loja = metaLojaMesVigenteCheia * metaScale;
+          if (rowData.attrId === "loja") {
+            rowData.meta_mensal_loja_completa = metaLojaMesVigenteCheia;
+          }
+
+          const { daysInPeriod, monthTotalDays } =
+            getLojaRobMockPeriodFactors();
+          const periodRatio =
+            monthTotalDays > 0 ? daysInPeriod / monthTotalDays : 1;
+          // Valor Meta (coluna): proporcional ao período. Projeção continua com meta mensal cheia (goalMes).
+          rowData.valor_meta = Math.max(
+            0,
+            Math.round(
+              metaLojaMesVigenteCheia * metaScale * periodRatio,
+            ),
+          );
+          const seedRobLoja =
+            (rowData.attrId === "vendedor" ||
+              rowData.attrId === "setor") &&
+            lastLojaSeed !== undefined
+              ? lastLojaSeed
+              : seed;
+          const variacaoLoja = lojaMockVariacaoFromSeed(seedRobLoja);
+          const robLoja = Math.max(
+            1,
+            Math.round(
+              metaLojaMesVigenteCheia * periodRatio * variacaoLoja,
+            ),
+          );
+          const varRange =
+            LOJA_MOCK_VARIACAO_MAX - LOJA_MOCK_VARIACAO_MIN;
+          if (rowData.attrId === "vendedor") {
+            const variacaoVendedor =
+              LOJA_MOCK_VARIACAO_MIN +
+              ((hashString(opt, seed) % 100) / 100) * varRange;
+            rowData.rob = Math.max(
+              1,
+              Math.round(
+                (robLoja / siblingCount) * variacaoVendedor,
+              ),
+            );
+          } else if (rowData.attrId === "setor") {
+            const variacaoSetor =
+              LOJA_MOCK_VARIACAO_MIN +
+              ((hashString(opt, seed + 31) % 100) / 100) * varRange;
+            rowData.rob = Math.max(
+              1,
+              Math.round(
+                (robLoja / siblingCount) * variacaoSetor,
+              ),
+            );
+          } else {
+            rowData.rob = robLoja;
+          }
+
+          const needsProj = METRICS_LIST.some(
+            (m) =>
+              m.id === "vlr_projecao_venda" || m.id === "pct_projecao_venda",
+          );
+          if (needsProj && metaMensalCfg) {
+            // Denominador da projeção: meta mensal cheia × escala só por granularidade (ex.: ÷ N vendedores).
+            const goalMes = metaLojaMesVigenteCheia * metaScale;
+            const todayProj = getToday();
+            // Mock: mesmo ROB da linha (período selecionado). Em produção: query separada
+            // (ROB monthStart → today, mesmos filtros de atributos).
+            const realizedCurrentMonth = Number(rowData.rob) || 0;
+
+            const proj = computeLojaVendaProjectionMesVigente({
+              today: todayProj,
+              realizedCurrentMonth,
+              monthlyGoal: goalMes,
+            });
+            if (METRICS_LIST.some((m) => m.id === "vlr_projecao_venda")) {
+              rowData.vlr_projecao_venda = proj.vlrProjecaoVenda;
+            }
+            if (METRICS_LIST.some((m) => m.id === "pct_projecao_venda")) {
+              rowData.pct_projecao_venda = proj.pctProjecaoRatio;
+            }
+          }
+        }
       }
 
       return rowData;
@@ -1512,8 +1740,21 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         pds.forEach((period) => {
           selectedMetrics.forEach((mId: string) => {
             const key = `${period}__${mId}`;
+            if (moduleConfig.id === "LOJA" && mId === "pct_projecao_venda") {
+              const sumV = newNode.children.reduce(
+                (a, c: any) =>
+                  a + (Number(c[`${period}__vlr_projecao_venda`]) || 0),
+                0,
+              );
+              const sumG = newNode.children.reduce(
+                (a, c: any) => a + (Number(c.meta_mensal_loja) || 0),
+                0,
+              );
+              newNode[key] = sumG > 0 ? sumV / sumG : null;
+              return;
+            }
             const childVals = newNode.children.map(
-              (c: any) => c[key] || 0,
+              (c: any) => Number(c[key]) || 0,
             );
             const config = METRIC_CONFIG[mId];
             if (config?.format === "percent") {
@@ -1547,6 +1788,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               0,
             );
           }
+          if (
+            moduleConfig.id === "LOJA" &&
+            (mId === "vlr_projecao_venda" || mId === "pct_projecao_venda")
+          ) {
+            newNode[`__total__${mId}`] = newNode[mId];
+          }
           // Variation & Growth: first period vs last period
           if (pds.length >= 2) {
             const firstVal = newNode[`${pds[0]}__${mId}`] || 0;
@@ -1573,6 +1820,19 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
           const periodSeed = hashString(period, pIdx * 17);
           const combinedSeed = hashString(node.id, periodSeed);
           selectedMetrics.forEach((mId: string) => {
+            if (
+              moduleConfig.id === "LOJA" &&
+              (mId === "vlr_projecao_venda" || mId === "pct_projecao_venda")
+            ) {
+              const baseV = newNode[mId];
+              newNode[`${period}__${mId}`] =
+                mId === "pct_projecao_venda"
+                  ? baseV === null || baseV === undefined
+                    ? null
+                    : baseV
+                  : Number(baseV) || 0;
+              return;
+            }
             const config = METRIC_CONFIG[mId];
             if (config) {
               // Use hourly pattern generator for hora a hora mode
@@ -1615,6 +1875,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               0,
             );
           }
+          if (
+            moduleConfig.id === "LOJA" &&
+            (mId === "vlr_projecao_venda" || mId === "pct_projecao_venda")
+          ) {
+            newNode[`__total__${mId}`] = newNode[mId];
+          }
           // Variation & Growth: first period vs last period
           if (pds.length >= 2) {
             const firstVal = newNode[`${pds[0]}__${mId}`] || 0;
@@ -1641,6 +1907,9 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     });
   };
 
+  /** Recalcula projeção Loja quando o dia civil muda (mês vigente). */
+  const lojaMesVigenteKey = getTodayFormatted();
+
   // Data Generation
   const rawRows = React.useMemo(() => {
     if (groupingArr.length === 0) return [];
@@ -1651,11 +1920,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       periods.length > 0
     ) {
       // PIVOT MODE (Evolução, Comparativo or Hora a Hora): rows = grouping hierarchy, columns = period × metric
-      const baseTree = buildGroupTree(groupingArr, 0, "", 0);
+      const baseTree = buildGroupTree(groupingArr, 0, "", 0, {}, undefined);
       return addPivotMetrics(baseTree, periods);
     }
     // Standard mode
-    return buildGroupTree(groupingArr, 0, "", 0);
+    return buildGroupTree(groupingArr, 0, "", 0, {}, undefined);
   }, [
     groupingArr,
     getFilteredGroupOptions,
@@ -1663,6 +1932,15 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     analysisMode,
     periods,
     selectedMetrics,
+    moduleConfig,
+    lojaMesVigenteKey,
+    periodType,
+    dateRange,
+    selectedMonths,
+    selectedYears,
+    compDateRange1,
+    compMonths1,
+    compYears1,
   ]);
 
   // Sorting Logic (Applies to top-level rows)
@@ -1772,6 +2050,21 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       return null;
     const acc: any = {};
     METRICS_LIST.forEach((m) => {
+      if (
+        moduleConfig.id === "LOJA" &&
+        m.id === "pct_projecao_venda"
+      ) {
+        const sumV = rawRows.reduce(
+          (a, r: any) => a + (Number(r.vlr_projecao_venda) || 0),
+          0,
+        );
+        const sumG = rawRows.reduce(
+          (a, r: any) => a + (Number(r.meta_mensal_loja) || 0),
+          0,
+        );
+        acc[m.id] = sumG > 0 ? sumV / sumG : null;
+        return;
+      }
       const vals = rawRows.map((r: any) => r[m.id]);
       const config = METRIC_CONFIG[m.id];
       if (config?.format === "percent") {
@@ -1786,7 +2079,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       }
     });
     return acc;
-  }, [rawRows, isTimeDrilldownEnabled, analysisMode]);
+  }, [rawRows, isTimeDrilldownEnabled, analysisMode, moduleConfig]);
 
   // Pivot totals (column-level totals row) — evolução, comparativo & hora a hora
   const pivotTotals = React.useMemo(() => {
@@ -1803,6 +2096,19 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     periods.forEach((period) => {
       selectedMetrics.forEach((mId: string) => {
         const key = `${period}__${mId}`;
+        if (moduleConfig.id === "LOJA" && mId === "pct_projecao_venda") {
+          const sumV = rawRows.reduce(
+            (a, r: any) =>
+              a + (Number(r[`${period}__vlr_projecao_venda`]) || 0),
+            0,
+          );
+          const sumG = rawRows.reduce(
+            (a, r: any) => a + (Number(r.meta_mensal_loja) || 0),
+            0,
+          );
+          acc[key] = sumG > 0 ? sumV / sumG : null;
+          return;
+        }
         const vals = rawRows.map((r: any) => r[key] || 0);
         const config = METRIC_CONFIG[mId];
         if (config?.format === "percent") {
@@ -1819,17 +2125,33 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     });
     selectedMetrics.forEach((mId: string) => {
       const key = `__total__${mId}`;
-      const vals = rawRows.map((r: any) => r[key] || 0);
       const config = METRIC_CONFIG[mId];
-      if (config?.format === "percent") {
-        acc[key] =
-          vals.reduce((a: number, b: number) => a + b, 0) /
-          vals.length;
-      } else {
-        acc[key] = vals.reduce(
-          (a: number, b: number) => a + b,
+      if (moduleConfig.id === "LOJA" && mId === "pct_projecao_venda") {
+        const sumV = rawRows.reduce(
+          (a, r: any) =>
+            a +
+            (Number(r[`__total__vlr_projecao_venda`]) ||
+              Number(r.vlr_projecao_venda) ||
+              0),
           0,
         );
+        const sumG = rawRows.reduce(
+          (a, r: any) => a + (Number(r.meta_mensal_loja) || 0),
+          0,
+        );
+        acc[key] = sumG > 0 ? sumV / sumG : null;
+      } else {
+        const vals = rawRows.map((r: any) => r[key] || 0);
+        if (config?.format === "percent") {
+          acc[key] =
+            vals.reduce((a: number, b: number) => a + b, 0) /
+            vals.length;
+        } else {
+          acc[key] = vals.reduce(
+            (a: number, b: number) => a + b,
+            0,
+          );
+        }
       }
       // Variation & Growth for totals row
       if (periods.length >= 2) {
@@ -1857,6 +2179,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     analysisMode,
     periods,
     selectedMetrics,
+    moduleConfig,
   ]);
 
   const groupingLabel =
@@ -1955,7 +2278,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
   // ─── Chart data: sorted by primary metric descending, paginated ───
   const chartSortedRows = React.useMemo(() => {
-    const primaryMetric = chartMetricIds[0] || "venda";
+    const primaryMetric = chartMetricIds[0];
+    if (!primaryMetric) return [];
     const rows = [...chartContext.rows];
     rows.sort((a: any, b: any) => {
       const aVal = a[primaryMetric] ?? 0;
@@ -1983,7 +2307,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const comparativeChartData = React.useMemo(() => {
     if (analysisMode !== "comparativo" || periods.length < 2)
       return [];
-    const metricId = chartMetricIds[0] || "venda";
+    const metricId = chartMetricIds[0];
+    if (!metricId) return [];
     // Sort rows by P2 value (most recent period) descending/ascending
     const rows = [...chartContext.rows];
     rows.sort((a: any, b: any) => {
@@ -2052,11 +2377,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   }, [temporalCurrentPage, temporalLimit]);
 
   // ─── Temporal chart data: X = periods, lines = paginated items ───
-  const temporalMetricId = chartMetricIds[0] || "venda";
+  const temporalMetricId = chartMetricIds[0] ?? "";
 
   // All rows sorted by the temporal metric total (descending)
   const temporalSortedRows = React.useMemo(() => {
-    if (!isPivotActive || periods.length === 0) return [];
+    if (!isPivotActive || periods.length === 0 || !temporalMetricId) return [];
     const rows = [...chartContext.rows];
     rows.sort((a: any, b: any) => {
       const aVal = a[`__total__${temporalMetricId}`] ?? 0;
@@ -2145,7 +2470,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // ─── Y-axis formatter for chart based on primary metric type ───
   const chartYAxisFormatter = React.useCallback(
     (value: number) => {
-      const primaryMetric = chartMetricIds[0] || "venda";
+      const primaryMetric = chartMetricIds[0];
+      if (!primaryMetric) return String(value);
       const config = METRIC_CONFIG[primaryMetric];
       if (!config) return String(value);
       switch (config.format) {
@@ -4888,10 +5214,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               value: number,
                               name: string,
                             ) => {
-                              const metricId =
-                                chartMetricIds[0] || "venda";
-                              const config =
-                                METRIC_CONFIG[metricId];
+                              const metricId = chartMetricIds[0];
+                              const config = metricId
+                                ? METRIC_CONFIG[metricId]
+                                : undefined;
                               if (name === "variation") {
                                 const pct = value * 100;
                                 const sign = pct > 0 ? "+" : "";

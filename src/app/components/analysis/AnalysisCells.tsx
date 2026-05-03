@@ -39,7 +39,7 @@ interface BaseCellProps {
 }
 
 interface MetricCellProps extends BaseCellProps {
-  value: number;
+  value: number | null | undefined;
   metricId: string;
   format?: string;
 }
@@ -73,8 +73,9 @@ export const MetricCell = React.memo<MetricCellProps>(
 
     // Apply color for variation metrics (positive/negative)
     if (format === 'variation') {
-      const isPositive = value > 0;
-      const isNegative = value < 0;
+      const v = value ?? 0;
+      const isPositive = v > 0;
+      const isNegative = v < 0;
       const colorClass = isPositive
         ? CELL_COLORS.positive
         : isNegative

@@ -160,6 +160,20 @@ export const lojaModule: ModuleConfig = {
     { id: 'sss',           label: 'SSS',                icon: BarChart3    },
     { id: 'margem_bruta',  label: 'Margem Bruta (MB)',  icon: Percent      },
     { id: 'valor_meta',    label: 'Valor da Meta',      icon: Target       },
+    {
+      id: 'vlr_projecao_venda',
+      label: 'Vlr Projeção de Venda (mês vigente)',
+      icon: DollarSign,
+      tooltip:
+        'Sempre no mês corrente (em aberto): vendas realizadas do dia 1 até hoje, mais projeção linear do restante do mês. Não usa o intervalo de datas selecionado na tela.',
+    },
+    {
+      id: 'pct_projecao_venda',
+      label: '% Projeção de Venda',
+      icon: Percent,
+      tooltip:
+        'Quanto a loja projeta atingir da meta mensal do mês vigente (100% = bater a meta; acima de 100% = superar). Exibe "—" se a meta mensal for zerada ou inválida.',
+    },
     { id: 'desvio_meta_r', label: 'Desvio Meta $',      icon: TrendingUp   },
     { id: 'desvio_meta_p', label: 'Desvio Meta %',      icon: TrendingUp   },
     { id: 'conversao',     label: 'Conversão',          icon: Percent      },
@@ -178,11 +192,22 @@ export const lojaModule: ModuleConfig = {
     'sss',
     'margem_bruta',
     'valor_meta',
+    'vlr_projecao_venda',
+    'pct_projecao_venda',
     'desvio_meta_r',
     'desvio_meta_p',
     'conversao',
     'match_preco',
   ],
+
+  /**
+   * Escala da meta na folha `loja` (1 = meta cheia).
+   * Para `setor` e `vendedor`, a escala é `1 / quantidade de opções no agrupamento`
+   * (calculada em AnalysisView — ex.: meta do vendedor = meta da loja ÷ vendedores ativos na lista).
+   */
+  metaMensalScaleByAttr: {
+    loja: 1,
+  } as const,
 
   // ── Analysis titles ───────────────────────────────────────
   analysisTitles: {

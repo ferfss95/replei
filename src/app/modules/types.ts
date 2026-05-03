@@ -92,6 +92,14 @@ export interface ModuleConfig {
   /** Seções extras no menu de métricas (ex.: Exposição de produtos no PRODUTO) */
   metricSidebarExtraSections?: MetricSidebarExtraSection[];
 
+  /**
+   * Fator de escala da `meta_mensal_loja` por `attrId` do nó folha.
+   * Garante que a projeção de venda fique na grandeza certa para cada granularidade.
+   * Ex.: { loja: 1, setor: 1/3, vendedor: 1/20 }
+   * Atributos não listados usam escala 1 (sem ajuste).
+   */
+  metaMensalScaleByAttr?: Readonly<Record<string, number>>;
+
   // ── Analysis titles ──
   /** Display title per analysis mode key (padrao | evolucao | comparativo) */
   analysisTitles: Record<string, string>;
