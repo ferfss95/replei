@@ -20,6 +20,7 @@ import {
   CIDADES_BY_ESTADO,
   STATE_TO_UF,
   METRIC_CONFIG,
+  isPercentRatioAggregatedAverage,
   applyParentContextToOptions,
   filterRegionalsByKnownLinks,
   filterStatesByKnownLinks,
@@ -280,7 +281,7 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
           METRICS_LIST.forEach((m: any) => {
             const config = METRIC_CONFIG[m.id];
             const childVals = children.map((c: any) => c[m.id]);
-            if (config?.format === 'percent') {
+            if (isPercentRatioAggregatedAverage(config?.format)) {
               rowData[m.id] =
                 childVals.reduce((a: number, b: number) => a + b, 0) /
                 (childVals.length || 1);
@@ -313,7 +314,7 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
   // ── Compute raw variation (P2 - P1) ──────────────────────────────
   const computeVariation = useCallback(
     (firstVal: number, lastVal: number, format: string | undefined): number => {
-      if (format === 'percent') {
+      if (format === 'percent' || format === 'percent0') {
         return lastVal - firstVal; // absolute difference in raw decimal form
       }
       if (firstVal === 0) {
@@ -348,7 +349,7 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
               const key = `${period}__${mId}`;
               const childVals = newNode.children.map((c: any) => c[key] || 0);
               const config = METRIC_CONFIG[mId];
-              if (config?.format === 'percent') {
+              if (isPercentRatioAggregatedAverage(config?.format)) {
                 newNode[key] =
                   childVals.reduce((a: number, b: number) => a + b, 0) /
                   (childVals.length || 1);
@@ -363,7 +364,7 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
           selectedMetrics.forEach((mId: string) => {
             const config = METRIC_CONFIG[mId];
             const allPeriodVals = pds.map((p) => newNode[`${p}__${mId}`] || 0);
-            if (config?.format === 'percent') {
+            if (isPercentRatioAggregatedAverage(config?.format)) {
               newNode[`__total__${mId}`] =
                 allPeriodVals.reduce((a: number, b: number) => a + b, 0) /
                 (allPeriodVals.length || 1);
@@ -419,7 +420,7 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
           selectedMetrics.forEach((mId: string) => {
             const config = METRIC_CONFIG[mId];
             const allPeriodVals = pds.map((p) => newNode[`${p}__${mId}`] || 0);
-            if (config?.format === 'percent') {
+            if (isPercentRatioAggregatedAverage(config?.format)) {
               newNode[`__total__${mId}`] =
                 allPeriodVals.reduce((a: number, b: number) => a + b, 0) /
                 (allPeriodVals.length || 1);
@@ -526,7 +527,7 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
     METRICS_LIST.forEach((m: any) => {
       const vals = rawRows.map((r: any) => r[m.id]);
       const config = METRIC_CONFIG[m.id];
-      if (config?.format === 'percent') {
+      if (isPercentRatioAggregatedAverage(config?.format)) {
         acc[m.id] =
           vals.reduce((a: number, b: number) => a + b, 0) / vals.length;
       } else {

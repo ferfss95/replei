@@ -142,11 +142,12 @@ export const VariationCell = React.memo<VariationCellProps>(
     let text = '';
 
     // Format based on metric type
-    if (format === 'percent') {
+    if (format === 'percent' || format === 'percent0') {
       const pp = value * 100;
+      const frac = format === 'percent0' ? 0 : 2;
       const formatted = new Intl.NumberFormat('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: frac,
+        maximumFractionDigits: frac,
       }).format(Math.abs(pp));
       text = `${pp < 0 ? '-' : sign}${formatted} pp`;
     } else if (format === 'currency') {

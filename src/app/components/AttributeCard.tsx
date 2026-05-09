@@ -4,7 +4,10 @@ import * as Popover from "@radix-ui/react-popover";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { cn } from "../utils";
 import type { ModuleColors } from "../constants/moduleColors";
-import { LOCALIZACAO_OPTION_GROUPS } from "../referenceData";
+import {
+  LOCALIZACAO_OPTION_GROUPS,
+  MARCA_OPTION_GROUPS,
+} from "../referenceData";
 
 /** Paleta neutra — default / hover / desativado agrupamento */
 const NEUTRAL_TEXT = "#808080";
@@ -69,16 +72,24 @@ export function AttributeCard({
     );
   }, [attribute.options, searchTerm]);
 
-  /** Cluster visual STATUS / CD / CDS — opções filtradas por busca */
-  const localizacaoGroupsFiltered = useMemo(() => {
-    if (attribute.id !== "localizacao") return [];
+  /** Grupos visuais (LOCALIZAÇÃO: STATUS/CD/CDS; MARCA: próprias / demais) — filtrados por busca */
+  const clusterGroupsFiltered = useMemo(() => {
+    const groups =
+      attribute.id === "localizacao"
+        ? LOCALIZACAO_OPTION_GROUPS
+        : attribute.id === "marca"
+          ? MARCA_OPTION_GROUPS
+          : null;
+    if (!groups) return [];
     const q = searchTerm.trim().toLowerCase();
-    return LOCALIZACAO_OPTION_GROUPS.map((g) => ({
-      ...g,
-      options: q
-        ? g.options.filter((o) => o.toLowerCase().includes(q))
-        : [...g.options],
-    })).filter((g) => g.options.length > 0);
+    return groups
+      .map((g) => ({
+        ...g,
+        options: q
+          ? g.options.filter((o) => o.toLowerCase().includes(q))
+          : [...g.options],
+      }))
+      .filter((g) => g.options.length > 0);
   }, [attribute.id, searchTerm]);
 
   const handleToggleOption = (value: string, isSelection: boolean) => {
@@ -345,10 +356,10 @@ export function AttributeCard({
         </div>
 
         <div className="scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent max-h-[240px] overflow-y-auto p-1.5">
-          {attribute.id === "localizacao" ? (
-            localizacaoGroupsFiltered.length > 0 ? (
+          {attribute.id === "localizacao" || attribute.id === "marca" ? (
+            clusterGroupsFiltered.length > 0 ? (
               <div>
-                {localizacaoGroupsFiltered.map((group, idx) => (
+                {clusterGroupsFiltered.map((group, idx) => (
                   <div key={group.id}>
                     {idx > 0 && (
                       <div

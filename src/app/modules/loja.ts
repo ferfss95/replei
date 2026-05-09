@@ -178,6 +178,12 @@ export const lojaModule: ModuleConfig = {
     { id: 'desvio_meta_p', label: 'Desvio Meta %',      icon: TrendingUp   },
     { id: 'conversao',     label: 'Conversão',          icon: Percent      },
     {
+      id: 'conversao_vendex',
+      label: 'Conversão Vendex',
+      icon: Percent,
+      tooltip: 'Indicador simulado entre 35% e 49% (duas casas decimais na exibição).',
+    },
+    {
       id: 'match_preco',
       label: 'Match de Preço',
       icon: Tag,
@@ -197,6 +203,7 @@ export const lojaModule: ModuleConfig = {
     'desvio_meta_r',
     'desvio_meta_p',
     'conversao',
+    'conversao_vendex',
     'match_preco',
   ],
 

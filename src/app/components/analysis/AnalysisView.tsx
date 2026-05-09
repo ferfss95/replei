@@ -73,6 +73,7 @@ import {
   METRIC_CONFIG,
   METRIC_ABBREVIATIONS,
   formatMetricValue,
+  isPercentRatioAggregatedAverage,
   filterCitiesByKnownLinks,
   filterRegionalsByKnownLinks,
   filterStatesByKnownLinks,
@@ -82,6 +83,12 @@ import {
 import { bc, shortPeriodLabel } from "../../utils/formatting";
 import { isPlanningMetric, getPlanningBg, generateHourlyValue } from "../../utils/dataGenerators";
 import { hashString } from "../../utils/calculations";
+import {
+  computePivotPeriodStockIndexSalt,
+  computeStandardStockIndexSalt,
+  isStockRelatedMetric,
+  type StockSaltContext,
+} from "../../utils/stockSnapshot";
 import { computeLojaVendaProjectionMesVigente } from "../../utils/lojaProjection";
 import type { ModuleConfig } from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
@@ -284,6 +291,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // Metrics already expressed as % or variation (with colors) — excluded from share % feature
   const PCT_EXCLUDED_METRICS = new Set([
     "margem",
+    "margem_liquida",
     "sss",
     // Apenas métricas que já são variação % (desvio meta %)
     "desvio_meta_p",
@@ -720,6 +728,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       case "currency":
         return 100; // Valores monetários (ex: 5.211, 12.345)
       case "percent":
+      case "percent0":
       case "percent1":
         return 75; // Percentuais (ex: 15,7%, 100%)
       case "integer":
@@ -953,6 +962,54 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     [getAttributeOptions, selections, exclusions, moduleConfig],
   );
 
+  const stockSaltContext = React.useMemo(
+    (): StockSaltContext => ({
+      analysisMode,
+      periodType,
+      dateRange,
+      selectedMonths,
+      selectedYears,
+      selectedSpecificDays,
+      weeklyMode,
+      weeklyComputedDays,
+      compDateRange1,
+      compDateRange2,
+      compMonths1,
+      compMonths2,
+      compYears1,
+      compYears2,
+      compSpecificDays1,
+      compSpecificDays2,
+      compWeeklyComputedDays1,
+      compWeeklyComputedDays2,
+    }),
+    [
+      analysisMode,
+      periodType,
+      dateRange,
+      selectedMonths,
+      selectedYears,
+      selectedSpecificDays,
+      weeklyMode,
+      weeklyComputedDays,
+      compDateRange1,
+      compDateRange2,
+      compMonths1,
+      compMonths2,
+      compYears1,
+      compYears2,
+      compSpecificDays1,
+      compSpecificDays2,
+      compWeeklyComputedDays1,
+      compWeeklyComputedDays2,
+    ],
+  );
+
+  const standardStockIndexSalt = React.useMemo(
+    () => computeStandardStockIndexSalt(stockSaltContext),
+    [stockSaltContext],
+  );
+
   const LOJA_MOCK_VARIACAO_MIN = 0.85;
   const LOJA_MOCK_VARIACAO_MAX = 1.2;
 
@@ -1108,7 +1165,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
           }
           const config = METRIC_CONFIG[m.id];
           const childVals = children.map((c: any) => c[m.id]);
-          if (config?.format === "percent") {
+          if (isPercentRatioAggregatedAverage(config?.format)) {
             rowData[m.id] =
               childVals.reduce(
                 (a: number, b: number) => a + b,
@@ -1146,7 +1203,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
           }
           const config = METRIC_CONFIG[m.id];
           if (config) {
-            const index = seed % config.data.length;
+            const index = isStockRelatedMetric(m.id)
+              ? Math.abs(
+                  seed + hashString(m.id) + standardStockIndexSalt,
+                ) % config.data.length
+              : seed % config.data.length;
             rowData[m.id] = config.data[index];
           } else {
             rowData[m.id] = 0;
@@ -1619,7 +1680,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     lastVal: number,
     format: string | undefined,
   ): number => {
-    if (format === "percent") {
+    if (format === "percent" || format === "percent0") {
       return lastVal - firstVal; // absolute difference in the raw decimal form
     }
     if (firstVal === 0) {
@@ -1660,11 +1721,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     const varColor =
       val > 0 ? "text-[#276749]" : "text-[#9B2C2C]";
     const varArrow: "up" | "down" = val > 0 ? "up" : "down";
-    if (format === "percent") {
+    if (format === "percent" || format === "percent0") {
       const pp = val * 100;
+      const frac = format === "percent0" ? 0 : 2;
       const formatted = new Intl.NumberFormat("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: frac,
+        maximumFractionDigits: frac,
       }).format(Math.abs(pp));
       return {
         text: `${pp < 0 ? "-" : sign}${formatted} pp`,
@@ -1732,11 +1794,16 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const addPivotMetrics = (
     nodes: any[],
     pds: string[],
+    pivotStockSalts: Record<string, number>,
   ): any[] => {
     return nodes.map((node) => {
       const newNode = { ...node };
       if (node.children?.length > 0) {
-        newNode.children = addPivotMetrics(node.children, pds);
+        newNode.children = addPivotMetrics(
+          node.children,
+          pds,
+          pivotStockSalts,
+        );
         pds.forEach((period) => {
           selectedMetrics.forEach((mId: string) => {
             const key = `${period}__${mId}`;
@@ -1757,7 +1824,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               (c: any) => Number(c[key]) || 0,
             );
             const config = METRIC_CONFIG[mId];
-            if (config?.format === "percent") {
+            if (isPercentRatioAggregatedAverage(config?.format)) {
               newNode[key] =
                 childVals.reduce(
                   (a: number, b: number) => a + b,
@@ -1776,7 +1843,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
           const allPeriodVals = pds.map(
             (p) => newNode[`${p}__${mId}`] || 0,
           );
-          if (config?.format === "percent") {
+          if (isPercentRatioAggregatedAverage(config?.format)) {
             newNode[`__total__${mId}`] =
               allPeriodVals.reduce(
                 (a: number, b: number) => a + b,
@@ -1835,23 +1902,40 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             }
             const config = METRIC_CONFIG[mId];
             if (config) {
+              const periodStockSalt =
+                pivotStockSalts[period] ?? 0;
               // Use hourly pattern generator for hora a hora mode
               if (
                 analysisMode === "horaahora" &&
                 period.endsWith("h")
               ) {
-                newNode[`${period}__${mId}`] =
-                  generateHourlyValue(
-                    period,
-                    node.label,
-                    mId,
-                    combinedSeed,
-                    config,
-                  );
+                if (isStockRelatedMetric(mId)) {
+                  const index =
+                    Math.abs(
+                      combinedSeed +
+                        hashString(mId) +
+                        periodStockSalt,
+                    ) % config.data.length;
+                  newNode[`${period}__${mId}`] =
+                    config.data[index];
+                } else {
+                  newNode[`${period}__${mId}`] =
+                    generateHourlyValue(
+                      period,
+                      node.label,
+                      mId,
+                      combinedSeed,
+                      config,
+                    );
+                }
               } else {
+                const saltExtra = isStockRelatedMetric(mId)
+                  ? periodStockSalt
+                  : 0;
                 const index =
-                  Math.abs(combinedSeed + hashString(mId)) %
-                  config.data.length;
+                  Math.abs(
+                    combinedSeed + hashString(mId) + saltExtra,
+                  ) % config.data.length;
                 newNode[`${period}__${mId}`] =
                   config.data[index];
               }
@@ -1863,7 +1947,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
           const allPeriodVals = pds.map(
             (p) => newNode[`${p}__${mId}`] || 0,
           );
-          if (config?.format === "percent") {
+          if (isPercentRatioAggregatedAverage(config?.format)) {
             newNode[`__total__${mId}`] =
               allPeriodVals.reduce(
                 (a: number, b: number) => a + b,
@@ -1920,8 +2004,15 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       periods.length > 0
     ) {
       // PIVOT MODE (Evolução, Comparativo or Hora a Hora): rows = grouping hierarchy, columns = period × metric
+      const pivotStockSalts: Record<string, number> = {};
+      for (const p of periods) {
+        pivotStockSalts[p] = computePivotPeriodStockIndexSalt(
+          p,
+          stockSaltContext,
+        );
+      }
       const baseTree = buildGroupTree(groupingArr, 0, "", 0, {}, undefined);
-      return addPivotMetrics(baseTree, periods);
+      return addPivotMetrics(baseTree, periods, pivotStockSalts);
     }
     // Standard mode
     return buildGroupTree(groupingArr, 0, "", 0, {}, undefined);
@@ -1939,8 +2030,17 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     selectedMonths,
     selectedYears,
     compDateRange1,
+    compDateRange2,
     compMonths1,
+    compMonths2,
     compYears1,
+    compYears2,
+    compSpecificDays1,
+    compSpecificDays2,
+    compWeeklyComputedDays1,
+    compWeeklyComputedDays2,
+    stockSaltContext,
+    standardStockIndexSalt,
   ]);
 
   // Sorting Logic (Applies to top-level rows)
@@ -2067,7 +2167,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       }
       const vals = rawRows.map((r: any) => r[m.id]);
       const config = METRIC_CONFIG[m.id];
-      if (config?.format === "percent") {
+      if (isPercentRatioAggregatedAverage(config?.format)) {
         acc[m.id] =
           vals.reduce((a: number, b: number) => a + b, 0) /
           vals.length;
@@ -2111,7 +2211,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         }
         const vals = rawRows.map((r: any) => r[key] || 0);
         const config = METRIC_CONFIG[mId];
-        if (config?.format === "percent") {
+        if (isPercentRatioAggregatedAverage(config?.format)) {
           acc[key] =
             vals.reduce((a: number, b: number) => a + b, 0) /
             vals.length;
@@ -2142,7 +2242,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         acc[key] = sumG > 0 ? sumV / sumG : null;
       } else {
         const vals = rawRows.map((r: any) => r[key] || 0);
-        if (config?.format === "percent") {
+        if (isPercentRatioAggregatedAverage(config?.format)) {
           acc[key] =
             vals.reduce((a: number, b: number) => a + b, 0) /
             vals.length;
@@ -2484,7 +2584,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             maximumFractionDigits: 0,
           }).format(value);
         }
+        case "percent0":
+          return new Intl.NumberFormat("pt-BR", {
+            style: "percent",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(value);
         case "percent":
+        case "percent1":
           return new Intl.NumberFormat("pt-BR", {
             style: "percent",
             minimumFractionDigits: 1,
@@ -2550,7 +2657,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             maximumFractionDigits: 0,
           }).format(value);
         }
+        case "percent0":
+          return new Intl.NumberFormat("pt-BR", {
+            style: "percent",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(value);
         case "percent":
+        case "percent1":
           return new Intl.NumberFormat("pt-BR", {
             style: "percent",
             minimumFractionDigits: 1,
@@ -2663,6 +2777,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       case "currency":
         return 100; // Valores monetários (ex: 5.211, 12.345)
       case "percent":
+      case "percent0":
       case "percent1":
         return 75; // Percentuais (ex: 15,7%, 100%)
       case "integer":
@@ -2763,13 +2878,17 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                   }).format(avgValue);
                   break;
                 case "percent":
-                case "percent1":
+                case "percent0":
+                case "percent1": {
+                  const frac =
+                    config.format === "percent0" ? 0 : 2;
                   avgFormatted = new Intl.NumberFormat("pt-BR", {
                     style: "percent",
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
+                    minimumFractionDigits: frac,
+                    maximumFractionDigits: frac,
                   }).format(avgValue);
                   break;
+                }
                 case "integer":
                   avgFormatted = new Intl.NumberFormat("pt-BR", {
                     minimumFractionDigits: 2,
@@ -2923,13 +3042,16 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                 }).format(avgValue);
                 break;
               case "percent":
-              case "percent1":
+              case "percent0":
+              case "percent1": {
+                const frac = config.format === "percent0" ? 0 : 2;
                 avgFormatted = new Intl.NumberFormat("pt-BR", {
                   style: "percent",
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
+                  minimumFractionDigits: frac,
+                  maximumFractionDigits: frac,
                 }).format(avgValue);
                 break;
+              }
               case "integer":
                 avgFormatted = new Intl.NumberFormat("pt-BR", {
                   minimumFractionDigits: 2,
@@ -5941,16 +6063,23 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   if (!config)
                                     return String(value);
                                   if (
-                                    config.format === "percent"
-                                  )
+                                    config.format === "percent" ||
+                                    config.format === "percent1" ||
+                                    config.format === "percent0"
+                                  ) {
+                                    const f =
+                                      config.format === "percent0"
+                                        ? 0
+                                        : 1;
                                     return new Intl.NumberFormat(
                                       "pt-BR",
                                       {
                                         style: "percent",
-                                        minimumFractionDigits: 1,
-                                        maximumFractionDigits: 1,
+                                        minimumFractionDigits: f,
+                                        maximumFractionDigits: f,
                                       },
                                     ).format(value);
+                                  }
                                   if (config.format === "days")
                                     return `${value}d`;
                                   if (
@@ -6124,16 +6253,23 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   if (!config)
                                     return String(value);
                                   if (
-                                    config.format === "percent"
-                                  )
+                                    config.format === "percent" ||
+                                    config.format === "percent1" ||
+                                    config.format === "percent0"
+                                  ) {
+                                    const f =
+                                      config.format === "percent0"
+                                        ? 0
+                                        : 1;
                                     return new Intl.NumberFormat(
                                       "pt-BR",
                                       {
                                         style: "percent",
-                                        minimumFractionDigits: 1,
-                                        maximumFractionDigits: 1,
+                                        minimumFractionDigits: f,
+                                        maximumFractionDigits: f,
                                       },
                                     ).format(value);
+                                  }
                                   if (config.format === "days")
                                     return `${value}d`;
                                   if (
@@ -7743,18 +7879,24 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             ).format(avgValue);
                                           break;
                                         case "percent":
-                                        case "percent1":
+                                        case "percent0":
+                                        case "percent1": {
+                                          const frac =
+                                            config.format === "percent0"
+                                              ? 0
+                                              : 2;
                                           avgFormatted =
                                             new Intl.NumberFormat(
                                               "pt-BR",
                                               {
                                                 style:
                                                   "percent",
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
+                                                minimumFractionDigits: frac,
+                                                maximumFractionDigits: frac,
                                               },
                                             ).format(avgValue);
                                           break;
+                                        }
                                         case "integer":
                                           avgFormatted =
                                             new Intl.NumberFormat(
@@ -8028,17 +8170,23 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                           ).format(avgValue);
                                         break;
                                       case "percent":
-                                      case "percent1":
+                                      case "percent0":
+                                      case "percent1": {
+                                        const frac =
+                                          config.format === "percent0"
+                                            ? 0
+                                            : 2;
                                         avgFormatted =
                                           new Intl.NumberFormat(
                                             "pt-BR",
                                             {
                                               style: "percent",
-                                              minimumFractionDigits: 2,
-                                              maximumFractionDigits: 2,
+                                              minimumFractionDigits: frac,
+                                              maximumFractionDigits: frac,
                                             },
                                           ).format(avgValue);
                                         break;
+                                      }
                                       case "integer":
                                         avgFormatted =
                                           new Intl.NumberFormat(
@@ -8218,17 +8366,23 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                               ).format(avgValue);
                                             break;
                                           case "percent":
-                                          case "percent1":
+                                          case "percent0":
+                                          case "percent1": {
+                                            const frac =
+                                              config.format === "percent0"
+                                                ? 0
+                                                : 2;
                                             avgFormatted =
                                               new Intl.NumberFormat(
                                                 "pt-BR",
                                                 {
                                                   style: "percent",
-                                                  minimumFractionDigits: 2,
-                                                  maximumFractionDigits: 2,
+                                                  minimumFractionDigits: frac,
+                                                  maximumFractionDigits: frac,
                                                 },
                                               ).format(avgValue);
                                             break;
+                                          }
                                           case "integer":
                                             avgFormatted =
                                               new Intl.NumberFormat(
@@ -8398,17 +8552,23 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             ).format(avgValue);
                                           break;
                                         case "percent":
-                                        case "percent1":
+                                        case "percent0":
+                                        case "percent1": {
+                                          const frac =
+                                            config.format === "percent0"
+                                              ? 0
+                                              : 2;
                                           avgFormatted =
                                             new Intl.NumberFormat(
                                               "pt-BR",
                                               {
                                                 style: "percent",
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
+                                                minimumFractionDigits: frac,
+                                                maximumFractionDigits: frac,
                                               },
                                             ).format(avgValue);
                                           break;
+                                        }
                                         case "integer":
                                           avgFormatted =
                                             new Intl.NumberFormat(
@@ -8673,20 +8833,26 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                               );
                                             break;
                                           case "percent":
-                                          case "percent1":
+                                          case "percent0":
+                                          case "percent1": {
+                                            const frac =
+                                              config.format === "percent0"
+                                                ? 0
+                                                : 2;
                                             avgFormatted =
                                               new Intl.NumberFormat(
                                                 "pt-BR",
                                                 {
                                                   style:
                                                     "percent",
-                                                  minimumFractionDigits: 2,
-                                                  maximumFractionDigits: 2,
+                                                  minimumFractionDigits: frac,
+                                                  maximumFractionDigits: frac,
                                                 },
                                               ).format(
                                                 avgValue,
                                               );
                                             break;
+                                          }
                                           case "integer":
                                             avgFormatted =
                                               new Intl.NumberFormat(
@@ -9002,18 +9168,24 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             ).format(avgValue);
                                           break;
                                         case "percent":
-                                        case "percent1":
+                                        case "percent0":
+                                        case "percent1": {
+                                          const frac =
+                                            config.format === "percent0"
+                                              ? 0
+                                              : 2;
                                           avgFormatted =
                                             new Intl.NumberFormat(
                                               "pt-BR",
                                               {
                                                 style:
                                                   "percent",
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
+                                                minimumFractionDigits: frac,
+                                                maximumFractionDigits: frac,
                                               },
                                             ).format(avgValue);
                                           break;
+                                        }
                                         case "integer":
                                           avgFormatted =
                                             new Intl.NumberFormat(

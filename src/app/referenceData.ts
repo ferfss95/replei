@@ -1,3 +1,5 @@
+import { hashString } from "./utils/calculations";
+
 export const REDE_OPTIONS = [
   "Centauro",
   "Fisia"
@@ -134,6 +136,7 @@ export const ORIGEM_OPTIONS = [
 ];
 
 export const TIPO_OPTIONS = [
+  "Loja Física",
   "OMS",
   "Encomenda Expressa 1P",
   "Encomenda Expressa 3P",
@@ -1671,6 +1674,17 @@ export const applyParentContextToOptions = (
             .filter(Boolean),
         );
       }
+    } else if (childAttrId === "mesa") {
+      if (parentAttrId === "sala") {
+        const letter = extractSalaLetter(parentValue);
+        if (letter) {
+          allowed = new Set(
+            MESA_OPTIONS.filter(
+              (code) => code.charAt(0).toUpperCase() === letter,
+            ),
+          );
+        }
+      }
     } else if (childAttrId === "estado") {
       if (parentAttrId === "rede") {
         allowed = new Set(
@@ -1757,10 +1771,97 @@ export const SUBGRUPOS_BY_GRUPO: Record<string, string[]> = {
   "Equipamentos": ["Bola", "Bomba de Ar", "Caneleira", "Cronômetro", "Raquete"]
 };
 
+/** Marcas próprias / licenciadas — primeira seção do atributo MARCA. */
+export const MARCA_PROPRIAS_LICENCIADAS = [
+  "OXER",
+  "NORD",
+  "ADAMS",
+  "ASICS LIC",
+  "CBF",
+] as const;
+
+/** Demais marcas — segunda seção do atributo MARCA (lista plana ordenada). */
+export const MARCA_DEMAIS_BRANDS = [
+  "Adidas",
+  "Asics",
+  "Fila",
+  "Mizuno",
+  "New Balance",
+  "Nike",
+  "Olympikus",
+  "Penalty",
+  "Puma",
+  "Umbro",
+  "Under Armour",
+] as const;
+
+/** Lista plana (seleção, exclusão, agrupamento, mocks) — ordem: próprias + demais A–Z. */
 export const MARCA_OPTIONS = [
-  "Adidas", "Asics", "Fila", "Mizuno", "New Balance", 
-  "Nike", "Olympikus", "Penalty", "Puma", "Umbro", "Under Armour"
+  ...MARCA_PROPRIAS_LICENCIADAS,
+  ...[...MARCA_DEMAIS_BRANDS].sort((a, b) => a.localeCompare(b, "pt-BR")),
 ];
+
+/** Grupos visuais no dropdown de MARCA (PRODUTO). */
+export interface MarcaOptionGroup {
+  id: "proprias_licenciadas" | "demais";
+  label: string;
+  options: readonly string[];
+}
+
+export const MARCA_OPTION_GROUPS: MarcaOptionGroup[] = [
+  {
+    id: "proprias_licenciadas",
+    label: "Marcas Próprias e Licenciadas",
+    options: MARCA_PROPRIAS_LICENCIADAS,
+  },
+  {
+    id: "demais",
+    label: "Demais",
+    options: [...MARCA_DEMAIS_BRANDS].sort((a, b) =>
+      a.localeCompare(b, "pt-BR"),
+    ),
+  },
+];
+
+function collapseSpaces(s: string): string {
+  return s.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Descrição do modelo: texto após a primeira ocorrência de uma marca conhecida
+ * (MARCA_OPTIONS, da mais longa para a mais curta). Sem marca → texto completo.
+ */
+export function modeloDescriptionAfterBrand(
+  raw: string,
+  brands: readonly string[] = MARCA_OPTIONS,
+): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const upper = trimmed.toUpperCase();
+  const byLen = [...brands].sort((a, b) => b.length - a.length);
+  for (const brand of byLen) {
+    const b = brand.trim();
+    if (!b) continue;
+    const idx = upper.indexOf(b.toUpperCase());
+    if (idx === -1) continue;
+    const consumed = trimmed.slice(idx, idx + b.length);
+    const after = trimmed.slice(idx + consumed.length).trim();
+    if (after.length > 0) return collapseSpaces(after);
+    return collapseSpaces(trimmed);
+  }
+  return collapseSpaces(trimmed);
+}
+
+/**
+ * Rótulo de modelo para listagens: 8 dígitos (determinísticos) + "-" + descrição pós-marca.
+ */
+export function formatModeloListEntry(raw: string): string {
+  const desc = modeloDescriptionAfterBrand(raw);
+  const basis = `${raw}\0${desc}`;
+  const n = hashString(basis, 904727) % 100_000_000;
+  const digits = String(n).padStart(8, "0");
+  return desc.length > 0 ? `${digits}-${desc}` : digits;
+}
 
 export const GENERO_OPTIONS = [
   "Feminino", "Masculino", "Unissex", "Não Informado"
@@ -1792,6 +1893,53 @@ export const SALA_OPTIONS = [
   "Sala F",
   "Sala O",
 ];
+
+/** Letra da sala a partir do rótulo "Sala O" → "O". */
+export function extractSalaLetter(salaLabel: string): string | null {
+  const m = salaLabel.trim().match(/^sala\s+(.+)$/i);
+  if (!m?.[1]) return null;
+  const token = m[1].trim();
+  return token ? token.charAt(0).toUpperCase() : null;
+}
+
+/** Mesas do PRODUTO; a primeira letra do código indica a sala (ex.: OG → Sala O). */
+const MESA_CODES_ORDERED = [
+  "OD", "O9", "OV", "OG", "OO", "OP", "CV", "V4", "ON", "OU", "OR", "V2", "OF", "O6", "OJ", "O7", "OC", "CS", "OX", "CH", "CB", "OI", "OM", "O1", "OE", "OB", "O3", "V7", "V5", "CF", "OW", "OA", "CR", "V3", "CM", "OH", "VA", "OS", "VD", "V1", "CC", "O2", "F6", "OK", "CK", "V6", "CA", "CT", "VG", "F1", "VN", "OL", "VL", "CO", "CQ", "VI", "VT", "OY", "F8", "F3", "F4", "FA", "F9", "F7", "FW", "FB", "FU", "F5", "FV", "FX", "F2", "FY", "FD", "F0", "FI", "FC", "FP", "FZ", "CJ", "VO", "CI", "VM", "O4", "O5", "VJ", "VB", "VH", "FE", "OT", "VQ", "CL", "CN", "FF",
+] as const;
+
+/** Salas removidas do catálogo; mesas cuja 1ª letra está aqui também não entram em MESA_OPTIONS. */
+const EXCLUDED_MESA_SALA_PREFIXES = new Set<string>(["S", "X", "Z"]);
+
+export const MESA_OPTIONS: string[] = (() => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const code of MESA_CODES_ORDERED) {
+    const c = code.trim().toUpperCase();
+    if (!c || seen.has(c)) continue;
+    if (EXCLUDED_MESA_SALA_PREFIXES.has(c.charAt(0))) continue;
+    seen.add(c);
+    out.push(c);
+  }
+  return out;
+})();
+
+/** Filtra códigos de mesa pelas salas selecionadas (vazio = todas). */
+export function filterMesasBySalasOptions(
+  allMesas: readonly string[],
+  selectedSalas: string[] | undefined,
+): string[] {
+  const salas = selectedSalas?.filter(Boolean) ?? [];
+  if (salas.length === 0) return [...allMesas];
+  const letters = new Set(
+    salas
+      .map((s) => extractSalaLetter(s))
+      .filter((x): x is string => x != null && x !== ""),
+  );
+  if (letters.size === 0) return [...allMesas];
+  return allMesas.filter((mesa) =>
+    letters.has(mesa.charAt(0).toUpperCase()),
+  );
+}
 
 export const UDN_OPTIONS = [
   "AQUATICOS - MAR - CAMISETA UV - 0002/SPEEDO",
@@ -1898,7 +2046,7 @@ export const UDN_OPTIONS = [
   "RACKET - TENNIS - POLO - 0002/DEMAIS"
 ];
 
-export const MODELO_OPTIONS = [
+const MODELO_OPTIONS_RAW: string[] = [
   "0000000000000 NSW CLUB MASC",
   "BERMUDA ADIDAS 3 LISTRAS",
   "BERMUDA ADIDAS 3 STRIPES MASCULINA",
@@ -2140,6 +2288,10 @@ export const MODELO_OPTIONS = [
   "TOP ADIDAS ESSENTIALS SUPORTE LEVE"
 ];
 
+export const MODELO_OPTIONS: string[] = MODELO_OPTIONS_RAW.map(
+  formatModeloListEntry,
+);
+
 // --- MOCK DATA FOR METRICS ---
 
 export const MOCK_LUCRO_BRUTO = [
@@ -2195,6 +2347,25 @@ export const MOCK_MARGEM = [
   0.4916, 0.4803, 0.4971, 0.4547, 0.4982, 0.4577, 0.4985, 0.5031, 0.5011, 0.4937, 0.4987, 0.4992, 0.4880,
   0.5123, 0.4813, 0.4870, 0.4047, 0.4838, 0.4156, 0.5039, 0.5007, 0.5133, 0.4922, 0.4861
 ];
+
+/** Fator entre 0,80 e 0,90 (10–20% a menos), determinístico por índice. */
+function mockFactor10to20PctLess(i: number, salt: number): number {
+  const n = Math.abs((i * 7919 + salt) % 11);
+  return 0.8 + n / 100;
+}
+
+/** CMV Comercial (PRODUTO): base MOCK_CMV com redução de 10–20% por posição. */
+export const MOCK_CMV_COMERCIAL = MOCK_CMV.map((v, i) => {
+  const f = mockFactor10to20PctLess(i, Math.floor(v) % 9973);
+  return Math.round(v * f * 100) / 100;
+});
+
+/** Margem Líquida (PRODUTO): base MOCK_MARGEM (MB), 10–20% a menos por posição. */
+export const MOCK_MARGEM_LIQUIDA = MOCK_MARGEM.map((m, i) => {
+  const f = mockFactor10to20PctLess(i, Math.floor(m * 10000) % 9973);
+  const out = m * f;
+  return Math.min(0.999, Math.max(0.01, Math.round(out * 10000) / 10000));
+});
 
 export const MOCK_QTD_VENDA = [
   18354, 16881, 17326, 15436, 13342, 15840, 15502, 14551, 12098, 13826, 13401, 12219, 11057,
@@ -2338,12 +2509,17 @@ export const MOCK_DESVIO_META_P = [
   0.0400, 0.0502, -0.0279, 0.0329, 0.0437, -0.0365, 0.0465
 ];
 
-export const MOCK_CONVERSAO = [
-  0.4523, 0.4612, 0.4389, 0.4701, 0.4456, 0.4578, 0.4634, 0.4490, 0.4567, 0.4623,
-  0.4489, 0.4712, 0.4534, 0.4601, 0.4678, 0.4523, 0.4590, 0.4645, 0.4512, 0.4589,
-  0.4467, 0.4623, 0.4578, 0.4501, 0.4634, 0.4590, 0.4478, 0.4556, 0.4612, 0.4534,
-  0.4601, 0.4678, 0.4545, 0.4623, 0.4689, 0.4567, 0.4634
-];
+/** Conversão (LOJA): 9%–14% (razão 0,09–0,14); exibição com duas casas decimais (`format: 'percent'`). */
+export const MOCK_CONVERSAO = Array.from({ length: 37 }, (_, i) => {
+  const u = ((i * 73 + 19) % 1001) / 1000;
+  return Math.round((0.09 + u * 0.05) * 10000) / 10000;
+});
+
+/** Conversão Vendex (LOJA): 35%–49% com variação; exibição com duas casas decimais (`format: 'percent'`). */
+export const MOCK_CONVERSAO_VENDEX = Array.from({ length: 37 }, (_, i) => {
+  const u = ((i * 97 + 31) % 1401) / 1400;
+  return Math.round((0.35 + u * 0.14) * 10000) / 10000;
+});
 
 export const MOCK_TKM = [
   156.32, 149.87, 162.45, 158.23, 147.56, 153.89, 160.12, 155.67, 149.34, 157.89,
@@ -2574,12 +2750,14 @@ export const MOCK_IND_CONV_CLICK = [
   0.0845, 0.0978, 0.0667, 0.0834, 0.0912, 0.0645, 0.0823,
 ];
 
-export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' | 'percent' | 'integer' | 'days' | 'decimal' | 'decimal1' | 'percent1' | 'variation' }> = {
+export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' | 'percent' | 'percent0' | 'integer' | 'days' | 'decimal' | 'decimal1' | 'percent1' | 'variation' }> = {
   // Produto metrics
   'venda': { data: MOCK_ROB, format: 'currency' },
   'sss': { data: MOCK_SSS, format: 'percent' },
   'cmv': { data: MOCK_CMV, format: 'currency' },
+  'cmv_comercial': { data: MOCK_CMV_COMERCIAL, format: 'currency' },
   'margem': { data: MOCK_MARGEM, format: 'percent' },
+  'margem_liquida': { data: MOCK_MARGEM_LIQUIDA, format: 'percent' },
   'lucro_bruto': { data: MOCK_LUCRO_BRUTO, format: 'currency' },
   'qtd_venda': { data: MOCK_QTD_VENDA, format: 'integer' },
   'qtd_estoque': { data: MOCK_QTD_ESTOQUE, format: 'integer' },
@@ -2622,6 +2800,7 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'desvio_meta_r': { data: MOCK_DESVIO_META_R, format: 'variation' },
   'desvio_meta_p': { data: MOCK_DESVIO_META_P, format: 'variation' },
   'conversao': { data: MOCK_CONVERSAO, format: 'percent' },
+  'conversao_vendex': { data: MOCK_CONVERSAO_VENDEX, format: 'percent' },
   'tkm': { data: MOCK_TKM, format: 'currency' },
   'qtd_tickets': { data: MOCK_QTD_TICKETS, format: 'integer' },
   'ipc': { data: MOCK_IPC, format: 'decimal' },
@@ -2631,7 +2810,7 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'margem_bruta': { data: MOCK_MARGEM, format: 'percent' },
   // ── Indicadores metrics ──────────────────────────────────
   // Prefixo ind_ — sem colisão com PRODUTO ou LOJA.
-  // Formatos: todos já existem em formatMetricValue (nenhum novo necessário).
+  // Formatos: `percent0` em formatMetricValue (percentagem sem decimais), se usado por alguma métrica.
   'ind_tkm':           { data: MOCK_IND_TKM,          format: 'integer'  },
   'ind_pmi':           { data: MOCK_IND_PMI,           format: 'integer'  },
   'ind_ipc':           { data: MOCK_IND_IPC,           format: 'decimal'  },
@@ -2654,8 +2833,10 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   'venda': 'ROB',
   'sss': 'SSS',
   'cmv': 'CMV',
+  'cmv_comercial': 'CMV Com.',
   'lucro_bruto': 'LB',
   'margem': 'MB',
+  'margem_liquida': 'ML',
   'qtd_venda': 'Qtd Venda',
   'qtd_estoque': 'Qtd Estoque',
   'vlr_estoque': 'Vlr Estoque',
@@ -2692,6 +2873,7 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   'desvio_meta_r': 'Desvio $',
   'desvio_meta_p': 'Desvio %',
   'conversao': 'Conversão',
+  'conversao_vendex': 'Conv. Vendex',
   // ── Indicadores ──────────────────────────────────────────
   'ind_tkm':           'TKM',
   'ind_pmi':           'PMI',
@@ -2721,6 +2903,8 @@ export const formatMetricValue = (
       return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
     case 'percent':
       return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+    case 'percent0':
+      return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
     case 'percent1':
       return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
     case 'integer':
@@ -2743,3 +2927,10 @@ export const formatMetricValue = (
       return value.toString();
   }
 };
+
+/** Razão em [0,1]: agregação por média (filhos / períodos), igual a `percent`. */
+export function isPercentRatioAggregatedAverage(
+  format: string | undefined,
+): boolean {
+  return format === 'percent' || format === 'percent0';
+}

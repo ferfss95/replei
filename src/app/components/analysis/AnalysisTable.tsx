@@ -780,13 +780,16 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
                             }).format(avgValue);
                             break;
                           case 'percent':
-                          case 'percent1':
+                          case 'percent0':
+                          case 'percent1': {
+                            const frac = config.format === 'percent0' ? 0 : 2;
                             avgFormatted = new Intl.NumberFormat('pt-BR', {
                               style: 'percent',
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
+                              minimumFractionDigits: frac,
+                              maximumFractionDigits: frac,
                             }).format(avgValue);
                             break;
+                          }
                           case 'integer':
                             avgFormatted = new Intl.NumberFormat('pt-BR', {
                               minimumFractionDigits: 2,
@@ -1078,13 +1081,16 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
                               }).format(avgValue);
                               break;
                             case 'percent':
-                            case 'percent1':
+                            case 'percent0':
+                            case 'percent1': {
+                              const frac = config.format === 'percent0' ? 0 : 2;
                               avgFormatted = new Intl.NumberFormat('pt-BR', {
                                 style: 'percent',
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
+                                minimumFractionDigits: frac,
+                                maximumFractionDigits: frac,
                               }).format(avgValue);
                               break;
+                            }
                             case 'integer':
                               avgFormatted = new Intl.NumberFormat('pt-BR', {
                                 minimumFractionDigits: 2,

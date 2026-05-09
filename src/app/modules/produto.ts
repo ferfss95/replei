@@ -42,6 +42,8 @@ import {
   MODELO_OPTIONS,
   VENDEDOR_OPTIONS,
   SALA_OPTIONS,
+  MESA_OPTIONS,
+  filterMesasBySalasOptions,
 } from '../referenceData';
 import type { ModuleConfig } from './types';
 
@@ -111,6 +113,7 @@ export const produtoModule: ModuleConfig = {
   // ── Domain attributes ──────────────────────────────────────
   domainAttributes: [
     { id: 'sala',         label: 'SALA',         icon: Megaphone,   options: [] },
+    { id: 'mesa',         label: 'MESA',         icon: LayoutGrid,  options: [] },
     { id: 'categoria',    label: 'CATEGORIA',    icon: Tag,         options: [] },
     { id: 'modalidade',   label: 'MODALIDADE',   icon: Activity,    options: [] },
     { id: 'grupo',        label: 'GRUPO',        icon: Layers,      options: [] },
@@ -128,6 +131,8 @@ export const produtoModule: ModuleConfig = {
   getDomainAttributeOptions(attrId, selections) {
     switch (attrId) {
       case 'sala':         return SALA_OPTIONS;
+      case 'mesa':
+        return filterMesasBySalasOptions(MESA_OPTIONS, selections['sala']);
       case 'categoria': {
         const selectedModalidades = selections['modalidade'] || [];
         if (selectedModalidades.length === 0) {
@@ -221,6 +226,19 @@ export const produtoModule: ModuleConfig = {
       result = applyGroupCategoryCoherence(attrId, result, selections);
     }
 
+    // mesa ↔ sala (código da mesa: 1ª letra = sala)
+    if (attrId === 'mesa') {
+      const selectedSalas = selections['sala'] || [];
+      if (selectedSalas.length > 0) {
+        const allowed = new Set(
+          filterMesasBySalasOptions(MESA_OPTIONS, selectedSalas),
+        );
+        if (allowed.size > 0) {
+          result = result.filter((opt) => allowed.has(opt));
+        }
+      }
+    }
+
     return result;
   },
 
@@ -228,9 +246,11 @@ export const produtoModule: ModuleConfig = {
   metrics: [
     { id: 'venda',       label: 'Venda (ROB)',      icon: DollarSign  },
     { id: 'sss',         label: 'SSS',              icon: Activity    },
-    { id: 'cmv',         label: 'CMV',              icon: DollarSign  },
-    { id: 'lucro_bruto', label: 'Lucro Bruto (LB)', icon: DollarSign  },
-    { id: 'margem',      label: 'Margem Bruta (MB)',icon: Percent     },
+    { id: 'cmv',             label: 'CMV',                 icon: DollarSign  },
+    { id: 'cmv_comercial',   label: 'CMV Comercial',       icon: DollarSign  },
+    { id: 'lucro_bruto',     label: 'Lucro Bruto (LB)',    icon: DollarSign  },
+    { id: 'margem',          label: 'Margem Bruta (MB)',   icon: Percent     },
+    { id: 'margem_liquida',  label: 'Margem Líquida (ML)', icon: Percent     },
     { id: 'qtd_venda',   label: 'Qtd Venda',        icon: ShoppingCart},
     { id: 'qtd_estoque', label: 'Qtd Estoque',      icon: Package     },
     { id: 'vlr_estoque', label: 'Vlr Estoque',      icon: DollarSign  },
@@ -332,7 +352,7 @@ export const produtoModule: ModuleConfig = {
   ],
 
   metricDisplayOrder: [
-    'venda', 'sss', 'cmv', 'lucro_bruto', 'margem',
+    'venda', 'sss', 'cmv', 'cmv_comercial', 'lucro_bruto', 'margem', 'margem_liquida',
     'qtd_venda', 'qtd_estoque', 'vlr_estoque', 'dep', 'def',
     'vlr_plano', 'qtd_plano', 'qtd_desvio_plano', 'vlr_desvio_plano',
     'vlr_target', 'qtd_target', 'qtd_desvio_target', 'vlr_desvio_target',
