@@ -1,7 +1,12 @@
 import React from "react";
 import { Filter, Anchor, Ban } from "lucide-react";
 import { cn } from "../../utils";
-import { LOCATION_ATTRIBUTES, type Step, type Module } from "../../constants";
+import {
+  LOCATION_ATTRIBUTES,
+  MAX_GROUPING_LEVELS,
+  type Module,
+  type Step,
+} from "../../constants";
 import { ScrollableRow } from "../ScrollableRow";
 import { AttributeCard as SmartAttributeCard } from "../AttributeCard";
 import type { ModuleConfig } from "../../modules/types";
@@ -57,7 +62,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
             className="text-[14px] font-semibold tabular-nums text-[#314158] ml-2"
             aria-live="polite"
           >
-            {grouping.length}/3
+            {grouping.length}/{MAX_GROUPING_LEVELS}
           </span>
         )}
       </div>
@@ -82,7 +87,10 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
                   attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
                   step={currentStep}
                   moduleColors={moduleColors}
-                  groupingLimitReached={currentStep === "grouping" && grouping.length >= 3}
+                  groupingLimitReached={
+                    currentStep === "grouping" &&
+                    grouping.length >= MAX_GROUPING_LEVELS
+                  }
                   selectionCount={selections[attr.id]?.length || 0}
                   isGrouped={grouping.includes(attr.id)}
                   groupLevel={grouping.indexOf(attr.id) + 1}
@@ -101,6 +109,46 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
             </ScrollableRow>
           </div>
 
+          {(currentModuleConfig.domainAttributeExtraRows ?? []).map(
+            (row, rowIdx) => (
+              <div key={`${row.sectionLabel}-${rowIdx}`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-[10px] font-medium uppercase tracking-[1.12px] text-slate-400">
+                    {row.sectionLabel}
+                  </span>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+                <ScrollableRow>
+                  {row.attributes.map((attr) => (
+                    <SmartAttributeCard
+                      key={attr.id}
+                      attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
+                      step={currentStep}
+                      moduleColors={moduleColors}
+                      groupingLimitReached={
+                        currentStep === "grouping" &&
+                        grouping.length >= MAX_GROUPING_LEVELS
+                      }
+                      selectionCount={selections[attr.id]?.length || 0}
+                      isGrouped={grouping.includes(attr.id)}
+                      groupLevel={grouping.indexOf(attr.id) + 1}
+                      exclusionCount={exclusions[attr.id]?.length || 0}
+                      onToggleGroup={() => handleAttributeClick(attr.id)}
+                      onUpdateSelection={(vals) =>
+                        setSelections((prev) => ({ ...prev, [attr.id]: vals }))
+                      }
+                      onUpdateExclusion={(vals) =>
+                        setExclusions((prev) => ({ ...prev, [attr.id]: vals }))
+                      }
+                      currentSelection={selections[attr.id] || []}
+                      currentExclusion={exclusions[attr.id] || []}
+                    />
+                  ))}
+                </ScrollableRow>
+              </div>
+            ),
+          )}
+
           {/* Localização (only shown for modules that use separate location section) */}
           {currentModule === "PRODUTO" && (
             <div>
@@ -117,7 +165,10 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
                     attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
                     step={currentStep}
                     moduleColors={moduleColors}
-                    groupingLimitReached={currentStep === "grouping" && grouping.length >= 3}
+                    groupingLimitReached={
+                    currentStep === "grouping" &&
+                    grouping.length >= MAX_GROUPING_LEVELS
+                  }
                     selectionCount={selections[attr.id]?.length || 0}
                     isGrouped={grouping.includes(attr.id)}
                     groupLevel={grouping.indexOf(attr.id) + 1}

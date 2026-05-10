@@ -1,6 +1,6 @@
 /**
  * Date Range Hook
- * Gerencia seleção de períodos (P1, P2), lógica MDSAA e validações
+ * Gerencia seleção de períodos (P1, P2), lógica MDSAA / LY e validações
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -20,6 +20,10 @@ import {
   getMDSAARange,
   getMDSAAMonths,
   getMDSAAYears,
+  getLYRange,
+  getLYSpecificDays,
+  getLYMonths,
+  getLYYears,
 } from '../dateUtils';
 
 interface UseDateRangeProps {
@@ -105,8 +109,23 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
   const [compWeekdays1, setCompWeekdays1] = useState<number[]>(getCurrentWeekdaysUntilYesterday());
   const [compWeekdays2, setCompWeekdays2] = useState<number[]>([]);
 
-  // MDSAA State
-  const [mdsaaActive, setMdsaaActive] = useState(true);
+  // MDSAA / LY (Last Year): mutuamente exclusivos; LY = mesmas datas civis no ano anterior
+  const [mdsaaActive, setMdsaaActiveInternal] = useState(true);
+  const [lyActive, setLyActiveInternal] = useState(false);
+
+  const setMdsaaActive = useCallback((active: boolean) => {
+    setMdsaaActiveInternal(active);
+    if (active) setLyActiveInternal(false);
+  }, []);
+
+  const setLyActive = useCallback((active: boolean) => {
+    setLyActiveInternal(active);
+    if (active) {
+      setMdsaaActiveInternal(false);
+    } else {
+      setMdsaaActiveInternal(true);
+    }
+  }, []);
 
   // Auto-scroll ref for P2 months
   const monthsP2ScrollRef = useRef<HTMLDivElement>(null);
@@ -152,9 +171,10 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
     }
   }, [periodType, analysisMode]);
 
-  // ─── Reactivate MDSAA when analysis mode or period type changes ───
+  // ─── Reactivar MDSAA (e desligar LY) ao mudar modo ou tipo de período ───
   useEffect(() => {
-    setMdsaaActive(true);
+    setMdsaaActiveInternal(true);
+    setLyActiveInternal(false);
   }, [analysisMode, periodType]);
 
   // ─── Initialize P1 with defaults when entering comparative mode ───
@@ -181,9 +201,28 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
     }
   }, [analysisMode, periodType]);
 
-  // ─── Auto-apply MDSAA when P1 changes (only if MDSAA is active) ───
+  // ─── Auto P2: LY (prioridade) ou MDSAA quando P1 muda ───
   useEffect(() => {
-    if (analysisMode !== "comparativo" || !mdsaaActive) return;
+    if (analysisMode !== "comparativo") return;
+
+    if (lyActive) {
+      if (periodType === "Diário") {
+        if (dailySubType === "periodo") {
+          setCompDateRange2(
+            getLYRange(compDateRange1.start, compDateRange1.end),
+          );
+        } else {
+          setCompSpecificDays2(getLYSpecificDays(compSpecificDays1));
+        }
+      } else if (periodType === "Mensal") {
+        setCompMonths2(getLYMonths(compMonths1));
+      } else if (periodType === "Anual") {
+        setCompYears2(getLYYears(compYears1));
+      }
+      return;
+    }
+
+    if (!mdsaaActive) return;
 
     if (periodType === "Diário") {
       if (dailySubType === "periodo") {
@@ -209,6 +248,7 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
     compMonths1,
     compYears1,
     mdsaaActive,
+    lyActive,
   ]);
 
   // ─── Auto-scroll to selected month in P2 ───
@@ -236,32 +276,38 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
 
   // ─── Manual P2 change handlers (disable MDSAA) ───
   const handleManualP2DateRangeChange = useCallback((field: "start" | "end", value: string) => {
-    setMdsaaActive(false);
+    setMdsaaActiveInternal(false);
+    setLyActiveInternal(false);
     setCompDateRange2((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   const handleManualP2SpecificDaysChange = useCallback((days: string[]) => {
-    setMdsaaActive(false);
+    setMdsaaActiveInternal(false);
+    setLyActiveInternal(false);
     setCompSpecificDays2(days);
   }, []);
 
   const handleManualP2WeeklyRangeChange = useCallback((field: "start" | "end", value: string) => {
-    setMdsaaActive(false);
+    setMdsaaActiveInternal(false);
+    setLyActiveInternal(false);
     setCompWeeklyRange2((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   const handleManualP2WeekdaysChange = useCallback((weekdays: number[]) => {
-    setMdsaaActive(false);
+    setMdsaaActiveInternal(false);
+    setLyActiveInternal(false);
     setCompWeekdays2(weekdays);
   }, []);
 
   const handleManualP2MonthsChange = useCallback((months: string[]) => {
-    setMdsaaActive(false);
+    setMdsaaActiveInternal(false);
+    setLyActiveInternal(false);
     setCompMonths2(months);
   }, []);
 
   const handleManualP2YearsChange = useCallback((years: string[]) => {
-    setMdsaaActive(false);
+    setMdsaaActiveInternal(false);
+    setLyActiveInternal(false);
     setCompYears2(years);
   }, []);
 
@@ -322,9 +368,11 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
     compWeekdays2,
     setCompWeekdays2,
 
-    // MDSAA
+    // MDSAA / LY
     mdsaaActive,
     setMdsaaActive,
+    lyActive,
+    setLyActive,
 
     // Manual P2 handlers
     handleManualP2DateRangeChange,

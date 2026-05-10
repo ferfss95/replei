@@ -6,7 +6,10 @@ import React, { useMemo } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { Calendar as CalendarIcon, Filter, Layers, Ban } from "lucide-react";
 import { LOCATION_ATTRIBUTES } from "../constants";
-import type { ModuleConfig } from "../modules/types";
+import {
+  collectAllDomainAttributes,
+  type ModuleConfig,
+} from "../modules/types";
 import type { AnalysisMode } from "../types/wizard";
 import {
   computePeriodDisplayText,
@@ -51,7 +54,7 @@ export interface AnalysisSummarySectionProps {
 
 function labelForAttr(moduleConfig: ModuleConfig, id: string): string {
   const attr =
-    moduleConfig.domainAttributes.find((a) => a.id === id) ||
+    collectAllDomainAttributes(moduleConfig).find((a) => a.id === id) ||
     LOCATION_ATTRIBUTES.find((a) => a.id === id);
   return attr?.label || id;
 }

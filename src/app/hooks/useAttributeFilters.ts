@@ -12,8 +12,15 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { LOCATION_ATTRIBUTES, type Step } from '../constants';
-import type { ModuleConfig } from '../modules/types';
+import {
+  LOCATION_ATTRIBUTES,
+  MAX_GROUPING_LEVELS,
+  type Step,
+} from '../constants';
+import {
+  collectAllDomainAttributes,
+  type ModuleConfig,
+} from '../modules/types';
 import {
   REDE_OPTIONS,
   CANAL_OPTIONS,
@@ -65,7 +72,9 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
       // First check if this attribute belongs to the current module's domain
       // (for Loja module, rede/tipo/estado/regional/cidade/loja are domain attributes)
       if (
-        currentModuleConfig.domainAttributes.some((attr) => attr.id === attrId)
+        collectAllDomainAttributes(currentModuleConfig).some(
+          (attr) => attr.id === attrId,
+        )
       ) {
         return currentModuleConfig.getDomainAttributeOptions(attrId, selections);
       }
@@ -157,8 +166,7 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
             // Remove this attribute from the hierarchy
             return prev.filter((id) => id !== attrId);
           } else {
-            // Limit to 3 levels max
-            if (prev.length >= 3) return prev;
+            if (prev.length >= MAX_GROUPING_LEVELS) return prev;
             // Add at the end (next level)
             return [...prev, attrId];
           }

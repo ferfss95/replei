@@ -23,6 +23,9 @@ export const STEPS: { id: Step; label: string; number: number }[] = [
   { id: 'analysis', label: 'Resultado', number: 4 },
 ];
 
+/** Quantidade máxima de níveis no agrupamento (passo «Agrupar atributos»). */
+export const MAX_GROUPING_LEVELS = 5;
+
 // Modules list
 export const MODULES: Module[] = ['PRODUTO', 'LOJA', 'EXTRAVIOS', 'INDICADORES'];
 

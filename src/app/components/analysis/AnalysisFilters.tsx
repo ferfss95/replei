@@ -14,7 +14,12 @@
 import React from 'react';
 import { AttributeCard as SmartAttributeCard } from '../AttributeCard';
 import { ScrollableRow } from '../ScrollableRow';
-import { LOCATION_ATTRIBUTES, type Module, type Step } from '../../constants';
+import {
+  LOCATION_ATTRIBUTES,
+  MAX_GROUPING_LEVELS,
+  type Module,
+  type Step,
+} from '../../constants';
 import { getModuleColors, type ModuleColors } from '../../constants/moduleColors';
 
 // ══════════════════════════════════════════════════════════════════
@@ -60,7 +65,8 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
   handleAttributeClick,
 }) => {
   const colors = moduleColors ?? getModuleColors(currentModule);
-  const groupingLimitReached = currentStep === "grouping" && grouping.length >= 3;
+  const groupingLimitReached =
+    currentStep === "grouping" && grouping.length >= MAX_GROUPING_LEVELS;
   return (
     <div className="px-6 py-6">
       <div className="space-y-8">
@@ -108,6 +114,52 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
             ))}
           </ScrollableRow>
         </div>
+
+        {(currentModuleConfig.domainAttributeExtraRows ?? []).map(
+          (row: { sectionLabel: string; attributes: any[] }, rowIdx: number) => (
+            <div key={`${row.sectionLabel}-${rowIdx}`}>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-[10px] font-medium uppercase tracking-[1.12px] text-slate-400">
+                  {row.sectionLabel}
+                </span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+              <ScrollableRow>
+                {row.attributes.map((attr: any) => (
+                  <SmartAttributeCard
+                    key={attr.id}
+                    attribute={{
+                      ...attr,
+                      options: getAttributeOptions(attr.id),
+                    }}
+                    step={currentStep}
+                    moduleColors={colors}
+                    groupingLimitReached={groupingLimitReached}
+                    selectionCount={selections[attr.id]?.length || 0}
+                    isGrouped={grouping.includes(attr.id)}
+                    groupLevel={grouping.indexOf(attr.id) + 1}
+                    exclusionCount={exclusions[attr.id]?.length || 0}
+                    onToggleGroup={() => handleAttributeClick(attr.id)}
+                    onUpdateSelection={(vals) =>
+                      setSelections((prev) => ({
+                        ...prev,
+                        [attr.id]: vals,
+                      }))
+                    }
+                    onUpdateExclusion={(vals) =>
+                      setExclusions((prev) => ({
+                        ...prev,
+                        [attr.id]: vals,
+                      }))
+                    }
+                    currentSelection={selections[attr.id] || []}
+                    currentExclusion={exclusions[attr.id] || []}
+                  />
+                ))}
+              </ScrollableRow>
+            </div>
+          ),
+        )}
 
         {/* Localização (only shown for modules that use separate location section) */}
         {currentModule === 'PRODUTO' && (

@@ -26,6 +26,7 @@ import {
   Package,
 } from 'lucide-react';
 import { cn } from '../../utils';
+import { ANALYSIS_ATTRIBUTE_SORT_KEY } from '../../utils/sortAnalysisRowTree';
 import { MetricCell, PercentageCell, VariationCell, GrowthCell } from './AnalysisCells';
 import type { AnalysisMode } from '../../types/wizard';
 
@@ -297,12 +298,37 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
                   boxShadow:
                     '1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)',
                 }}
-                className="px-4 py-2.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider sticky left-0 top-0 z-[50] bg-white select-none align-middle"
+                className="relative px-4 py-2.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider sticky left-0 top-0 z-[50] bg-white select-none align-middle"
               >
-                <div className="flex items-center gap-2 overflow-hidden">
+                <div
+                  className="group flex cursor-pointer items-center gap-2 overflow-hidden pr-1 transition-colors hover:bg-slate-50/80"
+                  onClick={() => handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY);
+                    }
+                  }}
+                >
                   <Anchor size={14} className="text-slate-400 shrink-0" />
-                  <span className="truncate text-[rgb(29,41,61)] text-[14px]">
+                  <span className="min-w-0 flex-1 truncate text-[rgb(29,41,61)] text-[14px]">
                     {groupingLabel}
+                  </span>
+                  <span className="shrink-0">
+                    {sortConfig?.key === ANALYSIS_ATTRIBUTE_SORT_KEY ? (
+                      sortConfig.direction === 'asc' ? (
+                        <ArrowUp size={12} className="text-slate-500" />
+                      ) : (
+                        <ArrowDown size={12} className="text-slate-500" />
+                      )
+                    ) : (
+                      <ArrowDown
+                        size={12}
+                        className="text-slate-300 opacity-0 transition-opacity group-hover:opacity-100"
+                      />
+                    )}
                   </span>
                 </div>
                 <div
@@ -1405,12 +1431,37 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
                   boxShadow:
                     '1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)',
                 }}
-                className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider sticky left-0 z-[50] bg-white select-none"
+                className="relative px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider sticky left-0 z-[50] bg-white select-none"
               >
-                <div className="flex items-center gap-2">
+                <div
+                  className="group flex cursor-pointer items-center gap-2 pr-1 transition-colors hover:bg-slate-50/80"
+                  onClick={() => handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY);
+                    }
+                  }}
+                >
                   <Anchor size={14} className="text-slate-400 shrink-0" />
-                  <span className="truncate text-[rgb(29,41,61)] text-[14px]">
+                  <span className="min-w-0 flex-1 truncate text-[rgb(29,41,61)] text-[14px]">
                     {groupingLabel}
+                  </span>
+                  <span className="shrink-0">
+                    {sortConfig?.key === ANALYSIS_ATTRIBUTE_SORT_KEY ? (
+                      sortConfig.direction === 'asc' ? (
+                        <ArrowUp size={12} className="text-slate-500" />
+                      ) : (
+                        <ArrowDown size={12} className="text-slate-500" />
+                      )
+                    ) : (
+                      <ArrowDown
+                        size={12}
+                        className="text-slate-300 opacity-0 transition-opacity group-hover:opacity-100"
+                      />
+                    )}
                   </span>
                 </div>
                 <div

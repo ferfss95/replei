@@ -332,3 +332,50 @@ export const getMDSAAYear = (yearStr: string): string => {
 export const getMDSAAYears = (years: string[]): string[] => {
   return years.map(getMDSAAYear).filter(y => y !== '');
 };
+
+// ─── LY (Last Year): mesmas datas civis do ano anterior (DD/MM/AAAA) ───────
+/** Uma data DD/MM/AAAA no ano civil imediatamente anterior (espelho de P1 → P2). */
+export const getLYDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('/');
+  if (parts.length !== 3) return '';
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const year = parseInt(parts[2], 10);
+  if (Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year)) return '';
+  const d = new Date(year, month - 1, day);
+  if (
+    d.getFullYear() !== year ||
+    d.getMonth() !== month - 1 ||
+    d.getDate() !== day
+  ) {
+    return '';
+  }
+  d.setFullYear(d.getFullYear() - 1);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
+
+export const getLYRange = (
+  start: string,
+  end: string,
+): { start: string; end: string } => {
+  if (!start || !end) return { start: '', end: '' };
+  return {
+    start: getLYDate(start),
+    end: getLYDate(end),
+  };
+};
+
+/** Dias específicos: cada dia em P1 → mesmo dia/mês no ano anterior. */
+export const getLYSpecificDays = (days: string[]): string[] => {
+  return days.map(getLYDate).filter((d) => d !== '');
+};
+
+/** Mensal comparativo LY: coincide com “mês + ano anterior” (igual MDSAA em meses). */
+export const getLYMonths = (months: string[]): string[] => getMDSAAMonths(months);
+
+/** Anual comparativo LY: ano anterior (igual MDSAA em anos). */
+export const getLYYears = (years: string[]): string[] => getMDSAAYears(years);

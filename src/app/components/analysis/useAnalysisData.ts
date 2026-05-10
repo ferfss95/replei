@@ -10,7 +10,7 @@
  * 5. Ordenação e paginação
  */
 
-import { useMemo, useCallback, useState, useEffect } from 'react';
+import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import {
   LOCATION_ATTRIBUTES,
   MONTHS_OPTIONS,
@@ -32,6 +32,12 @@ import {
   generateHourlyValue,
 } from '../../utils/index';
 import { getTodayFormatted } from '../../dateUtils';
+import { collectAllDomainAttributes } from '../../modules/types';
+import {
+  sortAnalysisRowTree,
+  makeRowComparator,
+  ANALYSIS_ATTRIBUTE_SORT_KEY,
+} from '../../utils/sortAnalysisRowTree';
 
 interface UseAnalysisDataProps {
   moduleConfig: any;
@@ -91,7 +97,6 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
 
   // ── Module-level aliases ─────────────────────────────────────────
   const METRICS_LIST = moduleConfig.metrics;
-  const METRIC_DISPLAY_ORDER = moduleConfig.metricDisplayOrder;
   const MODULE_TITLES = moduleConfig.analysisTitles as Record<string, string>;
 
   // ── State Management ─────────────────────────────────────────────
@@ -100,37 +105,46 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
     direction: 'asc' | 'desc';
   } | null>(null);
 
+  // Orçamento de nós POR sub-árvore: garante que todos os nós raiz apareçam.
+  const _buildBudget = useRef<{ remaining: number }>({ remaining: 0 });
+  const MAX_SUBTREE_NODES = 2000;
+
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
   // ── Helper: Get attribute label ──────────────────────────────────
   const getAttributeLabel = useCallback(
     (id: string): string => {
       const attr =
-        moduleConfig.domainAttributes.find((a: any) => a.id === id) ||
+        collectAllDomainAttributes(moduleConfig).find((a: any) => a.id === id) ||
         LOCATION_ATTRIBUTES.find((a) => a.id === id);
       return attr?.label || id;
     },
-    [moduleConfig.domainAttributes]
+    [moduleConfig]
   );
 
   // ── Helper: Get attribute icon ───────────────────────────────────
   const getAttributeIcon = useCallback(
     (id: string) => {
       const attr =
-        moduleConfig.domainAttributes.find((a: any) => a.id === id) ||
+        collectAllDomainAttributes(moduleConfig).find((a: any) => a.id === id) ||
         LOCATION_ATTRIBUTES.find((a) => a.id === id);
       return attr?.icon || Tag;
     },
-    [moduleConfig.domainAttributes]
+    [moduleConfig]
   );
 
   // ── Ordered metrics ──────────────────────────────────────────────
   const orderedMetrics = useMemo(() => {
-    return [...new Set(selectedMetrics)].sort(
-      (a, b) =>
-        METRIC_DISPLAY_ORDER.indexOf(a) - METRIC_DISPLAY_ORDER.indexOf(b)
-    );
-  }, [selectedMetrics, METRIC_DISPLAY_ORDER]);
+    const valid = new Set(METRICS_LIST.map((m: { id: string }) => m.id));
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const id of selectedMetrics) {
+      if (!valid.has(id) || seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
+  }, [selectedMetrics, METRICS_LIST]);
 
   // ── Get filtered group options ───────────────────────────────────
   const getFilteredGroupOptions = useCallback(
@@ -226,7 +240,8 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
         options = moduleConfig.getFilteredGroupOptions(
           attrId,
           options,
-          selections
+          selections,
+          exclusions,
         );
       }
 
@@ -247,6 +262,8 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
       parentContext: Record<string, string> = {}
     ): any[] => {
       if (levelIndex >= levels.length) return [];
+      // Somente sub-níveis (> 0) consomem orçamento; raiz sempre processa.
+      if (levelIndex > 0 && _buildBudget.current.remaining <= 0) return [];
 
       const attrId = levels[levelIndex];
       // 1. Obtém opções base respeitando seleções/exclusões globais
@@ -258,6 +275,14 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
       const isLeaf = levelIndex === levels.length - 1;
 
       return options.map((opt: string, idx: number) => {
+        if (levelIndex === 0) {
+          // Cada nó raiz inicia sub-árvore com orçamento próprio
+          _buildBudget.current = { remaining: MAX_SUBTREE_NODES };
+        } else {
+          if (_buildBudget.current.remaining <= 0) return null;
+          _buildBudget.current.remaining--;
+        }
+
         const rowId = parentId ? `${parentId}|${opt}` : opt;
         const seed = hashString(opt, parentSeed + idx * 7);
         // Propaga contexto acumulado + valor deste nível para o próximo
@@ -306,7 +331,7 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
         }
 
         return rowData;
-      });
+      }).filter(Boolean);
     },
     [getFilteredGroupOptions, METRICS_LIST]
   );
@@ -454,24 +479,33 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
     [selectedMetrics, analysisMode, computeVariation, computeGrowth]
   );
 
-  // ── Flatten tree for rendering ───────────────────────────────────
+  // ── Flatten tree — ordena cada `children` lazily ao expandir ────
   const flattenTree = useCallback(
-    (rows: any[], expandedSet: Set<string>): any[] => {
+    (
+      rows: any[],
+      expandedSet: Set<string>,
+      comparator: ((a: any, b: any) => number) | null,
+    ): any[] => {
       const result: any[] = [];
       for (const row of rows) {
         result.push(row);
         if (row.children?.length > 0 && expandedSet.has(row.id)) {
-          result.push(...flattenTree(row.children, expandedSet));
+          const children = comparator
+            ? [...row.children].sort(comparator)
+            : row.children;
+          result.push(...flattenTree(children, expandedSet, comparator));
         }
       }
       return result;
     },
-    []
+    [],
   );
 
   // ── Data Generation (Raw Rows) ───────────────────────────────────
   const rawRows = useMemo(() => {
     if (groupingArr.length === 0) return [];
+    // Inicializa orçamento; será sobrescrito por nó-raiz ao processar.
+    _buildBudget.current = { remaining: MAX_SUBTREE_NODES };
     if (
       (isTimeDrilldownEnabled ||
         analysisMode === 'comparativo' ||
@@ -493,25 +527,18 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
     addPivotMetrics,
   ]);
 
-  // ── Sorting Logic ────────────────────────────────────────────────
+  // Ordenação recursiva por nível (alinhado a AnalysisView)
   const sortedRows = useMemo(() => {
     if (!sortConfig) return rawRows;
-
-    return [...rawRows].sort((a: any, b: any) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
+    return sortAnalysisRowTree(rawRows, sortConfig);
   }, [rawRows, sortConfig]);
 
   // ── Flattened rows (with expand/collapse) ────────────────────────
   const finalRows = useMemo(() => {
     const expandedSet = new Set(expandedRows);
-    return flattenTree(sortedRows, expandedSet);
-  }, [sortedRows, expandedRows, flattenTree]);
+    const comparator = sortConfig ? makeRowComparator(sortConfig) : null;
+    return flattenTree(sortedRows, expandedSet, comparator);
+  }, [sortedRows, expandedRows, sortConfig, flattenTree]);
 
   // ── Totals (standard mode only) ──────────────────────────────────
   const totals = useMemo(() => {
@@ -585,22 +612,23 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
   }, []);
 
   // ── Sort Handler ─────────────────────────────────────────────────
-  const handleSort = useCallback((metricId: string) => {
+  const handleSort = useCallback((sortKey: string) => {
     setSortConfig((current) => {
-      if (current?.key === metricId) {
+      if (current?.key === sortKey) {
         return {
-          key: metricId,
+          key: sortKey,
           direction: current.direction === 'asc' ? 'desc' : 'asc',
         };
       }
-      return { key: metricId, direction: 'desc' };
+      const defaultDir =
+        sortKey === ANALYSIS_ATTRIBUTE_SORT_KEY ? 'asc' : 'desc';
+      return { key: sortKey, direction: defaultDir };
     });
   }, []);
 
   return {
     // Constants
     METRICS_LIST,
-    METRIC_DISPLAY_ORDER,
     MODULE_TITLES,
 
     // Helpers

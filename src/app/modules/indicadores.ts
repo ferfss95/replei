@@ -3,7 +3,7 @@
 // Módulo INDICADORES — KPIs operacionais de loja
 // Mecânica idêntica ao módulo LOJA.
 // Atributos: mesmos do LOJA (rede, tipo, estado, regional, cidade, loja, setor, vendedor).
-// Métricas: 14 KPIs com prefixo ind_ para evitar colisão com outros módulos.
+// Métricas: KPIs com prefixo ind_ para evitar colisão com outros módulos.
 //
 // ── Guia de manutenção ───────────────────────────────────────
 // Para adicionar uma nova métrica:
@@ -16,7 +16,7 @@
 //
 // Para alterar nome no menu lateral: editar `label` em `metrics`
 // Para alterar título na tabela: editar METRIC_ABBREVIATIONS em referenceData.ts
-// Para reordenar colunas: editar `metricDisplayOrder`
+// `metricDisplayOrder`: ordem canônica no módulo; colunas na tabela seguem a ordem de clique no menu.
 // Para alterar atributos: editar `domainAttributes` + getDomainAttributeOptions
 // ─────────────────────────────────────────────────────────────
 
@@ -38,6 +38,8 @@ import {
   Clock,
   Hash,
   Zap,
+  ClipboardList,
+  CircleDollarSign,
 } from 'lucide-react';
 import {
   REDE_OPTIONS,
@@ -54,6 +56,11 @@ import {
   filterStoresByKnownLinks,
 } from '../referenceData';
 import type { ModuleConfig } from './types';
+import {
+  PRODUTO_DOMAIN_ATTRIBUTE_DEFS,
+  isProdutoDomainAttrId,
+  produtoModule,
+} from './produto';
 
 // ── Opções locais do módulo ───────────────────────────────────
 // Sufixo _IND para que, se o módulo LOJA divergir no futuro,
@@ -89,7 +96,7 @@ const VENDEDOR_OPTIONS_IND = [
 export const indicadoresModule: ModuleConfig = {
   id: 'INDICADORES',
   label: 'INDICADORES',
-  domainSectionLabel: '',
+  domainSectionLabel: 'LOCALIZAÇÃO',
 
   // ── Atributos de domínio ──────────────────────────────────
   // Idênticos ao módulo LOJA. Se precisar divergir no futuro,
@@ -103,6 +110,13 @@ export const indicadoresModule: ModuleConfig = {
     { id: 'loja',     label: 'LOJA',     icon: Building2,  options: [] },
     { id: 'setor',    label: 'SETOR',    icon: Briefcase,  options: [] },
     { id: 'vendedor', label: 'VENDEDOR', icon: UserCircle, options: [] },
+  ],
+
+  domainAttributeExtraRows: [
+    {
+      sectionLabel: 'Produto',
+      attributes: PRODUTO_DOMAIN_ATTRIBUTE_DEFS,
+    },
   ],
 
   // ── Opções dinâmicas por atributo ────────────────────────
@@ -136,13 +150,17 @@ export const indicadoresModule: ModuleConfig = {
       }
       case 'setor':    return SETOR_OPTIONS_IND;
       case 'vendedor': return VENDEDOR_OPTIONS_IND;
-      default:         return [];
+      default:
+        if (isProdutoDomainAttrId(attrId)) {
+          return produtoModule.getDomainAttributeOptions(attrId, selections);
+        }
+        return [];
     }
   },
 
   // ── Cross-filtering ────────────────────────────────────────
   // estado → filtra cidade; cidade → filtra loja
-  getFilteredGroupOptions(attrId, options, selections) {
+  getFilteredGroupOptions(attrId, options, selections, exclusions) {
     let result = options;
 
     if (attrId === 'cidade') {
@@ -167,13 +185,25 @@ export const indicadoresModule: ModuleConfig = {
       }
     }
 
+    if (
+      isProdutoDomainAttrId(attrId) &&
+      produtoModule.getFilteredGroupOptions
+    ) {
+      result = produtoModule.getFilteredGroupOptions(
+        attrId,
+        result,
+        selections,
+        exclusions,
+      );
+    }
+
     return result;
   },
 
   // ── Métricas ──────────────────────────────────────────────
   // Prefixo ind_ em todos os IDs para isolamento total.
   // label = nome exibido no menu lateral da sidebar.
-  // Para reordenar colunas na tabela, altere apenas metricDisplayOrder.
+  // metricDisplayOrder: referência canônica; colunas na tabela = ordem de seleção no menu lateral.
   metrics: [
     { id: 'ind_tkm',           label: 'Ticket Médio',             icon: ShoppingCart },
     { id: 'ind_pmi',           label: 'Preço Médio de Item',      icon: Tag          },
@@ -201,6 +231,18 @@ export const indicadoresModule: ModuleConfig = {
       tooltip:
         'Do total de vendas realizadas, representa o percentual de vendas feitas com desconto igualando o preço praticado no site.',
     },
+    {
+      id: 'ind_qtd_personalizacoes',
+      label: 'Qtd de Personalizações',
+      icon: ClipboardList,
+      tooltip: 'Quantidade de personalizações realizadas pela loja no período (referência mensal).',
+    },
+    {
+      id: 'ind_vlr_personalizacoes',
+      label: 'Valor Personalizações',
+      icon: CircleDollarSign,
+      tooltip: 'Valor total das personalizações (custo unitário de referência R$ 17,00).',
+    },
   ],
 
   // ── Ordem das colunas na tabela de resultados ─────────────
@@ -219,6 +261,8 @@ export const indicadoresModule: ModuleConfig = {
     'ind_cko_movel',
     'ind_conv_click',
     'ind_match_preco',
+    'ind_qtd_personalizacoes',
+    'ind_vlr_personalizacoes',
   ],
 
   // ── Títulos por modo de análise ───────────────────────────

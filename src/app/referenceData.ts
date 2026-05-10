@@ -1685,6 +1685,14 @@ export const applyParentContextToOptions = (
           );
         }
       }
+    } else if (childAttrId === "modalidade") {
+      if (parentAttrId === "categoria") {
+        allowed = new Set(MODALIDADES_BY_CATEGORIA[parentValue] || []);
+      }
+    } else if (childAttrId === "subgrupo") {
+      if (parentAttrId === "grupo") {
+        allowed = new Set(SUBGRUPOS_BY_GRUPO[parentValue] || []);
+      }
     } else if (childAttrId === "estado") {
       if (parentAttrId === "rede") {
         allowed = new Set(
@@ -2373,6 +2381,12 @@ export const MOCK_QTD_VENDA = [
   2436, 2620, 2504, 2645, 2667, 2410, 2505, 2748, 2575, 2557, 2478
 ];
 
+/** Qtd de itens vendidos (PRODUTO): proxy = Qtd Venda × (100% + 10% … 17%, por posição). */
+export const MOCK_QTD_ITENS = MOCK_QTD_VENDA.map((q, i) => {
+  const extraPct = 0.1 + ((i * 5) % 8) * 0.01;
+  return Math.max(0, Math.round(q * (1 + extraPct)));
+});
+
 // ── Exposição de produtos (PRODUTO) — inteiros, grandeza alinhada aos exemplos do spec
 
 /**
@@ -2532,6 +2546,12 @@ export const MOCK_TKM = [
 export const MOCK_QTD_VENDAS_LOJA = MOCK_ROB.map((rob, idx) =>
   Math.max(0, Math.round(rob / Math.max(MOCK_TKM[idx % MOCK_TKM.length], 1))),
 );
+
+/** Qtd de itens vendidos (LOJA): proxy = Qtd de Vendas × (100% + 10% … 17%, por posição). */
+export const MOCK_QTD_ITENS_LOJA = MOCK_QTD_VENDAS_LOJA.map((q, i) => {
+  const extraPct = 0.1 + ((i * 5) % 8) * 0.01;
+  return Math.max(0, Math.round(q * (1 + extraPct)));
+});
 
 export const MOCK_QTD_TICKETS = [
   1523, 1467, 1598, 1545, 1423, 1489, 1567, 1534, 1456, 1512,
@@ -2742,6 +2762,19 @@ export const MOCK_IND_MATCH_PRECO = [
   0.115, 0.095, 0.126, 0.106, 0.084, 0.117, 0.1, 0.13, 0.108, 0.083,
 ];
 
+// Personalizações — qtd/mês por loja (referência 15–47); valor = qtd × R$ 17
+const MOCK_IND_QTD_PERSONALIZACOES_RAW = [
+  28, 19, 35, 42, 16, 31, 24, 38, 21, 45,
+  18, 33, 27, 41, 22, 36, 29, 44, 17, 39,
+  26, 32, 20, 46, 23, 34, 30, 40, 15, 37,
+  25, 43, 28, 31, 24, 19, 35,
+];
+const CUSTO_PERSONALIZACAO_REF = 17;
+export const MOCK_IND_QTD_PERSONALIZACOES = MOCK_IND_QTD_PERSONALIZACOES_RAW;
+export const MOCK_IND_VLR_PERSONALIZACOES = MOCK_IND_QTD_PERSONALIZACOES_RAW.map(
+  (q) => q * CUSTO_PERSONALIZACAO_REF,
+);
+
 // Conversão Click & Retire | percent 2 casas | range: 6%–10%
 export const MOCK_IND_CONV_CLICK = [
   0.0672, 0.0789, 0.0935, 0.0851, 0.0880, 0.0712, 0.0645, 0.0878, 0.0934, 0.0756,
@@ -2760,6 +2793,7 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'margem_liquida': { data: MOCK_MARGEM_LIQUIDA, format: 'percent' },
   'lucro_bruto': { data: MOCK_LUCRO_BRUTO, format: 'currency' },
   'qtd_venda': { data: MOCK_QTD_VENDA, format: 'integer' },
+  'qtd_itens': { data: MOCK_QTD_ITENS, format: 'integer' },
   'qtd_estoque': { data: MOCK_QTD_ESTOQUE, format: 'integer' },
   'vlr_estoque': { data: MOCK_VLR_ESTOQUE, format: 'currency' },
   'giro_estoque': { data: MOCK_GIRO_ESTOQUE, format: 'decimal1' },
@@ -2791,6 +2825,7 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   // Loja metrics
   'rob': { data: MOCK_ROB, format: 'currency' },
   'qtd_vendas_loja': { data: MOCK_QTD_VENDAS_LOJA, format: 'integer' },
+  'qtd_itens_loja': { data: MOCK_QTD_ITENS_LOJA, format: 'integer' },
   'valor_meta': { data: MOCK_VALOR_META, format: 'currency' },
   /** Meta mensal por loja (mock); não é métrica de UI — só denominador do % projeção mês vigente. */
   'meta_mensal_loja': { data: MOCK_LOJA_META_MENSAL, format: 'currency' },
@@ -2824,6 +2859,8 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'ind_ppa':           { data: MOCK_IND_PPA,           format: 'percent1' },
   'ind_cko_movel':     { data: MOCK_IND_CKO_MOVEL,     format: 'percent1' },
   'ind_match_preco':   { data: MOCK_IND_MATCH_PRECO,   format: 'percent1' },
+  'ind_qtd_personalizacoes': { data: MOCK_IND_QTD_PERSONALIZACOES, format: 'integer' },
+  'ind_vlr_personalizacoes': { data: MOCK_IND_VLR_PERSONALIZACOES, format: 'currency' },
   'ind_conv_click':    { data: MOCK_IND_CONV_CLICK,    format: 'percent'  },
 };
 
@@ -2837,7 +2874,8 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   'lucro_bruto': 'LB',
   'margem': 'MB',
   'margem_liquida': 'ML',
-  'qtd_venda': 'Qtd Venda',
+  'qtd_venda': 'Qtd de Vendas',
+  'qtd_itens': 'Qtd de Itens',
   'qtd_estoque': 'Qtd Estoque',
   'vlr_estoque': 'Vlr Estoque',
   'giro_estoque': 'Giro Estoque',
@@ -2866,6 +2904,7 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   // Loja
   'rob': 'ROB',
   'qtd_vendas_loja': 'Qtd de Vendas',
+  'qtd_itens_loja': 'Qtd de Itens',
   'margem_bruta': 'MB',
   'valor_meta': 'Valor Meta',
   'vlr_projecao_venda': 'Vlr Proj (mês vig.)',
@@ -2888,6 +2927,8 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   'ind_ppa':           'PPA',
   'ind_cko_movel':     'CKO Móvel',
   'ind_match_preco':   'Match Preço',
+  'ind_qtd_personalizacoes': 'Qtd Pers.',
+  'ind_vlr_personalizacoes': 'Vlr Pers.',
   'ind_conv_click':    'Conversão Click',
 };
 

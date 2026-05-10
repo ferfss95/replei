@@ -14,6 +14,7 @@ import {
   Briefcase,
   UserCircle,
   Tag,
+  Package,
 } from 'lucide-react';
 import {
   REDE_OPTIONS,
@@ -30,6 +31,11 @@ import {
   filterStoresByKnownLinks,
 } from '../referenceData';
 import type { ModuleConfig } from './types';
+import {
+  PRODUTO_DOMAIN_ATTRIBUTE_DEFS,
+  isProdutoDomainAttrId,
+  produtoModule,
+} from './produto';
 
 // ──────────────────────────────────────────────────────────────
 // LOJA module configuration
@@ -64,7 +70,7 @@ const VENDEDOR_OPTIONS = [
 export const lojaModule: ModuleConfig = {
   id: 'LOJA',
   label: 'LOJA',
-  domainSectionLabel: '', // Sem linha segmentadora
+  domainSectionLabel: 'LOCALIZAÇÃO',
 
   // ── Domain attributes (todos em uma única linha) ──────────
   domainAttributes: [
@@ -76,6 +82,13 @@ export const lojaModule: ModuleConfig = {
     { id: 'loja',      label: 'LOJA',      icon: Building2,  options: [] },
     { id: 'setor',     label: 'SETOR',     icon: Briefcase,  options: [] },
     { id: 'vendedor',  label: 'VENDEDOR',  icon: UserCircle, options: [] },
+  ],
+
+  domainAttributeExtraRows: [
+    {
+      sectionLabel: 'Produto',
+      attributes: PRODUTO_DOMAIN_ATTRIBUTE_DEFS,
+    },
   ],
 
   // ── Dynamic options per domain attribute ──────────────────
@@ -110,12 +123,16 @@ export const lojaModule: ModuleConfig = {
       }
       case 'setor':     return SETOR_OPTIONS;
       case 'vendedor':  return VENDEDOR_OPTIONS;
-      default:          return [];
+      default:
+        if (isProdutoDomainAttrId(attrId)) {
+          return produtoModule.getDomainAttributeOptions(attrId, selections);
+        }
+        return [];
     }
   },
 
   // ── Cross-attribute filter (opcional) ─────────────────────
-  getFilteredGroupOptions(attrId, options, selections) {
+  getFilteredGroupOptions(attrId, options, selections, exclusions) {
     let result = options;
 
     // estado ↔ cidade
@@ -144,6 +161,18 @@ export const lojaModule: ModuleConfig = {
       }
     }
 
+    if (
+      isProdutoDomainAttrId(attrId) &&
+      produtoModule.getFilteredGroupOptions
+    ) {
+      result = produtoModule.getFilteredGroupOptions(
+        attrId,
+        result,
+        selections,
+        exclusions,
+      );
+    }
+
     return result;
   },
 
@@ -151,13 +180,20 @@ export const lojaModule: ModuleConfig = {
   metrics: [
     { id: 'rob',           label: 'Venda (ROB)',        icon: DollarSign   },
     {
+      id: 'qtd_itens_loja',
+      label: 'Qtd de Itens',
+      icon: Package,
+      tooltip:
+        'Quantidade de itens vendidos (mock: entre 10% e 17% acima da Qtd de Vendas por posição).',
+    },
+    {
       id: 'qtd_vendas_loja',
       label: 'Qtd de Vendas',
       icon: Hash,
       tooltip:
         'Quantidade de vendas realizadas (proxy baseado em ROB dividido pelo Ticket Médio).',
     },
-    { id: 'sss',           label: 'SSS',                icon: BarChart3    },
+    { id: 'sss', label: 'SSS', icon: BarChart3 },
     { id: 'margem_bruta',  label: 'Margem Bruta (MB)',  icon: Percent      },
     { id: 'valor_meta',    label: 'Valor da Meta',      icon: Target       },
     {
@@ -194,6 +230,7 @@ export const lojaModule: ModuleConfig = {
 
   metricDisplayOrder: [
     'rob',
+    'qtd_itens_loja',
     'qtd_vendas_loja',
     'sss',
     'margem_bruta',

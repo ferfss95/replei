@@ -21,6 +21,7 @@ import { AnalysisSelector } from "../AnalysisSelector";
 import { DateRangePicker } from "../DateRangePicker";
 import { Calendar } from "../ui/calendar";
 import { MdsaaToggle } from "../MdsaaToggle";
+import { LyToggle } from "../LyToggle";
 import { LockedTooltip } from "../LockedTooltip";
 import type { AnalysisMode } from "../../types/wizard";
 import { NEUTRAL_PALETTE, type ModuleColors } from "../../constants/moduleColors";
@@ -86,9 +87,11 @@ interface SelectionViewProps {
   compSpecificDays2: string[];
   compExpandedYears2: Set<string>;
   setCompExpandedYears2: React.Dispatch<React.SetStateAction<Set<string>>>;
-  // MDSAA
+  // MDSAA / LY (comparativo)
   mdsaaActive: boolean;
   setMdsaaActive: (active: boolean) => void;
+  lyActive: boolean;
+  setLyActive: (active: boolean) => void;
   monthsP2ScrollRef: React.RefObject<HTMLDivElement | null>;
   // Manual P2 handlers
   handleManualP2DateRangeChange: (field: "start" | "end", value: string) => void;
@@ -136,6 +139,8 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
   setCompExpandedYears2,
   mdsaaActive,
   setMdsaaActive,
+  lyActive,
+  setLyActive,
   monthsP2ScrollRef,
   handleManualP2DateRangeChange,
   handleManualP2SpecificDaysChange,
@@ -1130,7 +1135,16 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               <span className="text-[11px] font-bold text-[#62748e] tracking-[0.55px] uppercase">
                                                 Período 2
                                               </span>
-                                              <MdsaaToggle mdsaaActive={mdsaaActive} setMdsaaActive={setMdsaaActive} />
+                                              <div className="flex flex-wrap items-center gap-1">
+                                                <MdsaaToggle
+                                                  mdsaaActive={mdsaaActive}
+                                                  setMdsaaActive={setMdsaaActive}
+                                                />
+                                                <LyToggle
+                                                  lyActive={lyActive}
+                                                  setLyActive={setLyActive}
+                                                />
+                                              </div>
                                             </div>
                                             <DateRangePicker
                                               startDate={
@@ -1303,7 +1317,16 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                 <span className="text-[11px] font-bold text-[#62748e] tracking-[0.55px] uppercase">
                                                   Período 2
                                                 </span>
-                                                <MdsaaToggle mdsaaActive={mdsaaActive} setMdsaaActive={setMdsaaActive} />
+                                                <div className="flex flex-wrap items-center gap-1">
+                                                  <MdsaaToggle
+                                                    mdsaaActive={mdsaaActive}
+                                                    setMdsaaActive={setMdsaaActive}
+                                                  />
+                                                  <LyToggle
+                                                    lyActive={lyActive}
+                                                    setLyActive={setLyActive}
+                                                  />
+                                                </div>
                                               </div>
                                               <div className="shrink-0 w-fit">
                                                 <Calendar
@@ -1561,7 +1584,16 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               <span className="text-[11px] font-bold text-[#62748e] tracking-[0.55px] uppercase">
                                                 Período 2
                                               </span>
-                                              <MdsaaToggle mdsaaActive={mdsaaActive} setMdsaaActive={setMdsaaActive} />
+                                              <div className="flex flex-wrap items-center gap-1">
+                                                <MdsaaToggle
+                                                  mdsaaActive={mdsaaActive}
+                                                  setMdsaaActive={setMdsaaActive}
+                                                />
+                                                <LyToggle
+                                                  lyActive={lyActive}
+                                                  setLyActive={setLyActive}
+                                                />
+                                              </div>
                                             </div>
                                             <div className="shrink-0 w-fit">
                                               <Calendar
@@ -2002,7 +2034,16 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               <span className="text-[11px] font-bold text-[#62748e] tracking-[0.55px] uppercase">
                                                 Período 2
                                               </span>
-                                              <MdsaaToggle mdsaaActive={mdsaaActive} setMdsaaActive={setMdsaaActive} />
+                                              <div className="flex flex-wrap items-center gap-1">
+                                                <MdsaaToggle
+                                                  mdsaaActive={mdsaaActive}
+                                                  setMdsaaActive={setMdsaaActive}
+                                                />
+                                                <LyToggle
+                                                  lyActive={lyActive}
+                                                  setLyActive={setLyActive}
+                                                />
+                                              </div>
                                             </div>
                                             <div
                                               ref={
@@ -2385,7 +2426,16 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               <span className="text-[11px] font-bold text-[#62748e] tracking-[0.55px] uppercase">
                                                 Período 2
                                               </span>
-                                              <MdsaaToggle mdsaaActive={mdsaaActive} setMdsaaActive={setMdsaaActive} />
+                                              <div className="flex flex-wrap items-center gap-1">
+                                                <MdsaaToggle
+                                                  mdsaaActive={mdsaaActive}
+                                                  setMdsaaActive={setMdsaaActive}
+                                                />
+                                                <LyToggle
+                                                  lyActive={lyActive}
+                                                  setLyActive={setLyActive}
+                                                />
+                                              </div>
                                             </div>
                                             <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 custom-scrollbar pt-2 w-[247px] shrink-0 border border-[#e2e8f0] rounded-lg p-2">
                                               {YEARS_OPTIONS.map(

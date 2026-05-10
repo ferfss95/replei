@@ -13,6 +13,22 @@ export interface AttributeDef {
   tooltip?: string;
 }
 
+/** Uma linha extra de atributos de domínio (rótulo + cartões), após `domainAttributes`. */
+export interface DomainAttributeExtraRow {
+  sectionLabel: string;
+  attributes: AttributeDef[];
+}
+
+/** Primeira linha + linhas extras — para label, ícone e checagem de opções de domínio. */
+export function collectAllDomainAttributes(
+  config: ModuleConfig,
+): AttributeDef[] {
+  const extra = (config.domainAttributeExtraRows ?? []).flatMap(
+    (row) => row.attributes,
+  );
+  return [...config.domainAttributes, ...extra];
+}
+
 export interface MetricDef {
   id: string;
   label: string;
@@ -47,6 +63,12 @@ export interface ModuleConfig {
   domainSectionLabel: string;
 
   /**
+   * Linhas adicionais de atributos de domínio (cada uma com rótulo de seção).
+   * Ex.: LOJA e INDICADORES exibem o bloco «Produto» (SALA…SABOR) após LOCALIZAÇÃO.
+   */
+  domainAttributeExtraRows?: DomainAttributeExtraRow[];
+
+  /**
    * Resolves the live option list for a domain attribute.
    * Called with the attribute id and the current selections map so that
    * cross-attribute narrowing (e.g. categoria → modalidade) can be applied.
@@ -72,7 +94,10 @@ export interface ModuleConfig {
   // ── Metrics ──
   /** Ordered list of metrics available for this module */
   metrics: MetricDef[];
-  /** Fixed display order for metric columns in the result table */
+  /**
+   * Ordem canônica dos ids de métrica no módulo (referência / consistência).
+   * Colunas na tabela de resultados seguem a ordem em que o usuário marca as métricas no menu lateral.
+   */
   metricDisplayOrder: string[];
   /** Optional: IDs of metrics that belong to the "Planning" group (for visual divider) */
   planningMetrics?: string[];

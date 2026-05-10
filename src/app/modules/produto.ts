@@ -45,7 +45,7 @@ import {
   MESA_OPTIONS,
   filterMesasBySalasOptions,
 } from '../referenceData';
-import type { ModuleConfig } from './types';
+import type { AttributeDef, ModuleConfig } from './types';
 
 /** Métricas do bloco "Exposição de produtos" (sidebar + tabela); EXTRAVIOS remove estas da cópia base. */
 export const EXPOSICAO_PRODUTO_METRIC_IDS = [
@@ -101,6 +101,31 @@ const applyGroupCategoryCoherence = (
   return options;
 };
 
+/** Mesma hierarquia do módulo PRODUTO (SALA → SABOR); reutilizada em LOJA e INDICADORES. */
+export const PRODUTO_DOMAIN_ATTRIBUTE_DEFS: AttributeDef[] = [
+  { id: 'sala',         label: 'SALA',         icon: Megaphone,   options: [] },
+  { id: 'mesa',         label: 'MESA',         icon: LayoutGrid,  options: [] },
+  { id: 'categoria',    label: 'CATEGORIA',    icon: Tag,         options: [] },
+  { id: 'modalidade',   label: 'MODALIDADE',   icon: Activity,    options: [] },
+  { id: 'grupo',        label: 'GRUPO',        icon: Layers,      options: [] },
+  { id: 'subgrupo',     label: 'SUB-GRUPO',    icon: Layers,      options: [] },
+  { id: 'marca',        label: 'MARCA',        icon: Tag,         options: [] },
+  { id: 'modelo',       label: 'MODELO',       icon: Component,   options: [] },
+  { id: 'genero',       label: 'GÊNERO',       icon: Users,       options: [] },
+  { id: 'faixa_etaria', label: 'FAIXA ETÁRIA', icon: Users,       options: [] },
+  { id: 'cor',          label: 'COR',          icon: Palette,     options: [] },
+  { id: 'tamanho',      label: 'TAMANHO',      icon: Ruler,       options: [] },
+  { id: 'sabor',        label: 'SABOR',        icon: Hash,        options: [] },
+];
+
+const PRODUTO_DOMAIN_ATTR_ID_SET = new Set(
+  PRODUTO_DOMAIN_ATTRIBUTE_DEFS.map((a) => a.id),
+);
+
+export function isProdutoDomainAttrId(attrId: string): boolean {
+  return PRODUTO_DOMAIN_ATTR_ID_SET.has(attrId);
+}
+
 // ──────────────────────────────────────────────────────────────
 // PRODUTO module configuration
 // ──────────────────────────────────────────────────────────────
@@ -111,21 +136,7 @@ export const produtoModule: ModuleConfig = {
   domainSectionLabel: 'Produto',
 
   // ── Domain attributes ──────────────────────────────────────
-  domainAttributes: [
-    { id: 'sala',         label: 'SALA',         icon: Megaphone,   options: [] },
-    { id: 'mesa',         label: 'MESA',         icon: LayoutGrid,  options: [] },
-    { id: 'categoria',    label: 'CATEGORIA',    icon: Tag,         options: [] },
-    { id: 'modalidade',   label: 'MODALIDADE',   icon: Activity,    options: [] },
-    { id: 'grupo',        label: 'GRUPO',        icon: Layers,      options: [] },
-    { id: 'subgrupo',     label: 'SUB-GRUPO',    icon: Layers,      options: [] },
-    { id: 'marca',        label: 'MARCA',        icon: Tag,         options: [] },
-    { id: 'modelo',       label: 'MODELO',       icon: Component,   options: [] },
-    { id: 'genero',       label: 'GÊNERO',       icon: Users,       options: [] },
-    { id: 'faixa_etaria', label: 'FAIXA ETÁRIA', icon: Users,       options: [] },
-    { id: 'cor',          label: 'COR',          icon: Palette,     options: [] },
-    { id: 'tamanho',      label: 'TAMANHO',      icon: Ruler,       options: [] },
-    { id: 'sabor',        label: 'SABOR',        icon: Hash,        options: [] },
-  ],
+  domainAttributes: PRODUTO_DOMAIN_ATTRIBUTE_DEFS,
 
   // ── Dynamic options per domain attribute ──────────────────
   getDomainAttributeOptions(attrId, selections) {
@@ -198,7 +209,7 @@ export const produtoModule: ModuleConfig = {
   },
 
   // ── Cross-attribute filter for AnalysisView grouping ──────
-  getFilteredGroupOptions(attrId, options, selections) {
+  getFilteredGroupOptions(attrId, options, selections, _exclusions) {
     let result = options;
 
     // categoria ↔ modalidade
@@ -245,13 +256,20 @@ export const produtoModule: ModuleConfig = {
   // ── Metrics ───────────────────────────────────────────────
   metrics: [
     { id: 'venda',       label: 'Venda (ROB)',      icon: DollarSign  },
-    { id: 'sss',         label: 'SSS',              icon: Activity    },
+    { id: 'qtd_venda',   label: 'Qtd de Vendas',    icon: ShoppingCart },
+    {
+      id: 'qtd_itens',
+      label: 'Qtd de Itens',
+      icon: Package,
+      tooltip:
+        'Quantidade de itens vendidos (mock: entre 10% e 17% acima da Qtd de Vendas por posição).',
+    },
+    { id: 'sss', label: 'SSS', icon: Activity },
     { id: 'cmv',             label: 'CMV',                 icon: DollarSign  },
     { id: 'cmv_comercial',   label: 'CMV Comercial',       icon: DollarSign  },
     { id: 'lucro_bruto',     label: 'Lucro Bruto (LB)',    icon: DollarSign  },
     { id: 'margem',          label: 'Margem Bruta (MB)',   icon: Percent     },
     { id: 'margem_liquida',  label: 'Margem Líquida (ML)', icon: Percent     },
-    { id: 'qtd_venda',   label: 'Qtd Venda',        icon: ShoppingCart},
     { id: 'qtd_estoque', label: 'Qtd Estoque',      icon: Package     },
     { id: 'vlr_estoque', label: 'Vlr Estoque',      icon: DollarSign  },
     { id: 'dep',         label: 'DEP',              icon: Package     },
@@ -352,8 +370,8 @@ export const produtoModule: ModuleConfig = {
   ],
 
   metricDisplayOrder: [
-    'venda', 'sss', 'cmv', 'cmv_comercial', 'lucro_bruto', 'margem', 'margem_liquida',
-    'qtd_venda', 'qtd_estoque', 'vlr_estoque', 'dep', 'def',
+    'venda', 'qtd_venda', 'qtd_itens', 'sss', 'cmv', 'cmv_comercial', 'lucro_bruto', 'margem', 'margem_liquida',
+    'qtd_estoque', 'vlr_estoque', 'dep', 'def',
     'vlr_plano', 'qtd_plano', 'qtd_desvio_plano', 'vlr_desvio_plano',
     'vlr_target', 'qtd_target', 'qtd_desvio_target', 'vlr_desvio_target',
     ...EXPOSICAO_PRODUTO_METRIC_IDS,
@@ -368,7 +386,6 @@ export const produtoModule: ModuleConfig = {
   metricsSidebarPlanningSubgroupLabel: 'Planejamento',
 
   metricsSidebarExcludeFromVendaEstoque: [
-    'sss',
     ...EXPOSICAO_PRODUTO_METRIC_IDS,
     'ppa',
     'match_preco',

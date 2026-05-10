@@ -99,6 +99,7 @@ export default function App() {
     compWeekdays1,
     compWeekdays2,
     mdsaaActive, setMdsaaActive,
+    lyActive, setLyActive,
     monthsP2ScrollRef,
     handleManualP2DateRangeChange,
     handleManualP2SpecificDaysChange,
@@ -363,6 +364,8 @@ export default function App() {
                     setCompExpandedYears2={setCompExpandedYears2}
                     mdsaaActive={mdsaaActive}
                     setMdsaaActive={setMdsaaActive}
+                    lyActive={lyActive}
+                    setLyActive={setLyActive}
                     monthsP2ScrollRef={monthsP2ScrollRef}
                     handleManualP2DateRangeChange={handleManualP2DateRangeChange}
                     handleManualP2SpecificDaysChange={handleManualP2SpecificDaysChange}

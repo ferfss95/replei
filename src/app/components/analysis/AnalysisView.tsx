@@ -90,7 +90,15 @@ import {
   type StockSaltContext,
 } from "../../utils/stockSnapshot";
 import { computeLojaVendaProjectionMesVigente } from "../../utils/lojaProjection";
-import type { ModuleConfig } from "../../modules/types";
+import {
+  sortAnalysisRowTree,
+  makeRowComparator,
+  ANALYSIS_ATTRIBUTE_SORT_KEY,
+} from "../../utils/sortAnalysisRowTree";
+import {
+  collectAllDomainAttributes,
+  type ModuleConfig,
+} from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
 import type { AnalysisMode, AveragePeriodType } from "../../types/wizard";
 
@@ -176,7 +184,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // These shadow the removed module-level constants so all internal
   // references remain unchanged when new modules are added.
   const METRICS_LIST = moduleConfig.metrics;
-  const METRIC_DISPLAY_ORDER = moduleConfig.metricDisplayOrder;
   const MODULE_TITLES = moduleConfig.analysisTitles as Record<
     string,
     string
@@ -194,13 +201,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // Attribute label/icon helpers — resolved via active module domain + shared location
   const getAttributeLabel = (id: string): string => {
     const attr =
-      moduleConfig.domainAttributes.find((a) => a.id === id) ||
+      collectAllDomainAttributes(moduleConfig).find((a) => a.id === id) ||
       LOCATION_ATTRIBUTES.find((a) => a.id === id);
     return attr?.label || id;
   };
   const getAttributeIcon = (id: string) => {
     const attr =
-      moduleConfig.domainAttributes.find((a) => a.id === id) ||
+      collectAllDomainAttributes(moduleConfig).find((a) => a.id === id) ||
       LOCATION_ATTRIBUTES.find((a) => a.id === id);
     return attr?.icon || Tag;
   };
@@ -208,14 +215,18 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // Helper to check if average is active
   const showAverage = averagePeriodType !== null;
 
-  // Ordered metrics (fixed display order, no drag-and-drop)
+  // Colunas da tabela = ordem em que o usuário clicou nas métricas (selectedMetrics)
   const orderedMetrics = React.useMemo(() => {
-    return [...new Set(selectedMetrics)].sort(
-      (a, b) =>
-        METRIC_DISPLAY_ORDER.indexOf(a) -
-        METRIC_DISPLAY_ORDER.indexOf(b),
-    );
-  }, [selectedMetrics, METRIC_DISPLAY_ORDER]);
+    const valid = new Set(METRICS_LIST.map((m) => m.id));
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const id of selectedMetrics) {
+      if (!valid.has(id) || seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
+  }, [selectedMetrics, METRICS_LIST]);
 
   // Sort State
   const [sortConfig, setSortConfig] = useState<{
@@ -1090,6 +1101,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     };
   };
 
+  // Orçamento de nós POR sub-árvore: garante que todos os nós raiz apareçam.
+  // Cada nó raiz (nível 0) reinicia o orçamento; sub-níveis o consomem.
+  const _buildBudget = React.useRef<{ remaining: number }>({ remaining: 0 });
+  const MAX_SUBTREE_NODES = 2000;
+
   // Recursive tree builder for multi-level grouping
   // parentContext acumula { attrId: value } de cada nível pai para restringir
   // as opções do filho somente aos itens que pertencem ao pai correto.
@@ -1102,6 +1118,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     lastLojaSeed?: number,
   ): any[] => {
     if (levelIndex >= levels.length) return [];
+    // Somente sub-níveis (> 0) consomem orçamento; raiz sempre processa.
+    if (levelIndex > 0 && _buildBudget.current.remaining <= 0) return [];
 
     const attrId = levels[levelIndex];
     // 1. Obtém opções base respeitando seleções/exclusões globais
@@ -1115,6 +1133,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     const siblingCount = Math.max(1, options.length);
 
     return options.map((opt: string, idx: number) => {
+      if (levelIndex === 0) {
+        // Cada nó raiz inicia sub-árvore com orçamento próprio
+        _buildBudget.current = { remaining: MAX_SUBTREE_NODES };
+      } else {
+        if (_buildBudget.current.remaining <= 0) return null;
+        _buildBudget.current.remaining--;
+      }
+
       const rowId = parentId ? `${parentId}|${opt}` : opt;
       const seed = hashString(opt, parentSeed + idx * 7);
       // Propaga contexto acumulado + valor deste nível para o próximo
@@ -1313,7 +1339,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       }
 
       return rowData;
-    });
+    }).filter(Boolean);
   };
 
   // Helper: compact label for a comparativo period's selections
@@ -1997,6 +2023,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // Data Generation
   const rawRows = React.useMemo(() => {
     if (groupingArr.length === 0) return [];
+    // Inicializa orçamento; será sobrescrito por nó-raiz ao processar.
+    _buildBudget.current = { remaining: MAX_SUBTREE_NODES };
     if (
       (isTimeDrilldownEnabled ||
         analysisMode === "comparativo" ||
@@ -2043,32 +2071,27 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     standardStockIndexSalt,
   ]);
 
-  // Sorting Logic (Applies to top-level rows)
+  // Ordenação: mesmo critério em cada nível da árvore de agrupamento (drill)
   const sortedRows = React.useMemo(() => {
     if (!sortConfig) return rawRows;
-
-    return [...rawRows].sort((a: any, b: any) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
-
-      if (aVal < bVal)
-        return sortConfig.direction === "asc" ? -1 : 1;
-      if (aVal > bVal)
-        return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
-    });
+    return sortAnalysisRowTree(rawRows, sortConfig);
   }, [rawRows, sortConfig]);
 
-  // Flatten tree for rendering (recursive, multi-level)
+  // Flatten tree for rendering — aplica sort em cada `children` no momento
+  // em que o nó é expandido (lazy, sem clone profundo).
   const flattenTree = (
     rows: any[],
     expandedSet: Set<string>,
+    comparator: ((a: any, b: any) => number) | null,
   ): any[] => {
     const result: any[] = [];
     for (const row of rows) {
       result.push(row);
       if (row.children?.length > 0 && expandedSet.has(row.id)) {
-        result.push(...flattenTree(row.children, expandedSet));
+        const children = comparator
+          ? [...row.children].sort(comparator)
+          : row.children;
+        result.push(...flattenTree(children, expandedSet, comparator));
       }
     }
     return result;
@@ -2076,8 +2099,9 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
   const finalRows = React.useMemo(() => {
     const expandedSet = new Set(expandedRows);
-    return flattenTree(sortedRows, expandedSet);
-  }, [sortedRows, expandedRows]);
+    const comparator = sortConfig ? makeRowComparator(sortConfig) : null;
+    return flattenTree(sortedRows, expandedSet, comparator);
+  }, [sortedRows, expandedRows, sortConfig]);
 
   // Show share % only when there are 2+ data rows (single row is always 100% — redundant)
   const hasMultipleRows = rawRows.length >= 2;
@@ -2109,16 +2133,19 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     );
   };
 
-  const handleSort = (metricId: string) => {
+  const handleSort = (sortKey: string) => {
     setSortConfig((current) => {
-      if (current?.key === metricId) {
+      if (current?.key === sortKey) {
         return {
-          key: metricId,
+          key: sortKey,
           direction:
             current.direction === "asc" ? "desc" : "asc",
         };
       }
-      return { key: metricId, direction: "desc" };
+      // Coluna de atributos: primeiro clique A–Z (asc); métricas: maior→menor (desc)
+      const defaultDir =
+        sortKey === ANALYSIS_ATTRIBUTE_SORT_KEY ? "asc" : "desc";
+      return { key: sortKey, direction: defaultDir };
     });
   };
 
@@ -6885,11 +6912,29 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             boxShadow:
                               "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                           }}
-                          className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider sticky left-0 top-0 z-[50] select-none align-middle"
+                          className="relative px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider sticky left-0 top-0 z-[50] select-none align-middle"
                         >
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="truncate text-[14px]">
+                          <div
+                            className="group flex cursor-pointer items-center gap-2 overflow-hidden pr-1 transition-colors hover:opacity-90"
+                            onClick={() =>
+                              handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY)
+                            }
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY);
+                              }
+                            }}
+                          >
+                            <span className="min-w-0 flex-1 truncate text-[14px]">
                               {groupingLabel}
+                            </span>
+                            <span className="shrink-0">
+                              {renderSortIndicator(
+                                ANALYSIS_ATTRIBUTE_SORT_KEY,
+                              )}
                             </span>
                           </div>
                           <div
@@ -9339,11 +9384,29 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             boxShadow:
                               "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                           }}
-                          className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider sticky left-0 top-0 z-[50] group select-none"
+                          className="relative px-4 py-3 text-left text-xs font-bold uppercase tracking-wider sticky left-0 top-0 z-[50] group select-none"
                         >
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="truncate text-[14px]">
+                          <div
+                            className="group flex cursor-pointer items-center gap-2 overflow-hidden pr-1 transition-colors hover:opacity-90"
+                            onClick={() =>
+                              handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY)
+                            }
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY);
+                              }
+                            }}
+                          >
+                            <span className="min-w-0 flex-1 truncate text-[14px]">
                               {groupingLabel}
+                            </span>
+                            <span className="shrink-0">
+                              {renderSortIndicator(
+                                ANALYSIS_ATTRIBUTE_SORT_KEY,
+                              )}
                             </span>
                           </div>
                           <div
