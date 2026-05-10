@@ -1,10 +1,18 @@
 import React from "react";
-import { TrendingUp, ChevronRight, PanelRightOpen, PanelRightClose, Check } from "lucide-react";
+import {
+  TrendingUp,
+  ChevronRight,
+  PanelRightOpen,
+  PanelRightClose,
+  Check,
+  CircleHelp,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../utils";
 import type { Module } from "../constants";
 import type { MetricDef, ModuleConfig } from "../modules/types";
 import { NEUTRAL_PALETTE, type ModuleColors } from "../constants/moduleColors";
+import { MetricsDictionaryDialog } from "./MetricsDictionaryDialog";
 
 interface MetricsSidebarProps {
   metricsCollapsed: boolean;
@@ -30,6 +38,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   moduleColors,
 }: MetricsSidebarProps) {
   const [hoveredMetricId, setHoveredMetricId] = React.useState<string | null>(null);
+  const [dictionaryOpen, setDictionaryOpen] = React.useState(false);
   const planningMetrics = currentModuleConfig.planningMetrics || [];
   const excludedFromVendaEstoque = new Set(
     currentModuleConfig.metricsSidebarExcludeFromVendaEstoque || [],
@@ -100,25 +109,41 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       )}
       style={{ top: 64 }}
     >
+      <MetricsDictionaryDialog
+        open={dictionaryOpen}
+        onOpenChange={setDictionaryOpen}
+        moduleConfig={currentModuleConfig}
+        accentColor={moduleColors.primaryColor}
+      />
+
       <div
         className={cn(
           "flex-none",
           metricsCollapsed ? "px-2 pt-4 pb-3" : "px-5 pt-5 pb-4",
         )}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           {!metricsCollapsed && (
-            <div className="flex items-center gap-2">
-              <TrendingUp size={14} className="text-[#90A1B9]" />
-              <h3 className="text-[14px] font-bold uppercase tracking-wider text-[rgb(49,65,88)]">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <TrendingUp size={14} className="shrink-0 text-[#90A1B9]" />
+              <h3 className="min-w-0 flex-1 truncate text-[14px] font-bold uppercase tracking-wider text-[rgb(49,65,88)]">
                 Métricas
               </h3>
+              <button
+                type="button"
+                onClick={() => setDictionaryOpen(true)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#90A1B9] transition-colors hover:bg-slate-100 hover:text-[#314158] cursor-pointer"
+                title="Glossário de métricas — descrições e fórmulas"
+                aria-label="Abrir glossário de métricas"
+              >
+                <CircleHelp size={17} strokeWidth={2} aria-hidden />
+              </button>
             </div>
           )}
           <button
             type="button"
             onClick={() => setMetricsCollapsed((v) => !v)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-[#90A1B9] hover:text-[#314158] hover:bg-slate-100 transition-colors cursor-pointer"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#90A1B9] transition-colors hover:bg-slate-100 hover:text-[#314158] cursor-pointer"
             title={metricsCollapsed ? "Expandir métricas" : "Recolher métricas"}
           >
             {metricsCollapsed ? (
