@@ -1831,6 +1831,19 @@ export const MARCA_OPTION_GROUPS: MarcaOptionGroup[] = [
   },
 ];
 
+/** Opções fixas do atributo FRANQUIA (módulo PRODUTO). */
+export const FRANQUIA_OPTIONS = [
+  "Pegasus",
+  "Vomero",
+  "Metcon",
+  "Revolution",
+  "Downshifter",
+  "Airmax",
+  "Dunk",
+  "T90",
+  "Airforce",
+] as const;
+
 function collapseSpaces(s: string): string {
   return s.replace(/\s+/g, " ").trim();
 }

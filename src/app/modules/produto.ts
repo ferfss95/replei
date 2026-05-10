@@ -27,6 +27,7 @@ import {
   ShoppingBasket,
   Refrigerator,
   BarChart3,
+  Award,
 } from 'lucide-react';
 import {
   CATEGORIAS_LIST,
@@ -34,6 +35,7 @@ import {
   GRUPOS_LIST,
   SUBGRUPOS_BY_GRUPO,
   MARCA_OPTIONS,
+  FRANQUIA_OPTIONS,
   GENERO_OPTIONS,
   FAIXA_ETARIA_OPTIONS,
   COR_OPTIONS,
@@ -110,6 +112,7 @@ export const PRODUTO_DOMAIN_ATTRIBUTE_DEFS: AttributeDef[] = [
   { id: 'grupo',        label: 'GRUPO',        icon: Layers,      options: [] },
   { id: 'subgrupo',     label: 'SUB-GRUPO',    icon: Layers,      options: [] },
   { id: 'marca',        label: 'MARCA',        icon: Tag,         options: [] },
+  { id: 'franquia',     label: 'FRANQUIA',     icon: Award,       options: [] },
   { id: 'modelo',       label: 'MODELO',       icon: Component,   options: [] },
   { id: 'genero',       label: 'GÊNERO',       icon: Users,       options: [] },
   { id: 'faixa_etaria', label: 'FAIXA ETÁRIA', icon: Users,       options: [] },
@@ -198,6 +201,7 @@ export const produtoModule: ModuleConfig = {
         return Array.from(new Set(subs)).sort();
       }
       case 'marca':        return MARCA_OPTIONS;
+      case 'franquia':     return [...FRANQUIA_OPTIONS];
       case 'modelo':       return MODELO_OPTIONS;
       case 'genero':       return GENERO_OPTIONS;
       case 'faixa_etaria': return FAIXA_ETARIA_OPTIONS;
