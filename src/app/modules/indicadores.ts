@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import {
   REDE_OPTIONS,
-  TIPO_OPTIONS,
+  TIPO_OPTIONS_INDICADORES,
   ESTADOS_LIST,
   REGIONAL_OPTIONS,
   LOJAS_LIST,
@@ -123,7 +123,7 @@ export const indicadoresModule: ModuleConfig = {
   getDomainAttributeOptions(attrId, selections) {
     switch (attrId) {
       case 'rede':     return REDE_OPTIONS;
-      case 'tipo':     return TIPO_OPTIONS;
+      case 'tipo':     return TIPO_OPTIONS_INDICADORES;
       case 'estado':
         return filterStatesByKnownLinks(ESTADOS_LIST, selections);
       case 'regional':
@@ -226,10 +226,17 @@ export const indicadoresModule: ModuleConfig = {
     { id: 'ind_conv_click',    label: 'Conversão Click & Retire', icon: Activity     },
     {
       id: 'ind_match_preco',
-      label: 'Match de Preço',
+      label: 'Match de Preço %',
       icon: Percent,
       tooltip:
         'Do total de vendas realizadas, representa o percentual de vendas feitas com desconto igualando o preço praticado no site.',
+    },
+    {
+      id: 'ind_match_preco_valor',
+      label: 'Match de Preço valor',
+      icon: CircleDollarSign,
+      tooltip:
+        'Valor (R$) de vendas com match de preço; mock entre 10% e 15% do ROB da posição.',
     },
     {
       id: 'ind_qtd_personalizacoes',
@@ -261,6 +268,7 @@ export const indicadoresModule: ModuleConfig = {
     'ind_cko_movel',
     'ind_conv_click',
     'ind_match_preco',
+    'ind_match_preco_valor',
     'ind_qtd_personalizacoes',
     'ind_vlr_personalizacoes',
   ],

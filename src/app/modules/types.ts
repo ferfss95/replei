@@ -106,8 +106,8 @@ export interface ModuleConfig {
   /** Subtítulo opcional dentro do accordion, acima da lista de métricas de planejamento */
   metricsSidebarPlanningSubgroupLabel?: string;
   /**
-   * Métricas no accordion Outras/Planejamento após o bloco com subtítulo PLANEJAMENTO
-   * (ex.: PPA e Match de Preço no PRODUTO).
+   * Métricas no accordion Planejamento após o bloco principal de planejamento
+   * (opcional por módulo; em PRODUTO as métricas PPA / Match ficam em «Venda e Estoque»).
    */
   metricsSidebarOutrasAfterPlanning?: string[];
   /**

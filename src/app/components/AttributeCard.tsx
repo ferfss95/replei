@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Check, Search, Filter, Trash2, Anchor } from "lucide-react";
+import { Check, Search, Filter, Trash2, Anchor, Tag, Minus } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { cn } from "../utils";
@@ -7,6 +7,9 @@ import type { ModuleColors } from "../constants/moduleColors";
 import {
   LOCALIZACAO_OPTION_GROUPS,
   MARCA_OPTION_GROUPS,
+  modeloListDisplayLabel,
+  CANAL_GROUP_CENTAURO_IDS,
+  CANAL_GROUP_NIKE_IDS,
 } from "../referenceData";
 
 /** Paleta neutra — default / hover / desativado agrupamento */
@@ -64,6 +67,8 @@ export function AttributeCard({
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isHover, setIsHover] = useState(false);
+  /** Modal MODELO: exibir prefixo `12345678-` (comportamento anterior ao toggle). */
+  const [showModeloCode, setShowModeloCode] = useState(true);
 
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return attribute.options;
@@ -106,6 +111,131 @@ export function AttributeCard({
   const handleClear = (isSelection: boolean) => {
     if (isSelection) onUpdateSelection([]);
     else onUpdateExclusion([]);
+  };
+
+  /** Modal CANAL: liga/desliga todos os canais do grupo (parcial → completo num clique). */
+  const toggleCanalGroup = (members: readonly string[]) => {
+    const updateFn = isSelectionMode ? onUpdateSelection : onUpdateExclusion;
+    const n = members.filter((m) => currentValues.includes(m)).length;
+    const allOn = n === members.length;
+    if (allOn) {
+      updateFn(currentValues.filter((v) => !members.includes(v)));
+    } else {
+      updateFn([...new Set([...currentValues, ...members])]);
+    }
+  };
+
+  const canalGroupCounts = (members: readonly string[]) => {
+    const n = members.filter((m) => currentValues.includes(m)).length;
+    return { n, allOn: n === members.length, indeterminate: n > 0 && n < members.length };
+  };
+
+  const renderCanalMasterRow = (title: string, members: readonly string[]) => {
+    const { allOn, indeterminate } = canalGroupCounts(members);
+    return (
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={indeterminate ? "mixed" : allOn}
+        onClick={() => toggleCanalGroup(members)}
+        className={cn(
+          "group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-all",
+          !allOn && !indeterminate && "text-slate-800 hover:bg-white/80",
+          (allOn || indeterminate) && "bg-white/90",
+        )}
+        style={
+          allOn
+            ? {
+                backgroundColor: moduleColors.backgroundColor,
+                color: moduleColors.iconColor,
+              }
+            : indeterminate
+              ? { backgroundColor: "rgba(248, 250, 252, 0.98)" }
+              : undefined
+        }
+      >
+        <div
+          className={cn(
+            "flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-all",
+            !allOn && !indeterminate && "border-slate-300 bg-white group-hover:border-slate-400",
+          )}
+          style={
+            allOn
+              ? {
+                  backgroundColor: moduleColors.primaryColor,
+                  borderColor: moduleColors.primaryColor,
+                }
+              : indeterminate
+                ? {
+                    backgroundColor: moduleColors.primaryColor,
+                    borderColor: moduleColors.primaryColor,
+                  }
+                : undefined
+          }
+          aria-hidden
+        >
+          {allOn && <Check size={11} className="text-white" strokeWidth={3} />}
+          {indeterminate && !allOn && (
+            <Minus size={11} className="text-white" strokeWidth={3} />
+          )}
+        </div>
+        <span
+          className={cn(
+            "truncate text-[13px] font-semibold tracking-tight",
+            (allOn || indeterminate) && "font-bold",
+          )}
+          style={
+            allOn
+              ? { color: moduleColors.iconColor }
+              : indeterminate
+                ? { color: "#334155" }
+                : undefined
+          }
+        >
+          {title}
+        </span>
+      </button>
+    );
+  };
+
+  /** Modal CANAL: hierarquia Todos Centauro / canais + Todos Nike / canais (com busca nos filhos). */
+  const renderCanalGroupedPanel = () => {
+    const q = searchTerm.trim().toLowerCase();
+    const section = (title: string, members: readonly string[]) => {
+      const visible = q
+        ? members.filter((m) => m.toLowerCase().includes(q))
+        : [...members];
+      if (visible.length === 0) return null;
+      return (
+        <div
+          key={title}
+          className="overflow-hidden rounded-lg border border-slate-200/90 bg-slate-50/50 shadow-sm"
+        >
+          {renderCanalMasterRow(title, members)}
+          <div className="border-t border-slate-200/80 bg-white/90 px-1 py-1">
+            <div className="ml-2 border-l-2 border-slate-200 pl-2.5">
+              <div className="space-y-0.5">
+                {visible.map((opt) => (
+                  <div key={opt} className="pl-0.5">
+                    {renderOptionRow(opt)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+    const centauro = section("Todos Centauro", CANAL_GROUP_CENTAURO_IDS);
+    const nike = section("Todos Nike", CANAL_GROUP_NIKE_IDS);
+    if (!centauro && !nike) {
+      return (
+        <div className="py-8 text-center text-slate-400">
+          <p className="text-xs">Nenhum resultado encontrado</p>
+        </div>
+      );
+    }
+    return <div className="space-y-3 px-0.5 py-1">{centauro}{nike}</div>;
   };
 
   const isSelected1 =
@@ -261,12 +391,16 @@ export function AttributeCard({
     </button>
   );
 
+  const optionDisplayLabel = (opt: string) =>
+    attribute.id === "modelo"
+      ? modeloListDisplayLabel(opt, showModeloCode)
+      : opt;
+
   const renderOptionRow = (opt: string) => {
     const isChecked = currentValues.includes(opt);
     return (
       <button
         type="button"
-        key={opt}
         onClick={() => handleToggleOption(opt, isSelectionMode)}
         className={cn(
           "group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all",
@@ -301,7 +435,7 @@ export function AttributeCard({
           className={cn("truncate text-xs font-medium", isChecked && "font-bold")}
           style={isChecked ? { color: moduleColors.iconColor } : undefined}
         >
-          {opt}
+          {optionDisplayLabel(opt)}
         </span>
       </button>
     );
@@ -310,7 +444,10 @@ export function AttributeCard({
   const popoverContent = (
     <Popover.Portal>
       <Popover.Content
-        className="z-50 flex w-[280px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl duration-200 animate-in zoom-in-95"
+        className={cn(
+          "z-50 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl duration-200 animate-in zoom-in-95",
+          attribute.id === "canal" ? "w-[308px]" : "w-[280px]",
+        )}
         sideOffset={8}
         side="top"
       >
@@ -353,9 +490,22 @@ export function AttributeCard({
               autoFocus
             />
           </div>
+          {attribute.id === "modelo" && (
+            <div className="flex justify-start px-1 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowModeloCode((v) => !v)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide underline-offset-2 transition-colors hover:underline"
+                style={{ color: moduleColors.primaryColor }}
+              >
+                {showModeloCode ? "Ocultar código" : "Exibir código"}
+                <Tag size={14} className="shrink-0" strokeWidth={2.25} aria-hidden />
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent max-h-[240px] overflow-y-auto p-1.5">
+        <div className="scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent max-h-[280px] overflow-y-auto p-1.5">
           {attribute.id === "localizacao" || attribute.id === "marca" ? (
             clusterGroupsFiltered.length > 0 ? (
               <div>
@@ -372,7 +522,9 @@ export function AttributeCard({
                       {group.label}
                     </p>
                     <div className="space-y-0.5 pb-2">
-                      {group.options.map((opt) => renderOptionRow(opt))}
+                      {group.options.map((opt) => (
+                        <React.Fragment key={opt}>{renderOptionRow(opt)}</React.Fragment>
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -382,9 +534,13 @@ export function AttributeCard({
                 <p className="text-xs">Nenhum resultado encontrado</p>
               </div>
             )
+          ) : attribute.id === "canal" ? (
+            renderCanalGroupedPanel()
           ) : filteredOptions.length > 0 ? (
             <div className="space-y-0.5">
-              {filteredOptions.map((opt) => renderOptionRow(opt))}
+              {filteredOptions.map((opt) => (
+                <React.Fragment key={opt}>{renderOptionRow(opt)}</React.Fragment>
+              ))}
             </div>
           ) : (
             <div className="py-8 text-center text-slate-400">
@@ -401,7 +557,7 @@ export function AttributeCard({
                   key={val}
                   className="inline-flex max-w-[80px] items-center truncate rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-600"
                 >
-                  {val}
+                  {optionDisplayLabel(val)}
                 </span>
               ))}
               {count > 3 && (

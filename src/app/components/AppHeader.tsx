@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { RotateCcw, LogOut, ChevronRight } from "lucide-react";
+import { RotateCcw, LogOut, ChevronRight, CircleHelp } from "lucide-react";
 import { motion } from "motion/react";
 import { STEPS, type Step, type Module } from "../constants";
 import { getModuleTitle } from "../constants/labels";
@@ -24,10 +24,14 @@ interface AppHeaderProps {
   isSelectionConfigured: boolean;
   isGroupingConfigured: boolean;
   isExclusionConfigured: boolean;
+  /** Pelo menos uma métrica marcada no menu lateral (vale para todos os módulos). */
+  hasAtLeastOneMetricSelected: boolean;
   isComparativoPeriodDefined: boolean;
   handleStepChange: (step: Step) => void;
   onClear: () => void;
   onExit?: () => void;
+  /** Abre o glossário de métricas (descrições e fórmulas do módulo atual). */
+  onOpenMetricsDictionary: () => void;
 }
 
 export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
@@ -38,13 +42,15 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
   isSelectionConfigured,
   isGroupingConfigured,
   isExclusionConfigured,
+  hasAtLeastOneMetricSelected,
   isComparativoPeriodDefined,
   handleStepChange,
   onClear,
   onExit,
+  onOpenMetricsDictionary,
 }: AppHeaderProps) {
   const [hoveredStep, setHoveredStep] = useState<Step | null>(null);
-  const [hoveredAction, setHoveredAction] = useState<"clear" | "exit" | null>(null);
+  const [hoveredAction, setHoveredAction] = useState<"clear" | "exit" | "help" | null>(null);
 
   const { primaryColor, highlightColor } = moduleColors;
   const highlightShadow = hexToRgba(highlightColor, 0.3);
@@ -123,7 +129,10 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
             {STEPS.map((step, index) => {
               const isActive = step.id === currentStep;
               const isAnalysisEnabled =
-                isSelectionConfigured && isGroupingConfigured && isComparativoPeriodDefined;
+                isSelectionConfigured &&
+                isGroupingConfigured &&
+                hasAtLeastOneMetricSelected &&
+                isComparativoPeriodDefined;
               const isLocked = step.id === "analysis" && !isAnalysisEnabled;
               const isHovered = hoveredStep === step.id;
 
@@ -132,6 +141,8 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
                 lockedReqs.push("selecionar ao menos um atributo");
               if (!isGroupingConfigured)
                 lockedReqs.push("definir um agrupamento");
+              if (!hasAtLeastOneMetricSelected)
+                lockedReqs.push("selecionar ao menos uma métrica no menu lateral");
               if (analysisMode === "comparativo" && !isComparativoPeriodDefined)
                 lockedReqs.push("informar o Período 2");
               const lockedMsg =
@@ -167,8 +178,21 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
           </div>
         </div>
 
-        {/* ── Direita: Botões de Ação ── */}
+        {/* ── Direita: ajuda métricas + ações ── */}
         <div className="flex items-center shrink-0" style={{ gap: 12 }}>
+          <button
+            type="button"
+            onClick={onOpenMetricsDictionary}
+            onMouseEnter={() => setHoveredAction("help")}
+            onMouseLeave={() => setHoveredAction(null)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-150"
+            style={getActionStyle(hoveredAction === "help")}
+            title="Glossário de métricas — descrições e fórmulas"
+            aria-label="Abrir glossário de métricas"
+          >
+            <CircleHelp size={18} strokeWidth={2} aria-hidden />
+          </button>
+
           <button
             onClick={onClear}
             onMouseEnter={() => setHoveredAction("clear")}

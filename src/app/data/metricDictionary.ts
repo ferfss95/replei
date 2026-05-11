@@ -115,8 +115,13 @@ export const METRIC_DICTIONARY: Record<string, MetricDictionaryEntry> = {
   },
   match_preco: {
     description:
-      'Participação de vendas em que o preço praticado foi equalizado ao preço do site (match de preço).',
-    formula: 'Match de Preço (%) = (vendas com match ÷ total de vendas) × 100%',
+      'Participação de vendas em que o preço praticado foi equalizado ao preço do site (match de preço %).',
+    formula: 'Match de Preço % = (vendas com match ÷ total de vendas) × 100%',
+  },
+  match_preco_valor: {
+    description:
+      'Valor monetário (R$) associado às vendas com match de preço no período; no protótipo, entre 10% e 15% do ROB da posição.',
+    formula: 'Match de Preço valor ≈ ROB da posição × (10% a 15%, mock)',
   },
   exp_calc_clicks_tenis: {
     description: 'Contagem simulada de interações (clicks) em exposição de calçados tipo tênis.',
@@ -261,8 +266,12 @@ export const METRIC_DICTIONARY: Record<string, MetricDictionaryEntry> = {
     formula: 'Conv. (%) = (retiradas ÷ cliques) × 100%',
   },
   ind_match_preco: {
-    description: 'Match de preço no recorte de indicadores.',
-    formula: 'Match (%) = (vendas com match ÷ total de vendas) × 100%',
+    description: 'Match de preço % no recorte de indicadores.',
+    formula: 'Match de Preço % = (vendas com match ÷ total de vendas) × 100%',
+  },
+  ind_match_preco_valor: {
+    description: 'Valor (R$) de match de preço no recorte de indicadores.',
+    formula: 'Match de Preço valor ≈ ROB da posição × (10% a 15%, mock)',
   },
   ind_qtd_personalizacoes: {
     description: 'Quantidade de serviços de personalização no período.',

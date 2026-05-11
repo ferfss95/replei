@@ -12,7 +12,7 @@ import { indicadoresModule } from './indicadores';
 export type ModuleId = 'PRODUTO' | 'LOJA' | 'EXTRAVIOS' | 'INDICADORES';
 
 const exposicaoMetricIdSet = new Set<string>(EXPOSICAO_PRODUTO_METRIC_IDS);
-const produtoOutrasPrecoIds = new Set<string>(['ppa', 'match_preco']);
+const produtoOutrasPrecoIds = new Set<string>(['ppa', 'match_preco', 'match_preco_valor']);
 
 /** PRODUTO sem métricas de exposição (placeholder EXTRAVIOS não deve exibir esse bloco). */
 const produtoSemExposicao: ModuleConfig = {

@@ -22,6 +22,7 @@ import { AnalysisView } from "./components/analysis/AnalysisView";
 import { SelectionView } from "./components/steps/SelectionView";
 import { AttributeGrid } from "./components/steps/AttributeGrid";
 import { MetricsSidebar } from "./components/MetricsSidebar";
+import { MetricsDictionaryDialog } from "./components/MetricsDictionaryDialog";
 import { AppHeader } from "./components/AppHeader";
 import { SecondaryHeader } from "./components/SecondaryHeader";
 import { AnalysisSummarySection } from "./components/AnalysisSummarySection";
@@ -58,6 +59,7 @@ export default function App() {
   const [averageDropdownOpen, setAverageDropdownOpen] = useState(false);
   const [showSharePct, setShowSharePct] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [metricsDictionaryOpen, setMetricsDictionaryOpen] = useState(false);
 
   // ─── Module Navigation ─────────────────────────────────────────
   const {
@@ -226,6 +228,13 @@ export default function App() {
   const handleStepChange = (targetStep: Step) => {
     if (targetStep === currentStep) return;
     if (targetStep === "analysis") {
+      const canOpenAnalysis =
+        isSelectionConfigured &&
+        isGroupingConfigured &&
+        selectedMetrics.length > 0 &&
+        isComparativoPeriodDefined;
+      if (!canOpenAnalysis) return;
+
       setIsGenerating(true);
       setTimeout(() => {
         setIsGenerating(false);
@@ -283,6 +292,13 @@ export default function App() {
         className="h-screen overflow-hidden text-slate-900 font-sans flex flex-col"
         style={{ backgroundColor: "#F1F1F1" }}
       >
+        <MetricsDictionaryDialog
+          open={metricsDictionaryOpen}
+          onOpenChange={setMetricsDictionaryOpen}
+          moduleConfig={currentModuleConfig}
+          accentColor={moduleColors.primaryColor}
+        />
+
         <AppHeader
           currentModule={currentModule}
           currentStep={currentStep}
@@ -291,9 +307,11 @@ export default function App() {
           isSelectionConfigured={isSelectionConfigured}
           isGroupingConfigured={isGroupingConfigured}
           isExclusionConfigured={isExclusionConfigured}
+          hasAtLeastOneMetricSelected={selectedMetrics.length > 0}
           isComparativoPeriodDefined={isComparativoPeriodDefined}
           handleStepChange={handleStepChange}
           onClear={handleClear}
+          onOpenMetricsDictionary={() => setMetricsDictionaryOpen(true)}
         />
 
         <motion.div

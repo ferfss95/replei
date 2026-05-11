@@ -278,15 +278,6 @@ export const produtoModule: ModuleConfig = {
     { id: 'vlr_estoque', label: 'Vlr Estoque',      icon: DollarSign  },
     { id: 'dep',         label: 'DEP',              icon: Package     },
     { id: 'def',         label: 'DEF',              icon: DollarSign  },
-    // Planejamento group divider
-    { id: 'vlr_plano',         label: 'Vlr Plano',         icon: Target },
-    { id: 'qtd_plano',         label: 'Qtd Plano',         icon: Target },
-    { id: 'qtd_desvio_plano',  label: 'Qtd Desvio Plano',  icon: Target },
-    { id: 'vlr_desvio_plano',  label: 'Vlr Desvio Plano',  icon: Target },
-    { id: 'vlr_target',        label: 'Vlr Target',        icon: Target },
-    { id: 'qtd_target',        label: 'Qtd Target',        icon: Target },
-    { id: 'qtd_desvio_target', label: 'Qtd Desvio Target', icon: Target },
-    { id: 'vlr_desvio_target', label: 'Vlr Desvio Target', icon: Target },
     {
       id: 'ppa',
       label: 'Alteração de Preço (PPA)',
@@ -296,11 +287,27 @@ export const produtoModule: ModuleConfig = {
     },
     {
       id: 'match_preco',
-      label: 'Match de Preço',
+      label: 'Match de Preço %',
       icon: Tag,
       tooltip:
         'Do total de vendas realizadas, representa o percentual de vendas feitas com desconto igualando o preço praticado no site.',
     },
+    {
+      id: 'match_preco_valor',
+      label: 'Match de Preço valor',
+      icon: DollarSign,
+      tooltip:
+        'Valor (R$) correspondente à participação de vendas com match de preço; mock entre 10% e 15% da venda (ROB) da posição.',
+    },
+    // Planejamento group divider
+    { id: 'vlr_plano',         label: 'Vlr Plano',         icon: Target },
+    { id: 'qtd_plano',         label: 'Qtd Plano',         icon: Target },
+    { id: 'qtd_desvio_plano',  label: 'Qtd Desvio Plano',  icon: Target },
+    { id: 'vlr_desvio_plano',  label: 'Vlr Desvio Plano',  icon: Target },
+    { id: 'vlr_target',        label: 'Vlr Target',        icon: Target },
+    { id: 'qtd_target',        label: 'Qtd Target',        icon: Target },
+    { id: 'qtd_desvio_target', label: 'Qtd Desvio Target', icon: Target },
+    { id: 'vlr_desvio_target', label: 'Vlr Desvio Target', icon: Target },
     // Exposição de produtos (rótulo menu = spec; tabela = METRIC_ABBREVIATIONS)
     {
       id: 'exp_calc_clicks_tenis',
@@ -376,26 +383,18 @@ export const produtoModule: ModuleConfig = {
   metricDisplayOrder: [
     'venda', 'qtd_venda', 'qtd_itens', 'sss', 'cmv', 'cmv_comercial', 'lucro_bruto', 'margem', 'margem_liquida',
     'qtd_estoque', 'vlr_estoque', 'dep', 'def',
+    'ppa', 'match_preco', 'match_preco_valor',
     'vlr_plano', 'qtd_plano', 'qtd_desvio_plano', 'vlr_desvio_plano',
     'vlr_target', 'qtd_target', 'qtd_desvio_target', 'vlr_desvio_target',
     ...EXPOSICAO_PRODUTO_METRIC_IDS,
-    'ppa',
-    'match_preco',
   ],
 
   // ── Planning metrics group (for visual divider in UI) ────
   planningMetrics: ['vlr_plano', 'qtd_plano', 'qtd_desvio_plano', 'vlr_desvio_plano', 'vlr_target', 'qtd_target', 'qtd_desvio_target', 'vlr_desvio_target'],
 
-  metricsSidebarPlanningGroupLabel: 'Outras',
-  metricsSidebarPlanningSubgroupLabel: 'Planejamento',
+  metricsSidebarPlanningGroupLabel: 'Planejamento',
 
-  metricsSidebarExcludeFromVendaEstoque: [
-    ...EXPOSICAO_PRODUTO_METRIC_IDS,
-    'ppa',
-    'match_preco',
-  ],
-
-  metricsSidebarOutrasAfterPlanning: ['ppa', 'match_preco'],
+  metricsSidebarExcludeFromVendaEstoque: [...EXPOSICAO_PRODUTO_METRIC_IDS],
 
   metricSidebarExtraSections: [
     {

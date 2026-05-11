@@ -5,14 +5,32 @@ import {
   PanelRightOpen,
   PanelRightClose,
   Check,
-  CircleHelp,
+  Search,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../utils";
 import type { Module } from "../constants";
 import type { MetricDef, ModuleConfig } from "../modules/types";
 import { NEUTRAL_PALETTE, type ModuleColors } from "../constants/moduleColors";
-import { MetricsDictionaryDialog } from "./MetricsDictionaryDialog";
+import { Input } from "./ui/input";
+import { stripAccents } from "../utils/searchNormalize";
+
+function metricMatchesNormalizedQuery(metric: MetricDef, normQuery: string): boolean {
+  if (!normQuery) return true;
+  const haystack = [
+    stripAccents(metric.label.toLowerCase()),
+    metric.id.toLowerCase(),
+    metric.tooltip ? stripAccents(metric.tooltip.toLowerCase()) : "",
+  ].join(" ");
+  return haystack.includes(normQuery);
+}
+
+type MetricSearchCluster = {
+  key: string;
+  title: string;
+  subtitle?: string;
+  metrics: MetricDef[];
+};
 
 interface MetricsSidebarProps {
   metricsCollapsed: boolean;
@@ -38,7 +56,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   moduleColors,
 }: MetricsSidebarProps) {
   const [hoveredMetricId, setHoveredMetricId] = React.useState<string | null>(null);
-  const [dictionaryOpen, setDictionaryOpen] = React.useState(false);
+  const [metricsSearchQuery, setMetricsSearchQuery] = React.useState("");
   const planningMetrics = currentModuleConfig.planningMetrics || [];
   const excludedFromVendaEstoque = new Set(
     currentModuleConfig.metricsSidebarExcludeFromVendaEstoque || [],
@@ -59,6 +77,83 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   // Módulos que exibem métricas diretamente, sem accordion "Venda e Estoque"
   const isLojaFlatMetrics = currentModule === "LOJA" || currentModule === "INDICADORES";
   const extraSidebarSections = currentModuleConfig.metricSidebarExtraSections || [];
+
+  React.useEffect(() => {
+    setMetricsSearchQuery("");
+  }, [currentModule]);
+
+  const trimmedSearch = metricsSearchQuery.trim();
+  const normSearchQuery = trimmedSearch
+    ? stripAccents(trimmedSearch.toLowerCase())
+    : "";
+  const isSearchMode = normSearchQuery.length > 0;
+
+  const searchClusters = React.useMemo((): MetricSearchCluster[] => {
+    if (!normSearchQuery) return [];
+
+    const planningIds = currentModuleConfig.planningMetrics || [];
+    const planningSet = new Set(planningIds);
+    const excludedFromVenda = new Set(
+      currentModuleConfig.metricsSidebarExcludeFromVendaEstoque || [],
+    );
+    const vendaMetrics = currentModuleConfig.metrics.filter(
+      (m) => !planningSet.has(m.id) && !excludedFromVenda.has(m.id),
+    );
+    const planMetrics = currentModuleConfig.metrics.filter((m) => planningSet.has(m.id));
+    const outrasIds = currentModuleConfig.metricsSidebarOutrasAfterPlanning || [];
+    const outrasMetrics = outrasIds
+      .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
+      .filter((m): m is MetricDef => Boolean(m));
+    const hasPlanAccordion = planMetrics.length > 0 || outrasMetrics.length > 0;
+    const extras = currentModuleConfig.metricSidebarExtraSections || [];
+
+    const match = (m: MetricDef) => metricMatchesNormalizedQuery(m, normSearchQuery);
+    const clusters: MetricSearchCluster[] = [];
+
+    const veHits = vendaMetrics.filter(match);
+    if (veHits.length > 0) {
+      clusters.push({
+        key: isLojaFlatMetrics ? "metricas_flat" : "venda_estoque",
+        title: isLojaFlatMetrics ? "Métricas" : "Venda e Estoque",
+        metrics: veHits,
+      });
+    }
+
+    extras.forEach((section, sectionIdx) => {
+      const groupId = section.sidebarGroupId ?? `metric_extra_${sectionIdx}`;
+      section.groups.forEach((group) => {
+        const metrics = group.metricIds
+          .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
+          .filter((m): m is MetricDef => Boolean(m))
+          .filter(match);
+        if (metrics.length > 0) {
+          clusters.push({
+            key: `${groupId}__${group.subtitle}`,
+            title: section.title,
+            subtitle: group.subtitle,
+            metrics,
+          });
+        }
+      });
+    });
+
+    if (hasPlanAccordion) {
+      const planLabel =
+        currentModuleConfig.metricsSidebarPlanningGroupLabel ?? "Planejamento";
+      const planOrdered: MetricDef[] = [];
+      for (const m of planMetrics) {
+        if (match(m)) planOrdered.push(m);
+      }
+      for (const m of outrasMetrics) {
+        if (match(m)) planOrdered.push(m);
+      }
+      if (planOrdered.length > 0) {
+        clusters.push({ key: "planejamento", title: planLabel, metrics: planOrdered });
+      }
+    }
+
+    return clusters;
+  }, [normSearchQuery, currentModuleConfig, isLojaFlatMetrics]);
 
   const renderMetricRow = (metric: Pick<MetricDef, "id" | "label" | "tooltip">) => {
     const isSelected = selectedMetrics.includes(metric.id);
@@ -109,13 +204,6 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       )}
       style={{ top: 64 }}
     >
-      <MetricsDictionaryDialog
-        open={dictionaryOpen}
-        onOpenChange={setDictionaryOpen}
-        moduleConfig={currentModuleConfig}
-        accentColor={moduleColors.primaryColor}
-      />
-
       <div
         className={cn(
           "flex-none",
@@ -129,15 +217,6 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
               <h3 className="min-w-0 flex-1 truncate text-[14px] font-bold uppercase tracking-wider text-[rgb(49,65,88)]">
                 Métricas
               </h3>
-              <button
-                type="button"
-                onClick={() => setDictionaryOpen(true)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#90A1B9] transition-colors hover:bg-slate-100 hover:text-[#314158] cursor-pointer"
-                title="Glossário de métricas — descrições e fórmulas"
-                aria-label="Abrir glossário de métricas"
-              >
-                <CircleHelp size={17} strokeWidth={2} aria-hidden />
-              </button>
             </div>
           )}
           <button
@@ -156,54 +235,63 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       </div>
 
       {!metricsCollapsed && (
-        <div className="flex-1 overflow-y-auto px-5 pb-5">
-          <div className="space-y-4">
-            {isLojaFlatMetrics ? (
-              <div className="space-y-1.5">{vendaEstoqueMetricRows}</div>
-            ) : (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => toggleMetricsGroup("venda_estoque")}
-                  className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
-                >
-                  <div className="flex items-center gap-2">
-                    <ChevronRight
-                      size={12}
-                      className={cn(
-                        "text-slate-400 transition-transform duration-200",
-                        metricsGroupExpanded["venda_estoque"] && "rotate-90",
-                      )}
-                    />
-                    <span>Venda e Estoque</span>
-                  </div>
-                </button>
-                {metricsGroupExpanded["venda_estoque"] && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="space-y-1.5 pl-1"
-                  >
-                    {vendaEstoqueMetricRows}
-                  </motion.div>
-                )}
-              </div>
-            )}
-
-            {/* 2. Exposição de produtos (e demais seções extras configuradas no módulo) */}
-            {extraSidebarSections.map((section, sectionIdx) => {
-              const groupId = section.sidebarGroupId ?? `metric_extra_${sectionIdx}`;
-              return (
-                <React.Fragment key={groupId}>
-                  <div className="py-2">
-                    <div className="h-px bg-slate-200" />
-                  </div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-5">
+          <div className="shrink-0 bg-white pb-3 pt-0">
+            <div className="relative">
+              <Search
+                size={14}
+                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#90A1B9]"
+                aria-hidden
+              />
+              <Input
+                value={metricsSearchQuery}
+                onChange={(e) => setMetricsSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setMetricsSearchQuery("");
+                }}
+                placeholder="Buscar métricas…"
+                aria-label="Buscar métricas no menu lateral"
+                className="h-9 border-[#d5dbe3] bg-white pl-8 text-[13px] shadow-none placeholder:text-slate-400 focus-visible:border-slate-400 focus-visible:ring-slate-200"
+              />
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="space-y-4">
+              {isSearchMode ? (
+                searchClusters.length === 0 ? (
+                  <p className="px-1 py-10 text-center text-[13px] leading-relaxed text-slate-500">
+                    Nenhuma métrica encontrada para &ldquo;{trimmedSearch}&rdquo;.
+                  </p>
+                ) : (
+                  searchClusters.map((cluster) => (
+                    <div key={cluster.key} className="space-y-2">
+                      <div className="border-l-2 border-slate-200 pl-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#62748E]">
+                          {cluster.title}
+                        </p>
+                        {cluster.subtitle ? (
+                          <p
+                            className="mt-0.5 text-[10px] font-semibold tracking-wide"
+                            style={{ color: "rgba(86, 104, 120, 0.75)" }}
+                          >
+                            {cluster.subtitle}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="space-y-1.5">
+                        {cluster.metrics.map((metric) => renderMetricRow(metric))}
+                      </div>
+                    </div>
+                  ))
+                )
+              ) : isLojaFlatMetrics ? (
+                <div className="space-y-1.5">{vendaEstoqueMetricRows}</div>
+              ) : (
+                <>
                   <div className="space-y-2">
                     <button
                       type="button"
-                      onClick={() => toggleMetricsGroup(groupId)}
+                      onClick={() => toggleMetricsGroup("venda_estoque")}
                       className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
                     >
                       <div className="flex items-center gap-2">
@@ -211,110 +299,151 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                           size={12}
                           className={cn(
                             "text-slate-400 transition-transform duration-200",
-                            metricsGroupExpanded[groupId] && "rotate-90",
+                            metricsGroupExpanded["venda_estoque"] && "rotate-90",
                           )}
                         />
-                        <span>{section.title}</span>
+                        <span>Venda e Estoque</span>
                       </div>
                     </button>
-                    {metricsGroupExpanded[groupId] && (
+                    {metricsGroupExpanded["venda_estoque"] && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="space-y-6 pl-1"
+                        className="space-y-1.5 pl-1"
                       >
-                        {section.groups.map((group) => (
-                          <div key={group.subtitle} className="space-y-1.5">
-                            <p
-                              className="px-2 text-[10px] font-semibold tracking-wide"
-                              style={{ color: "rgba(86, 104, 120, 0.6)" }}
-                            >
-                              {group.subtitle}
-                            </p>
-                            <div className="space-y-1.5">
-                              {group.metricIds.map((metricId) => {
-                                const metric = currentModuleConfig.metrics.find(
-                                  (m) => m.id === metricId,
-                                );
-                                return metric ? renderMetricRow(metric) : null;
-                              })}
-                            </div>
-                          </div>
-                        ))}
+                        {vendaEstoqueMetricRows}
                       </motion.div>
                     )}
                   </div>
-                </React.Fragment>
-              );
-            })}
 
-            {/* 3. Outras / planejamento (rótulo do accordion configurável por módulo) */}
-            {hasOutrasAccordion && (
-              <>
-                <div className="py-2">
-                  <div className="h-px bg-slate-200" />
-                </div>
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleMetricsGroup("planejamento")}
-                    className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
-                  >
-                    <div className="flex items-center gap-2">
-                      <ChevronRight
-                        size={12}
-                        className={cn(
-                          "text-slate-400 transition-transform duration-200",
-                          metricsGroupExpanded["planejamento"] && "rotate-90",
-                        )}
-                      />
-                      <span>
-                        {currentModuleConfig.metricsSidebarPlanningGroupLabel ??
-                          "Planejamento"}
-                      </span>
-                    </div>
-                  </button>
-                  {metricsGroupExpanded["planejamento"] && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className={cn(
-                        "pl-1",
-                        planejamentoMetrics.length > 0 || outrasAfterPlanningMetrics.length > 0
-                          ? "space-y-2"
-                          : "space-y-1.5",
-                      )}
-                    >
-                      {currentModuleConfig.metricsSidebarPlanningSubgroupLabel &&
-                        planejamentoMetrics.length > 0 && (
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600 px-2">
-                            {currentModuleConfig.metricsSidebarPlanningSubgroupLabel}
-                          </p>
-                        )}
-                      {planejamentoMetrics.length > 0 && (
-                        <div className="space-y-1.5">
-                          {planejamentoMetrics.map((metric) => renderMetricRow(metric))}
+                  {/* 2. Exposição de produtos (e demais seções extras configuradas no módulo) */}
+                  {extraSidebarSections.map((section, sectionIdx) => {
+                    const groupId = section.sidebarGroupId ?? `metric_extra_${sectionIdx}`;
+                    return (
+                      <React.Fragment key={groupId}>
+                        <div className="py-2">
+                          <div className="h-px bg-slate-200" />
                         </div>
-                      )}
-                      {outrasAfterPlanningMetrics.length > 0 && (
-                        <div
-                          className={cn(
-                            "space-y-1.5",
-                            planejamentoMetrics.length > 0 && "pt-1",
+                        <div className="space-y-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleMetricsGroup(groupId)}
+                            className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
+                          >
+                            <div className="flex items-center gap-2">
+                              <ChevronRight
+                                size={12}
+                                className={cn(
+                                  "text-slate-400 transition-transform duration-200",
+                                  metricsGroupExpanded[groupId] && "rotate-90",
+                                )}
+                              />
+                              <span>{section.title}</span>
+                            </div>
+                          </button>
+                          {metricsGroupExpanded[groupId] && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="space-y-6 pl-1"
+                            >
+                              {section.groups.map((group) => (
+                                <div key={group.subtitle} className="space-y-1.5">
+                                  <p
+                                    className="px-2 text-[10px] font-semibold tracking-wide"
+                                    style={{ color: "rgba(86, 104, 120, 0.6)" }}
+                                  >
+                                    {group.subtitle}
+                                  </p>
+                                  <div className="space-y-1.5">
+                                    {group.metricIds.map((metricId) => {
+                                      const metric = currentModuleConfig.metrics.find(
+                                        (m) => m.id === metricId,
+                                      );
+                                      return metric ? renderMetricRow(metric) : null;
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </motion.div>
                           )}
-                        >
-                          {outrasAfterPlanningMetrics.map((metric) => renderMetricRow(metric))}
                         </div>
-                      )}
-                    </motion.div>
+                      </React.Fragment>
+                    );
+                  })}
+
+                  {/* 3. Planejamento (rótulo do accordion configurável por módulo) */}
+                  {hasOutrasAccordion && (
+                    <>
+                      <div className="py-2">
+                        <div className="h-px bg-slate-200" />
+                      </div>
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleMetricsGroup("planejamento")}
+                          className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
+                        >
+                          <div className="flex items-center gap-2">
+                            <ChevronRight
+                              size={12}
+                              className={cn(
+                                "text-slate-400 transition-transform duration-200",
+                                metricsGroupExpanded["planejamento"] && "rotate-90",
+                              )}
+                            />
+                            <span>
+                              {currentModuleConfig.metricsSidebarPlanningGroupLabel ??
+                                "Planejamento"}
+                            </span>
+                          </div>
+                        </button>
+                        {metricsGroupExpanded["planejamento"] && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className={cn(
+                              "pl-1",
+                              planejamentoMetrics.length > 0 || outrasAfterPlanningMetrics.length > 0
+                                ? "space-y-2"
+                                : "space-y-1.5",
+                            )}
+                          >
+                            {currentModuleConfig.metricsSidebarPlanningSubgroupLabel &&
+                              planejamentoMetrics.length > 0 && (
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600 px-2">
+                                  {currentModuleConfig.metricsSidebarPlanningSubgroupLabel}
+                                </p>
+                              )}
+                            {planejamentoMetrics.length > 0 && (
+                              <div className="space-y-1.5">
+                                {planejamentoMetrics.map((metric) => renderMetricRow(metric))}
+                              </div>
+                            )}
+                            {outrasAfterPlanningMetrics.length > 0 && (
+                              <div
+                                className={cn(
+                                  "space-y-1.5",
+                                  planejamentoMetrics.length > 0 && "pt-1",
+                                )}
+                              >
+                                {outrasAfterPlanningMetrics.map((metric) => renderMetricRow(metric))}
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </div>
+                    </>
                   )}
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

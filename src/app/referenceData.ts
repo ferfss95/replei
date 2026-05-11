@@ -13,6 +13,15 @@ export const CANAL_OPTIONS = [
   "Digital Nike"
 ];
 
+/** Modal Canal — seleção rápida “Todos Centauro” (mesmos textos que `CANAL_OPTIONS`). */
+export const CANAL_GROUP_CENTAURO_IDS: readonly string[] = [
+  "Loja F\u00edsica Centauro",
+  "Digital Centauro",
+];
+
+/** Modal Canal — seleção rápida “Todos Nike”. */
+export const CANAL_GROUP_NIKE_IDS: readonly string[] = ["NVS", "NDIS", "Digital Nike"];
+
 export const FATURAMENTO_OPTIONS = [
   "Loja Física",
   "Digital"
@@ -135,14 +144,22 @@ export const ORIGEM_OPTIONS = [
   "Importado",
 ];
 
-export const TIPO_OPTIONS = [
-  "Loja Física",
+/**
+ * Opções do atributo TIPO nos modais — mesma lista para PRODUTO (via `TIPO_OPTIONS`),
+ * LOJA (`TIPO_OPTIONS_LOJA`) e INDICADORES (`TIPO_OPTIONS_INDICADORES`).
+ */
+const TIPO_OPTIONS_SOURCE: readonly string[] = [
+  "Compra em loja",
   "OMS",
   "Encomenda Expressa 1P",
   "Encomenda Expressa 3P",
   "Click e Retire",
-  "Pickup"
+  "Pickup",
 ];
+
+export const TIPO_OPTIONS: string[] = [...TIPO_OPTIONS_SOURCE];
+export const TIPO_OPTIONS_LOJA: string[] = [...TIPO_OPTIONS_SOURCE];
+export const TIPO_OPTIONS_INDICADORES: string[] = [...TIPO_OPTIONS_SOURCE];
 
 export const LOJAS_LIST = [
   "2029 - Shopping Vit\u00f3ria",
@@ -1884,6 +1901,18 @@ export function formatModeloListEntry(raw: string): string {
   return desc.length > 0 ? `${digits}-${desc}` : digits;
 }
 
+/**
+ * Rótulo de modelo na listagem do modal: com código (`12345678-descrição`) ou só a parte textual
+ * (sem os 8 dígitos iniciais nem o hífen). Entradas que não seguem esse formato são devolvidas intactas.
+ */
+export function modeloListDisplayLabel(entry: string, showCode: boolean): string {
+  if (showCode) return entry;
+  const noPrefix = entry.replace(/^\d{8}-/, "").trim();
+  if (noPrefix !== entry) return noPrefix.length > 0 ? noPrefix : entry;
+  if (/^\d{8}$/.test(entry)) return "";
+  return entry;
+}
+
 export const GENERO_OPTIONS = [
   "Feminino", "Masculino", "Unissex", "Não Informado"
 ];
@@ -2766,7 +2795,7 @@ export const MOCK_IND_CKO_MOVEL = [
   0.3034, 0.2767, 0.2601, 0.2923, 0.3089, 0.2645, 0.2956,
 ];
 
-// Match de Preço | percent 1 casa | valores alinhados ao spec (11,3% … 8,9%)
+// Match de Preço % | percent 1 casa | valores alinhados ao spec (11,3% … 8,9%)
 export const MOCK_IND_MATCH_PRECO = [
   0.113, 0.097, 0.132, 0.104, 0.089,
   0.121, 0.091, 0.128, 0.099, 0.086, 0.118, 0.094, 0.131, 0.102, 0.088,
@@ -2774,6 +2803,16 @@ export const MOCK_IND_MATCH_PRECO = [
   0.122, 0.098, 0.127, 0.105, 0.085, 0.119, 0.092, 0.133, 0.103, 0.091,
   0.115, 0.095, 0.126, 0.106, 0.084, 0.117, 0.1, 0.13, 0.108, 0.083,
 ];
+
+/**
+ * Match de Preço valor (R$): mock = venda (ROB) da posição × fator entre 10% e 15% (determinístico).
+ * PRODUTO (`match_preco_valor`), LOJA e INDICADORES (`ind_match_preco_valor`).
+ */
+export const MOCK_MATCH_PRECO_VALOR = MOCK_ROB.map((rob, i) => {
+  const u = ((i * 73 + 41) % 501) / 500;
+  const factor = 0.1 + u * 0.05;
+  return Math.round(rob * factor * 100) / 100;
+});
 
 // Personalizações — qtd/mês por loja (referência 15–47); valor = qtd × R$ 17
 const MOCK_IND_QTD_PERSONALIZACOES_RAW = [
@@ -2824,6 +2863,7 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   // PPA / Match (PRODUTO, LOJA — mesmos mocks que ind_*)
   'ppa': { data: MOCK_IND_PPA, format: 'percent1' },
   'match_preco': { data: MOCK_IND_MATCH_PRECO, format: 'percent1' },
+  'match_preco_valor': { data: MOCK_MATCH_PRECO_VALOR, format: 'currency' },
   // Exposição de produtos (PRODUTO) — format integer (0 casas decimais)
   'exp_calc_clicks_tenis': { data: MOCK_EXP_CALC_CLICKS_TENIS, format: 'integer' },
   'exp_calc_clicks_chuteiras': { data: MOCK_EXP_CALC_CLICKS_CHUTEIRAS, format: 'integer' },
@@ -2872,6 +2912,7 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'ind_ppa':           { data: MOCK_IND_PPA,           format: 'percent1' },
   'ind_cko_movel':     { data: MOCK_IND_CKO_MOVEL,     format: 'percent1' },
   'ind_match_preco':   { data: MOCK_IND_MATCH_PRECO,   format: 'percent1' },
+  'ind_match_preco_valor': { data: MOCK_MATCH_PRECO_VALOR, format: 'currency' },
   'ind_qtd_personalizacoes': { data: MOCK_IND_QTD_PERSONALIZACOES, format: 'integer' },
   'ind_vlr_personalizacoes': { data: MOCK_IND_VLR_PERSONALIZACOES, format: 'currency' },
   'ind_conv_click':    { data: MOCK_IND_CONV_CLICK,    format: 'percent'  },
@@ -2903,7 +2944,8 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   'qtd_desvio_target': 'Qtd Desv Target',
   'vlr_desvio_target': 'Vlr Desv Target',
   'ppa': 'PPA',
-  'match_preco': 'Match Preço',
+  'match_preco': 'Match de Preço %',
+  'match_preco_valor': 'Match de Preço valor',
   'exp_calc_clicks_tenis': 'Qtd clicks tênis',
   'exp_calc_clicks_chuteiras': 'Qtd clicks chuteiras',
   'exp_vest_bracos_araras': 'Qtd braços exposição',
@@ -2939,7 +2981,8 @@ export const METRIC_ABBREVIATIONS: Record<string, string> = {
   'ind_ee':            'EE',
   'ind_ppa':           'PPA',
   'ind_cko_movel':     'CKO Móvel',
-  'ind_match_preco':   'Match Preço',
+  'ind_match_preco':   'Match de Preço %',
+  'ind_match_preco_valor': 'Match de Preço valor',
   'ind_qtd_personalizacoes': 'Qtd Pers.',
   'ind_vlr_personalizacoes': 'Vlr Pers.',
   'ind_conv_click':    'Conversão Click',

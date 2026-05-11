@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import {
   REDE_OPTIONS,
-  TIPO_OPTIONS,
+  TIPO_OPTIONS_LOJA,
   ESTADOS_LIST,
   REGIONAL_OPTIONS,
   LOJAS_LIST,
@@ -95,7 +95,7 @@ export const lojaModule: ModuleConfig = {
   getDomainAttributeOptions(attrId, selections) {
     switch (attrId) {
       case 'rede':      return REDE_OPTIONS;
-      case 'tipo':      return TIPO_OPTIONS;
+      case 'tipo':      return TIPO_OPTIONS_LOJA;
       case 'estado':
         return filterStatesByKnownLinks(ESTADOS_LIST, selections);
       case 'regional':
@@ -221,10 +221,17 @@ export const lojaModule: ModuleConfig = {
     },
     {
       id: 'match_preco',
-      label: 'Match de Preço',
+      label: 'Match de Preço %',
       icon: Tag,
       tooltip:
         'Do total de vendas realizadas, representa o percentual de vendas feitas com desconto igualando o preço praticado no site.',
+    },
+    {
+      id: 'match_preco_valor',
+      label: 'Match de Preço valor',
+      icon: DollarSign,
+      tooltip:
+        'Valor (R$) de vendas com match de preço; mock entre 10% e 15% do ROB da posição.',
     },
   ],
 
@@ -242,6 +249,7 @@ export const lojaModule: ModuleConfig = {
     'conversao',
     'conversao_vendex',
     'match_preco',
+    'match_preco_valor',
   ],
 
   /**
