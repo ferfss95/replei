@@ -44,7 +44,7 @@ export default defineConfig({
           ],
           'charts-vendor': ['recharts'],
           'motion-vendor': ['motion'],
-          'pdf-vendor': ['jspdf', 'html-to-image'],
+          'html-export-vendor': ['html-to-image', 'xlsx'],
         },
       },
     },

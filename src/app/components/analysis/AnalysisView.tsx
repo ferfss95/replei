@@ -22,7 +22,6 @@ import {
   Download,
   FileSpreadsheet,
   Image as ImageIcon,
-  FileText,
   ArrowLeftRight,
   Tag,
   Palette,
@@ -50,7 +49,7 @@ import {
   Legend,
 } from "recharts";
 import * as htmlToImage from "html-to-image";
-import { jsPDF } from "jspdf";
+import * as XLSX from "xlsx";
 import * as Popover from "@radix-ui/react-popover";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
@@ -3168,8 +3167,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     </>
   );
 
-  // CSV Export
-  const handleExportCSV = React.useCallback(() => {
+  // Exportação da tabela geral para Excel (.xlsx)
+  const handleExportTableExcel = React.useCallback(() => {
     if (finalRows.length === 0) return;
     const rows: string[][] = [];
 
@@ -3430,23 +3429,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       });
     }
 
-    const csvContent = rows
-      .map((r) =>
-        r
-          .map((c) => `"${(c || "").replace(/"/g, '""')}"`)
-          .join(";"),
-      )
-      .join("\n");
-    const BOM = "\uFEFF";
-    const blob = new Blob([BOM + csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `analise_geral_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Tabela geral");
+    const fileName = `tabela_geral_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   }, [
     finalRows,
     isPivot,
@@ -3471,235 +3458,19 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             ? "comparativo"
             : analysisMode === "horaahora"
               ? "hora-a-hora"
-              : "ranking";
+              : "grafico";
       const dataUrl = await htmlToImage.toPng(
         chartContainerRef.current,
         { backgroundColor: "#ffffff", pixelRatio: 2 },
       );
       const link = document.createElement("a");
-      link.download = `analise_detalhada_${modeSuffix}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.download = `grafico_${modeSuffix}_${new Date().toISOString().slice(0, 10)}.png`;
       link.href = dataUrl;
       link.click();
     } catch (e) {
       console.error("Export PNG failed", e);
     }
   }, [analysisMode, isPivot]);
-
-  // Export chart as SVG
-  const handleExportChartSVG = React.useCallback(async () => {
-    if (!chartContainerRef.current) return;
-    try {
-      const modeSuffix =
-        analysisMode === "evolucao" && isPivot
-          ? "evolutivo"
-          : analysisMode === "comparativo"
-            ? "comparativo"
-            : analysisMode === "horaahora"
-              ? "hora-a-hora"
-              : "ranking";
-      const dataUrl = await htmlToImage.toSvg(
-        chartContainerRef.current,
-        { backgroundColor: "#ffffff" },
-      );
-      const link = document.createElement("a");
-      link.download = `analise_detalhada_${modeSuffix}_${new Date().toISOString().slice(0, 10)}.svg`;
-      link.href = dataUrl;
-      link.click();
-    } catch (e) {
-      console.error("Export SVG failed", e);
-    }
-  }, [analysisMode, isPivot]);
-
-  // Export table as PNG
-  const handleExportTablePNG = React.useCallback(async () => {
-    if (!tableContainerRef.current) return;
-    try {
-      const dataUrl = await htmlToImage.toPng(
-        tableContainerRef.current,
-        { backgroundColor: "#ffffff", pixelRatio: 2 },
-      );
-      const link = document.createElement("a");
-      link.download = `analise_geral_${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (e) {
-      console.error("Export Table PNG failed", e);
-    }
-  }, []);
-
-  // Export table as SVG
-  const handleExportTableSVG = React.useCallback(async () => {
-    if (!tableContainerRef.current) return;
-    try {
-      const dataUrl = await htmlToImage.toSvg(
-        tableContainerRef.current,
-        { backgroundColor: "#ffffff" },
-      );
-      const link = document.createElement("a");
-      link.download = `analise_geral_${new Date().toISOString().slice(0, 10)}.svg`;
-      link.href = dataUrl;
-      link.click();
-    } catch (e) {
-      console.error("Export Table SVG failed", e);
-    }
-  }, []);
-
-  // Export PDF Report (chart + table)
-  const handleExportPDF = React.useCallback(async () => {
-    try {
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a4",
-      });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const contentW = pageW - margin * 2;
-      let cursorY = margin;
-
-      const chartModeLabel =
-        analysisMode === "evolucao"
-          ? "Evolutivo"
-          : analysisMode === "comparativo"
-            ? "Comparativo"
-            : analysisMode === "horaahora"
-              ? "Hora a Hora"
-              : "Ranking de Performance";
-
-      // Title
-      pdf.setFontSize(14);
-      pdf.setTextColor(15, 23, 43);
-      pdf.text(
-        customTitle ||
-          MODULE_TITLES[analysisMode] ||
-          "Análise de Venda e Estoque",
-        margin,
-        cursorY + 6,
-      );
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 116, 139);
-      const dateStr = new Date().toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
-      pdf.text(`Gerado em ${dateStr}`, margin, cursorY + 12);
-      cursorY += 18;
-
-      // Chart
-      if (
-        chartContainerRef.current &&
-        showChart &&
-        showChartSection
-      ) {
-        // Section label
-        pdf.setFontSize(11);
-        pdf.setTextColor(69, 85, 108);
-        pdf.text(
-          `GRÁFICO ${chartModeLabel.toUpperCase()}`,
-          margin,
-          cursorY + 5,
-        );
-        cursorY += 10;
-
-        const chartImg = await htmlToImage.toPng(
-          chartContainerRef.current,
-          { backgroundColor: "#ffffff", pixelRatio: 2 },
-        );
-        const chartEl = chartContainerRef.current;
-        const ratio =
-          chartEl.offsetHeight / chartEl.offsetWidth;
-        const imgW = contentW;
-        const imgH = imgW * ratio;
-        const fittedH = Math.min(
-          imgH,
-          pageH - cursorY - margin - 50,
-        );
-        pdf.addImage(
-          chartImg,
-          "PNG",
-          margin,
-          cursorY,
-          imgW,
-          fittedH,
-        );
-        cursorY += fittedH + 6;
-      }
-
-      // Table
-      if (tableContainerRef.current) {
-        if (cursorY > pageH - 40) {
-          pdf.addPage();
-          cursorY = margin;
-        }
-
-        // Section label
-        pdf.setFontSize(11);
-        pdf.setTextColor(69, 85, 108);
-        pdf.text("TABELA GERAL", margin, cursorY + 5);
-        cursorY += 10;
-
-        const tableImg = await htmlToImage.toPng(
-          tableContainerRef.current,
-          { backgroundColor: "#ffffff", pixelRatio: 2 },
-        );
-        const tableEl = tableContainerRef.current;
-        const ratio =
-          tableEl.offsetHeight / tableEl.offsetWidth;
-        const imgW = contentW;
-        const imgH = imgW * ratio;
-        // If table image is taller than remaining space, start new page
-        const availH = pageH - cursorY - margin;
-        if (imgH > availH) {
-          // Scale to fit one page
-          const fittedH = Math.min(imgH, pageH - margin * 2);
-          const fittedW = fittedH / ratio;
-          if (imgH > availH) {
-            pdf.addPage();
-            cursorY = margin;
-          }
-          pdf.addImage(
-            tableImg,
-            "PNG",
-            margin,
-            cursorY,
-            Math.min(fittedW, contentW),
-            Math.min(fittedH, pageH - margin * 2),
-          );
-        } else {
-          pdf.addImage(
-            tableImg,
-            "PNG",
-            margin,
-            cursorY,
-            imgW,
-            imgH,
-          );
-        }
-      }
-
-      const modeSuffix =
-        analysisMode === "evolucao" && isPivot
-          ? "evolutivo"
-          : analysisMode === "comparativo"
-            ? "comparativo"
-            : analysisMode === "horaahora"
-              ? "hora-a-hora"
-              : "ranking";
-      pdf.save(
-        `relatorio_${modeSuffix}_${new Date().toISOString().slice(0, 10)}.pdf`,
-      );
-    } catch (e) {
-      console.error("Export PDF failed", e);
-    }
-  }, [
-    showChart,
-    showChartSection,
-    analysisMode,
-    isPivot,
-    customTitle,
-  ]);
 
   const periodDisplayText = React.useMemo(
     () =>
@@ -4827,21 +4598,29 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                   align="end"
                 >
                   <DropdownMenu.Item
-                    className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md cursor-pointer outline-none"
-                    onSelect={handleExportPDF}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-2.5 text-xs rounded-md cursor-pointer outline-none",
+                      finalRows.length > 0
+                        ? "text-slate-700 hover:bg-slate-50"
+                        : "text-slate-300 cursor-not-allowed",
+                    )}
+                    disabled={finalRows.length === 0}
+                    onSelect={handleExportTableExcel}
                   >
-                    <FileText
+                    <FileSpreadsheet
                       size={14}
-                      className="text-slate-400"
+                      className={
+                        finalRows.length > 0
+                          ? "text-slate-400"
+                          : "text-slate-300"
+                      }
                     />
                     <div className="flex flex-col">
                       <span className="font-medium">
-                        Relat��rio PDF
+                        Tabela geral (Excel)
                       </span>
                       <span className="text-[10px] font-normal text-slate-400">
-                        {showChartSection && showChart
-                          ? `${analysisMode === "padrao" ? "Ranking de Performance" : analysisMode === "evolucao" ? "Gráfico Evolutivo" : analysisMode === "horaahora" ? "Gráfico Hora a Hora" : "Gráfico Comparativo"} + Tabela Geral`
-                          : "Tabela Geral"}
+                        Arquivo .xlsx com os dados exibidos
                       </span>
                     </div>
                   </DropdownMenu.Item>
@@ -4867,33 +4646,15 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     <div className="flex flex-col">
                       <span className="font-medium">
                         {analysisMode === "padrao"
-                          ? "Ranking de Performance"
+                          ? "Gráfico"
                           : analysisMode === "evolucao"
-                            ? "Gráfico Evolutivo"
+                            ? "Gráfico evolutivo"
                             : analysisMode === "horaahora"
-                              ? "Gráfico Hora a Hora"
-                              : "Gráfico Comparativo"}
+                              ? "Gráfico hora a hora"
+                              : "Gráfico comparativo"}
                       </span>
                       <span className="text-[10px] font-normal text-slate-400">
                         Imagem PNG do gráfico
-                      </span>
-                    </div>
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator className="h-px bg-slate-100 my-1" />
-                  <DropdownMenu.Item
-                    className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md cursor-pointer outline-none"
-                    onSelect={handleExportCSV}
-                  >
-                    <FileSpreadsheet
-                      size={14}
-                      className="text-slate-400"
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        Tabela Geral
-                      </span>
-                      <span className="text-[10px] font-normal text-slate-400">
-                        Dados completos em CSV
                       </span>
                     </div>
                   </DropdownMenu.Item>
@@ -4958,7 +4719,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                 <div className="flex items-center gap-2.5">
                   <span className="font-medium text-[#45556c] text-[18px] tracking-[0.45px] leading-[16px]">
                     {analysisMode === "padrao" &&
-                      "Ranking de performance"}
+                      "Gráfico"}
                     {analysisMode === "evolucao" &&
                       "Gráfico evolutivo"}
                     {analysisMode === "comparativo" &&
