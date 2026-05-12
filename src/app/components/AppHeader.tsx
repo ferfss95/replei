@@ -30,7 +30,7 @@ interface AppHeaderProps {
   handleStepChange: (step: Step) => void;
   onClear: () => void;
   onExit?: () => void;
-  /** Abre o glossário de métricas (descrições e fórmulas do módulo atual). */
+  /** Abre a central de ajuda (guias, FAQ e glossário de métricas do módulo atual). */
   onOpenMetricsDictionary: () => void;
 }
 
@@ -187,8 +187,8 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
             onMouseLeave={() => setHoveredAction(null)}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-150"
             style={getActionStyle(hoveredAction === "help")}
-            title="Glossário de métricas — descrições e fórmulas"
-            aria-label="Abrir glossário de métricas"
+            title="Ajuda e suporte — guias, FAQ e glossário de métricas"
+            aria-label="Abrir central de ajuda"
           >
             <CircleHelp size={18} strokeWidth={2} aria-hidden />
           </button>
