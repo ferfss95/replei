@@ -1,5 +1,7 @@
 // Date utility functions for the analysis wizard
 
+import type { AnalysisMode } from './types/wizard';
+
 // Group months by year
 export const groupMonthsByYear = (months: string[]): Record<string, string[]> => {
   const result: Record<string, string[]> = {};
@@ -193,7 +195,10 @@ export const getLastCompleteWeekdays = (): number[] => {
 };
 
 // Detects month rollover and returns appropriate defaults
-export const getDefaultsForPeriodType = (periodType: string) => {
+export const getDefaultsForPeriodType = (
+  periodType: string,
+  analysisMode?: AnalysisMode,
+) => {
   const today = getToday();
   const dayOfMonth = today.getDate();
   const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
@@ -205,10 +210,15 @@ export const getDefaultsForPeriodType = (periodType: string) => {
     };
   }
   
-  // CASE: ANUAL - always current year
+  // CASE: ANUAL — ano corrente só no Intraday (demais modos: ano anterior)
   if (periodType === 'Anual') {
+    const currentYear = parseInt(getCurrentYearString(), 10);
+    const defaultYear =
+      analysisMode === 'horaahora'
+        ? getCurrentYearString()
+        : String(currentYear - 1);
     return {
-      selectedYears: [getCurrentYearString()]
+      selectedYears: [defaultYear],
     };
   }
   

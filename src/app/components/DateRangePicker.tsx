@@ -3,6 +3,8 @@ import * as Popover from '@radix-ui/react-popover';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import { cn } from '../utils';
+import type { AnalysisMode } from '../types/wizard';
+import { isCalendarDayBlocked } from '../utils/dateSelectionRules';
 
 interface DateRangePickerProps {
   startDate: string; // formato: DD/MM/YYYY
@@ -10,6 +12,7 @@ interface DateRangePickerProps {
   onStartChange: (value: string) => void;
   onEndChange: (value: string) => void;
   disabled?: boolean;
+  analysisMode?: AnalysisMode;
 }
 
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({
@@ -18,6 +21,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   onStartChange,
   onEndChange,
   disabled = false,
+  analysisMode,
 }) => {
   const [open, setOpen] = useState(false);
   const [clickPhase, setClickPhase] = useState<'start' | 'end'>('start');
@@ -53,9 +57,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const start = parseDate(startDate);
   const end   = parseDate(endDate);
 
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-
   const defaultMonth = (() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -84,6 +85,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const handleDayClick = useCallback((date: Date, modifiers: Record<string, boolean>) => {
     // Ignora dias externos ao mês e dias desabilitados
     if (modifiers.outside || modifiers.disabled) return;
+    if (analysisMode && isCalendarDayBlocked(date, analysisMode)) return;
 
     setHoverDate(undefined);
     const clicked = toDay(date);
@@ -111,7 +113,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       }
       setClickPhase('start');
     }
-  }, [clickPhase, start, onStartChange, onEndChange]);
+  }, [clickPhase, start, onStartChange, onEndChange, analysisMode]);
 
   // ─── Modificadores visuais ────────────────────────────────────────────────
   const startDay = start ? toDay(start) : undefined;
@@ -237,7 +239,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 onDayClick={handleDayClick}
                 numberOfMonths={2}
                 defaultMonth={defaultMonth}
-                disabled={(date) => date > today}
+                analysisMode={analysisMode}
                 onDayMouseEnter={handleDayMouseEnter}
                 onDayMouseLeave={handleDayMouseLeave}
                 modifiers={modifiers}

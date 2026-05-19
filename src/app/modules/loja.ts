@@ -181,24 +181,24 @@ export const lojaModule: ModuleConfig = {
     { id: 'rob',           label: 'Venda (ROB)',        icon: DollarSign   },
     {
       id: 'qtd_itens_loja',
-      label: 'Qtd de Itens',
+      label: 'Qtd Itens',
       icon: Package,
       tooltip:
         'Quantidade de itens vendidos (mock: entre 10% e 17% acima da Qtd de Vendas por posição).',
     },
     {
       id: 'qtd_vendas_loja',
-      label: 'Qtd de Vendas',
+      label: 'Qtd Vendas',
       icon: Hash,
       tooltip:
         'Quantidade de vendas realizadas (proxy baseado em ROB dividido pelo Ticket Médio).',
     },
-    { id: 'sss', label: 'SSS', icon: BarChart3 },
-    { id: 'margem_bruta',  label: 'Margem Bruta (MB)',  icon: Percent      },
-    { id: 'valor_meta',    label: 'Valor da Meta',      icon: Target       },
+    { id: 'sss', label: '% SSS', icon: BarChart3 },
+    { id: 'margem_bruta',  label: '% Margem Bruta (MB)', icon: Percent      },
+    { id: 'valor_meta',    label: 'Vlr Meta',            icon: Target       },
     {
       id: 'vlr_projecao_venda',
-      label: 'Vlr Projeção de Venda (mês vigente)',
+      label: 'Vlr Projeção Venda (mês vigente)',
       icon: DollarSign,
       tooltip:
         'Sempre no mês corrente (em aberto): vendas realizadas do dia 1 até hoje, mais projeção linear do restante do mês. Não usa o intervalo de datas selecionado na tela.',
@@ -210,8 +210,8 @@ export const lojaModule: ModuleConfig = {
       tooltip:
         'Quanto a loja projeta atingir da meta mensal do mês vigente (100% = bater a meta; acima de 100% = superar). Exibe "—" se a meta mensal for zerada ou inválida.',
     },
-    { id: 'desvio_meta_r', label: 'Desvio Meta $',      icon: TrendingUp   },
-    { id: 'desvio_meta_p', label: 'Desvio Meta %',      icon: TrendingUp   },
+    { id: 'desvio_meta_r', label: 'Vlr Desvio Meta',    icon: TrendingUp   },
+    { id: 'desvio_meta_p', label: '% Desvio Meta',      icon: TrendingUp   },
     { id: 'conversao',     label: 'Conversão',          icon: Percent      },
     {
       id: 'conversao_vendex',
@@ -221,14 +221,14 @@ export const lojaModule: ModuleConfig = {
     },
     {
       id: 'match_preco',
-      label: 'Match de Preço %',
+      label: '% Match de Preço',
       icon: Tag,
       tooltip:
         'Do total de vendas realizadas, representa o percentual de vendas feitas com desconto igualando o preço praticado no site.',
     },
     {
       id: 'match_preco_valor',
-      label: 'Match de Preço valor',
+      label: 'Vlr Match de Preço',
       icon: DollarSign,
       tooltip:
         'Valor (R$) de vendas com match de preço; mock entre 10% e 15% do ROB da posição.',

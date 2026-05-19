@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { RotateCcw, LogOut, ChevronRight, CircleHelp } from "lucide-react";
+import { RotateCcw, LogOut, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { STEPS, type Step, type Module } from "../constants";
 import { getModuleTitle } from "../constants/labels";
@@ -30,8 +30,6 @@ interface AppHeaderProps {
   handleStepChange: (step: Step) => void;
   onClear: () => void;
   onExit?: () => void;
-  /** Abre a central de ajuda (guias, FAQ e glossário de métricas do módulo atual). */
-  onOpenMetricsDictionary: () => void;
 }
 
 export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
@@ -47,10 +45,9 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
   handleStepChange,
   onClear,
   onExit,
-  onOpenMetricsDictionary,
 }: AppHeaderProps) {
   const [hoveredStep, setHoveredStep] = useState<Step | null>(null);
-  const [hoveredAction, setHoveredAction] = useState<"clear" | "exit" | "help" | null>(null);
+  const [hoveredAction, setHoveredAction] = useState<"clear" | "exit" | null>(null);
 
   const { primaryColor, highlightColor } = moduleColors;
   const highlightShadow = hexToRgba(highlightColor, 0.3);
@@ -178,21 +175,8 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
           </div>
         </div>
 
-        {/* ── Direita: ajuda métricas + ações ── */}
+        {/* ── Direita: ações ── */}
         <div className="flex items-center shrink-0" style={{ gap: 12 }}>
-          <button
-            type="button"
-            onClick={onOpenMetricsDictionary}
-            onMouseEnter={() => setHoveredAction("help")}
-            onMouseLeave={() => setHoveredAction(null)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-150"
-            style={getActionStyle(hoveredAction === "help")}
-            title="Ajuda e suporte — guias, FAQ e glossário de métricas"
-            aria-label="Abrir central de ajuda"
-          >
-            <CircleHelp size={18} strokeWidth={2} aria-hidden />
-          </button>
-
           <button
             onClick={onClear}
             onMouseEnter={() => setHoveredAction("clear")}

@@ -4,13 +4,14 @@
  */
 import React, { useMemo } from "react";
 import * as Popover from "@radix-ui/react-popover";
-import { Calendar as CalendarIcon, Filter, Layers, Ban } from "lucide-react";
+import { Calendar as CalendarIcon, Filter, Anchor, Ban } from "lucide-react";
 import { LOCATION_ATTRIBUTES } from "../constants";
 import {
   collectAllDomainAttributes,
   type ModuleConfig,
 } from "../modules/types";
 import type { AnalysisMode } from "../types/wizard";
+import { getComparativoPeriodLabel } from "../constants/labels";
 import {
   computePeriodDisplayText,
   computeComparativoPeriodSmartSummary,
@@ -228,7 +229,7 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
                 <Popover.Trigger asChild>
                   <button type="button" className={tagBtnClass} style={TAG_SURFACE}>
                     <CalendarIcon size={10} className="shrink-0 text-[#2C2C2C]" />
-                    <span className="uppercase">P{idx}</span>
+                    <span>{getComparativoPeriodLabel(idx)}</span>
                     <span className="font-normal ml-0.5">
                       {computeComparativoPeriodSmartSummary(idx, compInput)}
                     </span>
@@ -339,7 +340,7 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
           <Popover.Root>
             <Popover.Trigger asChild>
               <button type="button" className={tagBtnClass} style={TAG_SURFACE}>
-                <Layers size={10} className="shrink-0 text-[#2C2C2C]" />
+                <Anchor size={10} className="shrink-0 text-[#2C2C2C]" strokeWidth={2.25} />
                 <span className="uppercase">Agrupamento:</span>
                 <span className="font-normal ml-0.5">
                   {grouping.length > 1

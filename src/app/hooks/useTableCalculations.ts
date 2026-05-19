@@ -6,6 +6,7 @@
 import { useState, useCallback, type Dispatch, type SetStateAction } from 'react';
 import type { AnalysisMode, AveragePeriodType } from '../types/wizard';
 import { PERIOD_OPTIONS } from '../constants';
+import { isComparativoPeriodKey, isComparativoPeriodOne } from '../constants/labels';
 import { calculatePeriodCounts, calculateDaysInMonth, calculateDaysInYear } from '../utils/calculations';
 
 interface UseTableCalculationsProps {
@@ -151,8 +152,8 @@ export const useTableCalculations = ({
 
       // For general, comparative, and intraday modes
       const range =
-        analysisMode === "comparativo" && periodStr?.includes("P")
-          ? periodStr === "P1"
+        analysisMode === "comparativo" && isComparativoPeriodKey(periodStr)
+          ? isComparativoPeriodOne(periodStr)
             ? compDateRange1
             : compDateRange2
           : dateRange;

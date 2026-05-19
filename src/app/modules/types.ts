@@ -33,7 +33,11 @@ export interface MetricDef {
   id: string;
   label: string;
   icon: LucideIcon;
-  /** Texto para `title` no menu de métricas (contexto da métrica) */
+  /** Orientação geral (significado e regras) — tooltip de métricas */
+  orientation?: string;
+  /** Fórmula descritiva da base de cálculo — tooltip de métricas */
+  formula?: string;
+  /** Texto legado único (orientação e/ou fórmula); usado se orientation/formula ausentes */
   tooltip?: string;
 }
 

@@ -4,20 +4,26 @@ import {
   ChevronRight,
   PanelRightOpen,
   PanelRightClose,
-  Check,
   Search,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../utils";
-import type { Module } from "../constants";
+import type { Module, Step } from "../constants";
 import type { MetricDef, ModuleConfig } from "../modules/types";
 import { NEUTRAL_PALETTE, type ModuleColors } from "../constants/moduleColors";
 import { Input } from "./ui/input";
 import { stripAccents } from "../utils/searchNormalize";
+import { getMetricSidebarLabel } from "../data/metricNaming";
+import {
+  MetricCheckIconTooltip,
+  MetricInfoIconTooltip,
+} from "./MetricOrientationTooltip";
 
 function metricMatchesNormalizedQuery(metric: MetricDef, normQuery: string): boolean {
   if (!normQuery) return true;
+  const displayLabel = getMetricSidebarLabel(metric.id, metric.label);
   const haystack = [
+    stripAccents(displayLabel.toLowerCase()),
     stripAccents(metric.label.toLowerCase()),
     metric.id.toLowerCase(),
     metric.tooltip ? stripAccents(metric.tooltip.toLowerCase()) : "",
@@ -33,6 +39,9 @@ type MetricSearchCluster = {
 };
 
 interface MetricsSidebarProps {
+  currentStep: Step;
+  /** Ids ativados na preparação; na etapa Resultado a sidebar lista somente este universo. */
+  resultMetricCatalog: string[];
   metricsCollapsed: boolean;
   setMetricsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   metricsGroupExpanded: Record<string, boolean>;
@@ -45,6 +54,8 @@ interface MetricsSidebarProps {
 }
 
 export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSidebar({
+  currentStep,
+  resultMetricCatalog,
   metricsCollapsed,
   setMetricsCollapsed,
   metricsGroupExpanded,
@@ -57,30 +68,79 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
 }: MetricsSidebarProps) {
   const [hoveredMetricId, setHoveredMetricId] = React.useState<string | null>(null);
   const [metricsSearchQuery, setMetricsSearchQuery] = React.useState("");
+  const isResultStep = currentStep === "analysis";
+  const resultCatalogSet = React.useMemo(
+    () => (isResultStep ? new Set(resultMetricCatalog) : null),
+    [isResultStep, resultMetricCatalog],
+  );
+
+  const filterByResultCatalog = React.useCallback(
+    (metrics: MetricDef[]) =>
+      resultCatalogSet ? metrics.filter((m) => resultCatalogSet.has(m.id)) : metrics,
+    [resultCatalogSet],
+  );
+
   const planningMetrics = currentModuleConfig.planningMetrics || [];
   const excludedFromVendaEstoque = new Set(
     currentModuleConfig.metricsSidebarExcludeFromVendaEstoque || [],
   );
-  const vendaEstoqueMetrics = currentModuleConfig.metrics.filter(
-    (m) =>
-      !planningMetrics.includes(m.id) && !excludedFromVendaEstoque.has(m.id),
+  const vendaEstoqueMetrics = filterByResultCatalog(
+    currentModuleConfig.metrics.filter(
+      (m) => !planningMetrics.includes(m.id) && !excludedFromVendaEstoque.has(m.id),
+    ),
   );
-  const planejamentoMetrics = currentModuleConfig.metrics.filter((m) =>
-    planningMetrics.includes(m.id),
+  const planejamentoMetrics = filterByResultCatalog(
+    currentModuleConfig.metrics.filter((m) => planningMetrics.includes(m.id)),
   );
   const outrasAfterPlanningIds = currentModuleConfig.metricsSidebarOutrasAfterPlanning || [];
-  const outrasAfterPlanningMetrics = outrasAfterPlanningIds
-    .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
-    .filter((m): m is MetricDef => Boolean(m));
+  const outrasAfterPlanningMetrics = filterByResultCatalog(
+    outrasAfterPlanningIds
+      .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
+      .filter((m): m is MetricDef => Boolean(m)),
+  );
   const hasOutrasAccordion =
     planejamentoMetrics.length > 0 || outrasAfterPlanningMetrics.length > 0;
   // Módulos que exibem métricas diretamente, sem accordion "Venda e Estoque"
   const isLojaFlatMetrics = currentModule === "LOJA" || currentModule === "INDICADORES";
   const extraSidebarSections = currentModuleConfig.metricSidebarExtraSections || [];
 
+  /** Na etapa Resultado, oculta seções/grupos sem métricas no catálogo de preparação. */
+  const visibleExtraSidebarSections = React.useMemo(() => {
+    return extraSidebarSections
+      .map((section, sectionIdx) => {
+        const groupId = section.sidebarGroupId ?? `metric_extra_${sectionIdx}`;
+        const groups =
+          isResultStep && resultCatalogSet
+            ? section.groups
+                .map((group) => ({
+                  ...group,
+                  metricIds: group.metricIds.filter((id) => resultCatalogSet.has(id)),
+                }))
+                .filter((group) => group.metricIds.length > 0)
+            : section.groups;
+        if (isResultStep && resultCatalogSet && groups.length === 0) return null;
+        return { section, groupId, groups };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+  }, [extraSidebarSections, isResultStep, resultCatalogSet]);
+
+  const showVendaEstoqueAccordion =
+    !isLojaFlatMetrics && (!isResultStep || vendaEstoqueMetrics.length > 0);
+  const showFlatMetricsList =
+    isLojaFlatMetrics && (!isResultStep || vendaEstoqueMetrics.length > 0);
+  const showPlanejamentoDivider =
+    hasOutrasAccordion &&
+    (showVendaEstoqueAccordion ||
+      showFlatMetricsList ||
+      visibleExtraSidebarSections.length > 0);
+
   React.useEffect(() => {
     setMetricsSearchQuery("");
   }, [currentModule]);
+
+  React.useEffect(() => {
+    if (isResultStep) setMetricsSearchQuery("");
+  }, [isResultStep]);
 
   const trimmedSearch = metricsSearchQuery.trim();
   const normSearchQuery = trimmedSearch
@@ -155,7 +215,9 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
     return clusters;
   }, [normSearchQuery, currentModuleConfig, isLojaFlatMetrics]);
 
-  const renderMetricRow = (metric: Pick<MetricDef, "id" | "label" | "tooltip">) => {
+  const renderMetricRow = (
+    metric: Pick<MetricDef, "id" | "label" | "tooltip" | "orientation" | "formula">,
+  ) => {
     const isSelected = selectedMetrics.includes(metric.id);
     const isHovered = hoveredMetricId === metric.id;
     const borderColor = isHovered
@@ -172,24 +234,35 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       <button
         type="button"
         key={metric.id}
-        title={metric.tooltip || undefined}
         onClick={() => toggleMetric(metric.id)}
         onMouseEnter={() => setHoveredMetricId(metric.id)}
         onMouseLeave={() => setHoveredMetricId(null)}
         className={cn(
-          "w-full text-left px-3 py-2 text-[13px] rounded-lg transition-all duration-200 flex items-center justify-between border border-solid",
+          "w-full text-left px-3 py-2 text-[13px] rounded-lg transition-all duration-200 flex items-center justify-between gap-2 border border-solid",
         )}
         style={{
           backgroundColor: isSelected
             ? moduleColors.backgroundColor
-            : "transparent",
+            : isHovered
+              ? "#ffffff"
+              : "transparent",
           borderColor,
           boxShadow,
           color: textColor,
         }}
       >
-        <span className={cn("font-medium", isSelected && "font-semibold")}>{metric.label}</span>
-        {isSelected && <Check size={14} className="shrink-0" aria-hidden />}
+        <span className={cn("min-w-0 flex-1 font-medium", isSelected && "font-semibold")}>
+          {getMetricSidebarLabel(metric.id, metric.label)}
+        </span>
+        {isSelected ? (
+          <MetricCheckIconTooltip
+            metricId={metric.id}
+            metric={metric}
+            iconColor={moduleColors.iconColor}
+          />
+        ) : isHovered ? (
+          <MetricInfoIconTooltip metricId={metric.id} metric={metric} />
+        ) : null}
       </button>
     );
   };
@@ -212,12 +285,19 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       >
         <div className="flex items-center justify-between gap-2">
           {!metricsCollapsed && (
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <TrendingUp size={14} className="shrink-0 text-[#90A1B9]" />
-              <h3 className="min-w-0 flex-1 truncate text-[14px] font-bold uppercase tracking-wider text-[rgb(49,65,88)]">
-                Métricas
-              </h3>
-            </div>
+            <motion.div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={14} className="shrink-0 text-[#90A1B9]" />
+                <h3 className="min-w-0 flex-1 truncate text-[14px] font-bold uppercase tracking-wider text-[rgb(49,65,88)]">
+                  {isResultStep ? "Métricas selecionadas" : "Métricas"}
+                </h3>
+              </div>
+              {isResultStep ? (
+                <p className="mt-2 text-[12px] leading-snug text-[#62748E] pr-1">
+                  Para selecionar novas métricas, retorne às etapas anteriores.
+                </p>
+              ) : null}
+            </motion.div>
           )}
           <button
             type="button"
@@ -236,6 +316,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
 
       {!metricsCollapsed && (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-5">
+          {!isResultStep ? (
           <div className="shrink-0 bg-white pb-3 pt-0">
             <div className="relative">
               <Search
@@ -255,7 +336,8 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
               />
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          ) : null}
+          <div className={cn("min-h-0 flex-1 overflow-y-auto", isResultStep && "pt-1")}>
             <div className="space-y-4">
               {isSearchMode ? (
                 searchClusters.length === 0 ? (
@@ -284,10 +366,13 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                     </div>
                   ))
                 )
-              ) : isLojaFlatMetrics ? (
+              ) : showFlatMetricsList ? (
                 <div className="space-y-1.5">{vendaEstoqueMetricRows}</div>
-              ) : (
+              ) : !showVendaEstoqueAccordion &&
+                visibleExtraSidebarSections.length === 0 &&
+                !hasOutrasAccordion ? null : (
                 <>
+                  {showVendaEstoqueAccordion ? (
                   <div className="space-y-2">
                     <button
                       type="button"
@@ -316,16 +401,19 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                         {vendaEstoqueMetricRows}
                       </motion.div>
                     )}
-                  </div>
+                  </div>) : null}
 
                   {/* 2. Exposição de produtos (e demais seções extras configuradas no módulo) */}
-                  {extraSidebarSections.map((section, sectionIdx) => {
-                    const groupId = section.sidebarGroupId ?? `metric_extra_${sectionIdx}`;
+                  {visibleExtraSidebarSections.map(({ section, groupId, groups }, sectionIdx) => {
+                    const showSectionDivider =
+                      sectionIdx > 0 || showVendaEstoqueAccordion;
                     return (
                       <React.Fragment key={groupId}>
-                        <div className="py-2">
-                          <div className="h-px bg-slate-200" />
-                        </div>
+                        {showSectionDivider ? (
+                          <div className="py-2">
+                            <div className="h-px bg-slate-200" />
+                          </div>
+                        ) : null}
                         <div className="space-y-2">
                           <button
                             type="button"
@@ -351,7 +439,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                               transition={{ duration: 0.2 }}
                               className="space-y-6 pl-1"
                             >
-                              {section.groups.map((group) => (
+                              {groups.map((group) => (
                                 <div key={group.subtitle} className="space-y-1.5">
                                   <p
                                     className="px-2 text-[10px] font-semibold tracking-wide"
@@ -379,9 +467,11 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                   {/* 3. Planejamento (rótulo do accordion configurável por módulo) */}
                   {hasOutrasAccordion && (
                     <>
-                      <div className="py-2">
-                        <div className="h-px bg-slate-200" />
-                      </div>
+                      {showPlanejamentoDivider ? (
+                        <div className="py-2">
+                          <div className="h-px bg-slate-200" />
+                        </div>
+                      ) : null}
                       <div className="space-y-2">
                         <button
                           type="button"

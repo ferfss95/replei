@@ -6,17 +6,43 @@ import { DayPicker } from "react-day-picker";
 
 import { cn } from "./utils";
 import { buttonVariants } from "./button";
+import type { AnalysisMode } from "../../types/wizard";
+import { isCalendarDayBlocked } from "../../utils/dateSelectionRules";
+import { createCalendarTodayRuleComponents } from "../calendar/CalendarTodayRuleDay";
+
+type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  /** Quando informado, aplica bloqueio de D0 (hoje) fora do Intraday. */
+  analysisMode?: AnalysisMode;
+};
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  analysisMode,
+  disabled,
+  components,
   ...props
-}: React.ComponentProps<typeof DayPicker>) {
+}: CalendarProps) {
+  const mergedDisabled = React.useCallback(
+    (date: Date) => {
+      if (analysisMode && isCalendarDayBlocked(date, analysisMode)) return true;
+      if (typeof disabled === "function") return disabled(date);
+      return false;
+    },
+    [analysisMode, disabled],
+  );
+
+  const todayRuleComponents = React.useMemo(
+    () => createCalendarTodayRuleComponents(analysisMode),
+    [analysisMode],
+  );
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
       weekStartsOn={1}
+      disabled={analysisMode ? mergedDisabled : disabled}
       className={cn("p-3", className)}
       classNames={{
         months: "flex flex-col sm:flex-row gap-2",
@@ -67,6 +93,8 @@ function Calendar({
         IconRight: ({ className, ...props }) => (
           <ChevronRight className={cn("size-4", className)} {...props} />
         ),
+        ...todayRuleComponents,
+        ...components,
       }}
       {...props}
     />

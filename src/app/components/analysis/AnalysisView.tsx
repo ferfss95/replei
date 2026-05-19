@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Check,
   Filter,
+  Anchor,
   Layers,
   ChevronDown,
   ChevronLeft,
@@ -68,6 +69,7 @@ import {
   formatDate,
 } from "../../dateUtils";
 import { computePeriodDisplayText } from "../../utils/analysisPeriodSummary";
+import { IntradaySyncMetadata } from "../IntradaySyncMetadata";
 import {
   METRIC_CONFIG,
   METRIC_ABBREVIATIONS,
@@ -100,6 +102,14 @@ import {
 } from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
 import type { AnalysisMode, AveragePeriodType } from "../../types/wizard";
+import {
+  COMPARATIVO_PERIOD_LABELS,
+  getComparativoPeriodLabel,
+  isComparativoPeriodKey,
+  isComparativoPeriodOne,
+} from "../../constants/labels";
+import { getMetricSidebarLabel, getMetricTableLabel } from "../../data/metricNaming";
+import { MetricColumnHeaderTooltip } from "../MetricOrientationTooltip";
 
 // ══════════════════════════════════════════════════════════════════
 // TYPES
@@ -458,8 +468,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
     if (periodType === "Diário") {
       const range =
-        isComparativo && periodStr?.includes("P")
-          ? periodStr === "P1"
+        isComparativo && isComparativoPeriodKey(periodStr)
+          ? isComparativoPeriodOne(periodStr)
             ? compDateRange1
             : compDateRange2
           : dateRange;
@@ -473,16 +483,16 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
     if (periodType === "Mensal") {
       const months =
-        isComparativo && periodStr?.includes("P")
-          ? periodStr === "P1"
+        isComparativo && isComparativoPeriodKey(periodStr)
+          ? isComparativoPeriodOne(periodStr)
             ? compMonths1.length
             : compMonths2.length
           : selectedMonths.length;
 
       // Base anual para converter meses em dias na média diária
       const baseYearStr =
-        isComparativo && periodStr?.includes("P")
-          ? periodStr === "P1"
+        isComparativo && isComparativoPeriodKey(periodStr)
+          ? isComparativoPeriodOne(periodStr)
             ? compYears1[0] || selectedYears[0] || getCurrentYearString()
             : compYears2[0] || selectedYears[0] || getCurrentYearString()
           : selectedYears[0] || getCurrentYearString();
@@ -499,15 +509,15 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
     // periodType === "Anual"
     const years =
-      isComparativo && periodStr?.includes("P")
-        ? periodStr === "P1"
+      isComparativo && isComparativoPeriodKey(periodStr)
+        ? isComparativoPeriodOne(periodStr)
           ? compYears1.length
           : compYears2.length
         : selectedYears.length;
 
     const yearList =
-      isComparativo && periodStr?.includes("P")
-        ? periodStr === "P1"
+      isComparativo && isComparativoPeriodKey(periodStr)
+        ? isComparativoPeriodOne(periodStr)
           ? compYears1
           : compYears2
         : selectedYears;
@@ -1605,8 +1615,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         has2 = !!(compDateRange2.start && compDateRange2.end);
       }
       const result: string[] = [];
-      if (has1) result.push("Período 1");
-      if (has2) result.push("Período 2");
+      if (has1) result.push(COMPARATIVO_PERIOD_LABELS[1]);
+      if (has2) result.push(COMPARATIVO_PERIOD_LABELS[2]);
       return result;
     }
     if (!isTimeDrilldownEnabled) return [];
@@ -2469,9 +2479,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
   // Comparative period labels (cheap — no memo needed)
   const compP1Label =
-    periods.length >= 1 ? compPeriodSubtitle(1) || "P1" : "P1";
+    periods.length >= 1
+      ? compPeriodSubtitle(1) || getComparativoPeriodLabel(1)
+      : getComparativoPeriodLabel(1);
   const compP2Label =
-    periods.length >= 2 ? compPeriodSubtitle(2) || "P2" : "P2";
+    periods.length >= 2
+      ? compPeriodSubtitle(2) || getComparativoPeriodLabel(2)
+      : getComparativoPeriodLabel(2);
 
   // Reset chart page when source data changes
   React.useEffect(() => {
@@ -3594,9 +3608,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
         }}
       >
-        <h3 className="text-[14px] font-bold uppercase tracking-wide text-[#314158] mb-3">
-          Resumo da análise
-        </h3>
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <h3 className="text-[14px] font-bold uppercase tracking-wide text-[#314158] shrink-0">
+            Resumo da análise
+          </h3>
+          {analysisMode === "horaahora" && <IntradaySyncMetadata />}
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period tag(s) */}
           {analysisMode === "comparativo" ? (
@@ -3614,7 +3631,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     }}
                   >
                     <CalendarIcon size={10} />
-                    <span className="uppercase">P1</span>
+                    <span>{getComparativoPeriodLabel(1)}</span>
                     <span className="font-normal ml-0.5">
                       {compPeriodSmartSummary(1)}
                     </span>
@@ -3663,7 +3680,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     }}
                   >
                     <CalendarIcon size={10} />
-                    <span className="uppercase">P2</span>
+                    <span>{getComparativoPeriodLabel(2)}</span>
                     <span className="font-normal ml-0.5">
                       {compPeriodSmartSummary(2)}
                     </span>
@@ -4050,7 +4067,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     ...bc("#D9D9D9"),
                   }}
                 >
-                  <Layers size={10} className="shrink-0 text-[#2C2C2C]" />
+                  <Anchor size={10} className="shrink-0 text-[#2C2C2C]" strokeWidth={2.25} />
                   <span className="uppercase">Agrupamento:</span>
                   <span className="font-normal ml-0.5">
                     {groupingArr.length > 1
@@ -6713,21 +6730,17 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               );
                               const abbrev =
                                 METRIC_ABBREVIATIONS[mId] ||
-                                metric?.label ||
+                                getMetricTableLabel(mId, metric?.label) ||
                                 mId;
                               const isLastMetric =
                                 mIdx ===
                                 orderedMetrics.length - 1;
                               return (
-                                <RadixTooltip.Root
+                                <MetricColumnHeaderTooltip
                                   key={`metric_group__${mId}`}
-                                  delayDuration={300}
-                                >
-                                  <RadixTooltip.Trigger asChild>
-                                    <th
-                                      colSpan={getSubColsForMetric(
-                                        mId,
-                                      )}
+                                  metricId={mId}
+                                  metric={metric}
+                                  colSpan={getSubColsForMetric(mId)}
                                       className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide select-none"
                                       style={{
                                         backgroundColor:
@@ -6749,21 +6762,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                           : {}),
                                       }}
                                     >
-                                      <div className="flex items-center justify-center gap-1.5 text-[13px]">
-                                        {abbrev}
-                                      </div>
-                                    </th>
-                                  </RadixTooltip.Trigger>
-                                  <RadixTooltip.Portal>
-                                    <RadixTooltip.Content
-                                      className="z-50 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded shadow-lg animate-in fade-in zoom-in-95 max-w-[250px]"
-                                      sideOffset={5}
-                                    >
-                                      {metric?.label || mId}
-                                      <RadixTooltip.Arrow className="fill-slate-900" />
-                                    </RadixTooltip.Content>
-                                  </RadixTooltip.Portal>
-                                </RadixTooltip.Root>
+                                  <div className="flex items-center justify-center gap-1.5 text-[13px]">
+                                    {abbrev}
+                                  </div>
+                                </MetricColumnHeaderTooltip>
                               );
                             },
                           )
@@ -6888,7 +6890,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                                 className="shrink-0 opacity-50"
                                               />
                                               <span>
-                                                P{pIdx + 1}
+                                                {period}
                                               </span>
                                             </div>
                                           </Popover.Trigger>
@@ -7338,7 +7340,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   );
                                   const abbrev =
                                     METRIC_ABBREVIATIONS[mId] ||
-                                    metric?.label ||
+                                    getMetricTableLabel(mId, metric?.label) ||
                                     mId;
                                   const isLastInPeriod =
                                     mIdx ===
@@ -7480,7 +7482,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 );
                                 const abbrev =
                                   METRIC_ABBREVIATIONS[mId] ||
-                                  metric?.label ||
+                                  getMetricTableLabel(mId, metric?.label) ||
                                   mId;
                                 const totalSortKey = `__total__${mId}`;
                                 const out: React.ReactNode[] = [];
@@ -9186,7 +9188,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             if (!metric) return null;
                             const abbrev =
                               METRIC_ABBREVIATIONS[metricId] ||
-                              metric.label;
+                              getMetricTableLabel(metricId, metric.label);
                             const canShowPct =
                               showSharePct &&
                               !PCT_EXCLUDED_METRICS.has(
@@ -9282,7 +9284,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       className="z-50 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded shadow-lg animate-in fade-in zoom-in-95 max-w-[250px]"
                                       sideOffset={5}
                                     >
-                                      {metric.label}
+                                      {getMetricSidebarLabel(metric.id, metric.label)}
                                       <RadixTooltip.Arrow className="fill-slate-900" />
                                     </RadixTooltip.Content>
                                   </RadixTooltip.Portal>

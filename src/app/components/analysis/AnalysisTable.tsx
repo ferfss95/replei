@@ -26,6 +26,9 @@ import {
   Package,
 } from 'lucide-react';
 import { cn } from '../../utils';
+import { getMetricSidebarLabel, getMetricTableLabel } from '../../data/metricNaming';
+import { MetricColumnHeaderTooltip } from '../MetricOrientationTooltip';
+import { getComparativoPeriodLabel } from '../../constants/labels';
 import { ANALYSIS_ATTRIBUTE_SORT_KEY } from '../../utils/sortAnalysisRowTree';
 import { MetricCell, PercentageCell, VariationCell, GrowthCell } from './AnalysisCells';
 import type { AnalysisMode } from '../../types/wizard';
@@ -338,13 +341,17 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
               </th>
               {orderedMetrics.map((mId: string, mIdx: number) => {
                 const metric = METRICS_LIST.find((m) => m.id === mId);
-                const abbrev = METRIC_ABBREVIATIONS[mId] || metric?.label || mId;
+                const abbrev =
+                  METRIC_ABBREVIATIONS[mId] ||
+                  getMetricTableLabel(mId, metric?.label) ||
+                  mId;
                 const isLastMetric = mIdx === orderedMetrics.length - 1;
                 return (
-                  <RadixTooltip.Root key={`metric_group__${mId}`} delayDuration={300}>
-                    <RadixTooltip.Trigger asChild>
-                      <th
-                        colSpan={getSubColsForMetric(mId)}
+                  <MetricColumnHeaderTooltip
+                    key={`metric_group__${mId}`}
+                    metricId={mId}
+                    metric={metric}
+                    colSpan={getSubColsForMetric(mId)}
                         className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide bg-white text-slate-700 select-none"
                         style={{
                           borderBottomWidth: 1,
@@ -365,18 +372,7 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
                           )}
                           {abbrev}
                         </div>
-                      </th>
-                    </RadixTooltip.Trigger>
-                    <RadixTooltip.Portal>
-                      <RadixTooltip.Content
-                        className="z-50 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded shadow-lg animate-in fade-in zoom-in-95 max-w-[250px]"
-                        sideOffset={5}
-                      >
-                        {metric?.label || mId}
-                        <RadixTooltip.Arrow className="fill-slate-900" />
-                      </RadixTooltip.Content>
-                    </RadixTooltip.Portal>
-                  </RadixTooltip.Root>
+                  </MetricColumnHeaderTooltip>
                 );
               })}
             </tr>
@@ -418,7 +414,7 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
                           <Popover.Trigger asChild>
                             <div className="flex items-center gap-1 cursor-pointer hover:text-slate-700 transition-colors justify-end">
                               <CalendarIcon size={10} className="shrink-0 opacity-50" />
-                              <span>P{pIdx + 1}</span>
+                              <span>{getComparativoPeriodLabel((pIdx + 1) as 1 | 2)}</span>
                             </div>
                           </Popover.Trigger>
                           <Popover.Portal>
@@ -1473,7 +1469,9 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
               {orderedMetrics.map((metricId: string) => {
                 const metric = METRICS_LIST.find((m) => m.id === metricId);
                 if (!metric) return null;
-                const abbrev = METRIC_ABBREVIATIONS[metricId] || metric.label;
+                const abbrev =
+                  METRIC_ABBREVIATIONS[metricId] ||
+                  getMetricTableLabel(metricId, metric.label);
                 const canShowPct = showSharePct && !PCT_EXCLUDED_METRICS.has(metricId);
                 const isLastMetric =
                   metricId === orderedMetrics[orderedMetrics.length - 1];
@@ -1521,7 +1519,7 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
                         className="z-50 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded shadow-lg animate-in fade-in zoom-in-95 max-w-[250px]"
                         sideOffset={5}
                       >
-                        {metric.label}
+                        {getMetricSidebarLabel(metric.id, metric.label)}
                         <RadixTooltip.Arrow className="fill-slate-900" />
                       </RadixTooltip.Content>
                     </RadixTooltip.Portal>

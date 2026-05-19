@@ -25,6 +25,12 @@ import {
   getLYMonths,
   getLYYears,
 } from '../dateUtils';
+import {
+  sanitizeDateRangeForAnalysisMode,
+  sanitizeMonthsForAnalysisMode,
+  sanitizeSpecificDaysForAnalysisMode,
+  sanitizeYearsForAnalysisMode,
+} from '../utils/dateSelectionRules';
 
 interface UseDateRangeProps {
   analysisMode: AnalysisMode;
@@ -140,7 +146,7 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
       return;
     }
 
-    const defaults = getDefaultsForPeriodType(periodType);
+    const defaults = getDefaultsForPeriodType(periodType, analysisMode);
 
     if (defaults.dateRange) {
       setDateRange(defaults.dateRange);
@@ -181,7 +187,7 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
   useEffect(() => {
     if (analysisMode !== "comparativo") return;
 
-    const defaults = getDefaultsForPeriodType(periodType);
+    const defaults = getDefaultsForPeriodType(periodType, analysisMode);
 
     if (periodType === "Diário") {
       if (defaults.dateRange) {
@@ -200,6 +206,30 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
       setCompYears1(defaults.selectedYears);
     }
   }, [analysisMode, periodType]);
+
+  // ─── Remove D0 (hoje) ao sair do Intraday ───
+  useEffect(() => {
+    if (analysisMode === "horaahora") return;
+
+    setDateRange((prev) => sanitizeDateRangeForAnalysisMode(prev, analysisMode));
+    setSelectedSpecificDays((prev) =>
+      sanitizeSpecificDaysForAnalysisMode(prev, analysisMode),
+    );
+    setSelectedMonths((prev) => sanitizeMonthsForAnalysisMode(prev, analysisMode));
+    setSelectedYears((prev) => sanitizeYearsForAnalysisMode(prev, analysisMode));
+    setCompDateRange1((prev) => sanitizeDateRangeForAnalysisMode(prev, analysisMode));
+    setCompDateRange2((prev) => sanitizeDateRangeForAnalysisMode(prev, analysisMode));
+    setCompSpecificDays1((prev) =>
+      sanitizeSpecificDaysForAnalysisMode(prev, analysisMode),
+    );
+    setCompSpecificDays2((prev) =>
+      sanitizeSpecificDaysForAnalysisMode(prev, analysisMode),
+    );
+    setCompMonths1((prev) => sanitizeMonthsForAnalysisMode(prev, analysisMode));
+    setCompMonths2((prev) => sanitizeMonthsForAnalysisMode(prev, analysisMode));
+    setCompYears1((prev) => sanitizeYearsForAnalysisMode(prev, analysisMode));
+    setCompYears2((prev) => sanitizeYearsForAnalysisMode(prev, analysisMode));
+  }, [analysisMode]);
 
   // ─── Auto P2: LY (prioridade) ou MDSAA quando P1 muda ───
   useEffect(() => {

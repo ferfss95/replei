@@ -260,19 +260,19 @@ export const produtoModule: ModuleConfig = {
   // ── Metrics ───────────────────────────────────────────────
   metrics: [
     { id: 'venda',       label: 'Venda (ROB)',      icon: DollarSign  },
-    { id: 'qtd_venda',   label: 'Qtd de Vendas',    icon: ShoppingCart },
+    { id: 'qtd_venda',   label: 'Qtd Vendas',       icon: ShoppingCart },
     {
       id: 'qtd_itens',
-      label: 'Qtd de Itens',
+      label: 'Qtd Itens',
       icon: Package,
       tooltip:
         'Quantidade de itens vendidos (mock: entre 10% e 17% acima da Qtd de Vendas por posição).',
     },
-    { id: 'sss', label: 'SSS', icon: Activity },
+    { id: 'sss', label: '% SSS', icon: Activity },
     { id: 'cmv',             label: 'CMV',                 icon: DollarSign  },
     { id: 'cmv_comercial',   label: 'CMV Comercial',       icon: DollarSign  },
     { id: 'lucro_bruto',     label: 'Lucro Bruto (LB)',    icon: DollarSign  },
-    { id: 'margem',          label: 'Margem Bruta (MB)',   icon: Percent     },
+    { id: 'margem',          label: '% Margem Bruta (MB)', icon: Percent     },
     { id: 'margem_liquida',  label: 'Margem Líquida (ML)', icon: Percent     },
     { id: 'qtd_estoque', label: 'Qtd Estoque',      icon: Package     },
     { id: 'vlr_estoque', label: 'Vlr Estoque',      icon: DollarSign  },
@@ -287,14 +287,14 @@ export const produtoModule: ModuleConfig = {
     },
     {
       id: 'match_preco',
-      label: 'Match de Preço %',
+      label: '% Match de Preço',
       icon: Tag,
       tooltip:
         'Do total de vendas realizadas, representa o percentual de vendas feitas com desconto igualando o preço praticado no site.',
     },
     {
       id: 'match_preco_valor',
-      label: 'Match de Preço valor',
+      label: 'Vlr Match de Preço',
       icon: DollarSign,
       tooltip:
         'Valor (R$) correspondente à participação de vendas com match de preço; mock entre 10% e 15% da venda (ROB) da posição.',
@@ -308,72 +308,72 @@ export const produtoModule: ModuleConfig = {
     { id: 'qtd_target',        label: 'Qtd Target',        icon: Target },
     { id: 'qtd_desvio_target', label: 'Qtd Desvio Target', icon: Target },
     { id: 'vlr_desvio_target', label: 'Vlr Desvio Target', icon: Target },
-    // Exposição de produtos (rótulo menu = spec; tabela = METRIC_ABBREVIATIONS)
+    // Exposição de produtos — nomenclatura: data/metricNaming.ts
     {
       id: 'exp_calc_clicks_tenis',
-      label: 'Qtd de clicks tênis',
+      label: 'Qtd Clicks Tênis',
       icon: MousePointerClick,
       tooltip:
         'Quantidade de clicks em posições de exposição de calçados do tipo tênis.',
     },
     {
       id: 'exp_calc_clicks_chuteiras',
-      label: 'Qtd de clicks chuteiras',
+      label: 'Qtd Clicks Chuteiras',
       icon: MousePointerClick,
       tooltip:
         'Quantidade de clicks em posições de exposição de calçados do tipo chuteira.',
     },
     {
       id: 'exp_vest_bracos_araras',
-      label: 'Qtd braços de exposição',
+      label: 'Qtd Braços Exposição',
       icon: Shirt,
       tooltip:
         'Quantidade de braços de exposição para vestuário que a loja possui.',
     },
     {
       id: 'exp_vest_mesas',
-      label: 'Qtd mesas',
+      label: 'Qtd Mesas',
       icon: Table2,
       tooltip:
         'Quantidade de mesas para exposição de vestuário que a loja possui.',
     },
     {
       id: 'exp_meias_bracos',
-      label: 'Qtd braços de meias',
+      label: 'Qtd Braços Meias',
       icon: LayoutGrid,
       tooltip:
         'Quantidade de braços de araras para exposição de meias que a loja possui.',
     },
     {
       id: 'exp_acc_torres_relogios',
-      label: 'Qtd expositores de relógios',
+      label: 'Qtd Expositores Relógios',
       icon: Watch,
       tooltip:
         'Quantidade de expositores (mesas ou torres) de relógios que a loja possui.',
     },
     {
       id: 'exp_acc_torres_oculos',
-      label: 'Qtd expositores de óculos',
+      label: 'Qtd Expositores Óculos',
       icon: Glasses,
       tooltip:
         'Quantidade de expositores (mesas ou torres) de óculos que a loja possui.',
     },
     {
       id: 'exp_acc_cestos_bolas',
-      label: 'Qtd cestos de bolas',
+      label: 'Qtd Cestos Bolas',
       icon: ShoppingBasket,
       tooltip: 'Quantidade de cestos para expor bolas que a loja possui.',
     },
     {
       id: 'exp_checkstand_modulos',
-      label: 'Qtd módulos checkstand',
+      label: 'Qtd Módulos Checkstand',
       icon: Store,
       tooltip:
         'Quantidade de módulos de checkstand que a loja possui no ponto de venda.',
     },
     {
       id: 'exp_nut_geladeiras',
-      label: 'Qtd geladeiras',
+      label: 'Qtd Geladeiras',
       icon: Refrigerator,
       tooltip:
         'Quantidade de geladeiras que a loja possui para expor bebidas.',

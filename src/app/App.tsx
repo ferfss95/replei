@@ -22,7 +22,6 @@ import { AnalysisView } from "./components/analysis/AnalysisView";
 import { SelectionView } from "./components/steps/SelectionView";
 import { AttributeGrid } from "./components/steps/AttributeGrid";
 import { MetricsSidebar } from "./components/MetricsSidebar";
-import { MetricsDictionaryDialog } from "./components/MetricsDictionaryDialog";
 import { AppHeader } from "./components/AppHeader";
 import { SecondaryHeader } from "./components/SecondaryHeader";
 import { AnalysisSummarySection } from "./components/AnalysisSummarySection";
@@ -59,7 +58,8 @@ export default function App() {
   const [averageDropdownOpen, setAverageDropdownOpen] = useState(false);
   const [showSharePct, setShowSharePct] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [metricsDictionaryOpen, setMetricsDictionaryOpen] = useState(false);
+  /** Métricas ativadas nas etapas 1–3; na etapa 4 a sidebar só lista este universo. */
+  const [resultMetricCatalog, setResultMetricCatalog] = useState<string[]>([]);
 
   // ─── Module Navigation ─────────────────────────────────────────
   const {
@@ -74,6 +74,9 @@ export default function App() {
     onAnalysisModeChange: setAnalysisMode,
     onAveragePeriodTypeChange: setAveragePeriodType,
   });
+
+  const selectedMetricsRef = React.useRef(selectedMetrics);
+  selectedMetricsRef.current = selectedMetrics;
 
   // ─── Date Range & MDSAA ────────────────────────────────────────
   const {
@@ -133,6 +136,7 @@ export default function App() {
       setExclusions({});
       setGrouping([]);
       setCurrentStep("selection");
+      setResultMetricCatalog([]);
       setMetricsGroupExpanded(getMetricsSidebarDefaultsForModule(currentModule));
     }
 
@@ -205,10 +209,22 @@ export default function App() {
     const metricExistsInModule = currentModuleConfig.metrics.some((metric) => metric.id === metricId);
     if (!metricExistsInModule) return;
 
+    if (currentStep === "analysis") {
+      if (!resultMetricCatalog.includes(metricId)) return;
+      setSelectedMetrics((prev) =>
+        prev.includes(metricId) ? prev.filter((m) => m !== metricId) : [...prev, metricId],
+      );
+      return;
+    }
+
     setSelectedMetrics((prev) => {
       if (prev.includes(metricId)) {
+        setResultMetricCatalog((catalog) => catalog.filter((id) => id !== metricId));
         return prev.filter((m) => m !== metricId);
       }
+      setResultMetricCatalog((catalog) =>
+        catalog.includes(metricId) ? catalog : [...catalog, metricId],
+      );
       return [...prev, metricId];
     });
   };
@@ -236,6 +252,9 @@ export default function App() {
       if (!canOpenAnalysis) return;
 
       setIsGenerating(true);
+      setResultMetricCatalog((catalog) => [
+        ...new Set([...catalog, ...selectedMetricsRef.current]),
+      ]);
       setTimeout(() => {
         setIsGenerating(false);
         setCurrentStep("analysis");
@@ -255,6 +274,7 @@ export default function App() {
       setCurrentStep("selection");
       setAnalysisMode("padrao");
       setSelectedMetrics(getDefaultSelectedMetricsForModule(currentModule));
+      setResultMetricCatalog([]);
       setMetricsCollapsed(false);
       setMetricsGroupExpanded(getMetricsSidebarDefaultsForModule(currentModule));
       setAveragePeriodType(null);
@@ -292,13 +312,6 @@ export default function App() {
         className="h-screen overflow-hidden text-slate-900 font-sans flex flex-col"
         style={{ backgroundColor: "#F1F1F1" }}
       >
-        <MetricsDictionaryDialog
-          open={metricsDictionaryOpen}
-          onOpenChange={setMetricsDictionaryOpen}
-          moduleConfig={currentModuleConfig}
-          accentColor={moduleColors.primaryColor}
-        />
-
         <AppHeader
           currentModule={currentModule}
           currentStep={currentStep}
@@ -311,7 +324,6 @@ export default function App() {
           isComparativoPeriodDefined={isComparativoPeriodDefined}
           handleStepChange={handleStepChange}
           onClear={handleClear}
-          onOpenMetricsDictionary={() => setMetricsDictionaryOpen(true)}
         />
 
         <motion.div
@@ -480,6 +492,8 @@ export default function App() {
           </main>
 
           <MetricsSidebar
+            currentStep={currentStep}
+            resultMetricCatalog={resultMetricCatalog}
             metricsCollapsed={metricsCollapsed}
             setMetricsCollapsed={setMetricsCollapsed}
             metricsGroupExpanded={metricsGroupExpanded}

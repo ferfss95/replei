@@ -17,6 +17,17 @@ export interface PeriodSummaryInput {
   selectedYears: string[];
 }
 
+/** Resumo diário: "Hoje" quando início e fim são o dia atual. */
+export function formatDailyPeriodChipText(
+  start: string,
+  end: string,
+): string {
+  const today = getTodayFormatted();
+  if (start === today && end === today) return "Hoje";
+  const endLabel = end === today ? "Hoje" : end;
+  return `${start} — ${endLabel}`;
+}
+
 export function computePeriodDisplayText(p: PeriodSummaryInput): string {
   const {
     analysisMode,
@@ -31,12 +42,9 @@ export function computePeriodDisplayText(p: PeriodSummaryInput): string {
 
   if (analysisMode === "comparativo") return "";
 
-  const today = getTodayFormatted();
-
   if (analysisMode === "horaahora") {
     if (periodType === "Diário") {
-      const endLabel = dateRange.end === today ? "Hoje" : dateRange.end;
-      return `${dateRange.start} — ${endLabel}`;
+      return formatDailyPeriodChipText(dateRange.start, dateRange.end);
     }
     if (periodType === "Semanal") {
       if (weeklyMode === "specific") {
@@ -104,8 +112,7 @@ export function computePeriodDisplayText(p: PeriodSummaryInput): string {
   }
 
   if (periodType === "Diário") {
-    const endLabel = dateRange.end === today ? "Hoje" : dateRange.end;
-    return `${dateRange.start} — ${endLabel}`;
+    return formatDailyPeriodChipText(dateRange.start, dateRange.end);
   }
 
   if (periodType === "Semanal") {
@@ -282,9 +289,7 @@ export function computeComparativoPeriodSmartSummary(
   if (periodType === "Diário") {
     const dr = periodIdx === 1 ? compDateRange1 : compDateRange2;
     if (!dr.start || !dr.end) return "—";
-    const today = getTodayFormatted();
-    const endLabel = dr.end === today ? "Hoje" : dr.end;
-    return `${dr.start} — ${endLabel}`;
+    return formatDailyPeriodChipText(dr.start, dr.end);
   }
   if (periodType === "Semanal") {
     if (weeklyMode === "specific") {

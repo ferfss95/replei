@@ -15,7 +15,13 @@ import {
   MAX_WEEKLY_DAYS,
   type Module,
 } from "../../constants";
-import { groupMonthsByYear, getToday, getTodayFormatted } from "../../dateUtils";
+import { groupMonthsByYear, getTodayFormatted } from "../../dateUtils";
+import {
+  getSelectableMonthsForYear,
+  isMonthPeriodBlocked,
+  isYearPeriodBlocked,
+} from "../../utils/dateSelectionRules";
+import { PeriodBlockedOptionTooltip } from "../calendar/PeriodBlockedTooltip";
 import { InteractiveMandala } from "../InteractiveMandala";
 import { AnalysisSelector } from "../AnalysisSelector";
 import { DateRangePicker } from "../DateRangePicker";
@@ -233,7 +239,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                     )}
                                   >
                                     <CalendarRange size={14} />
-                                    Data Início e Fim
+                                    Dias Corridos
                                   </button>
                                   <button
                                     onClick={() =>
@@ -415,6 +421,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                         "periodo" && (
                                         <div className="flex flex-col gap-3 h-full w-[320px] shrink-0 mt-[14px]">
                                           <DateRangePicker
+                                            analysisMode={analysisMode}
                                             startDate={
                                               dateRange.start
                                             }
@@ -461,6 +468,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                           {/* Inline calendar multi-select */}
                                           <div className="shrink-0 w-fit">
                                             <Calendar
+                                              analysisMode={analysisMode}
                                               className="p-2 !w-[245px]"
                                               mode="multiple"
                                               selected={selectedSpecificDays.map(
@@ -495,9 +503,6 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                     formatted,
                                                   );
                                               }}
-                                              disabled={(date) =>
-                                                date > getToday()
-                                              }
                                               classNames={{
                                                 months:
                                                   "flex flex-col",
@@ -616,7 +621,8 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                         {/* Inline calendar multi-select */}
                                         <div className="shrink-0 w-fit">
                                           <Calendar
-                                            className="p-2 !w-[245px]"
+                                              analysisMode={analysisMode}
+                                              className="p-2 !w-[245px]"
                                             mode="multiple"
                                             selected={selectedSpecificDays.map(
                                               (s) => {
@@ -650,9 +656,6 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                   formatted,
                                                 );
                                             }}
-                                            disabled={(date) =>
-                                              date > getToday()
-                                            }
                                             classNames={{
                                               months:
                                                 "flex flex-col",
@@ -757,21 +760,28 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                   );
                                                 const yearMonths =
                                                   months;
+                                                const selectableYearMonths =
+                                                  getSelectableMonthsForYear(
+                                                    yearMonths,
+                                                    analysisMode,
+                                                  );
                                                 const selectedCount =
-                                                  yearMonths.filter(
+                                                  selectableYearMonths.filter(
                                                     (m) =>
                                                       selectedMonths.includes(
                                                         m,
                                                       ),
                                                   ).length;
                                                 const allSelected =
+                                                  selectableYearMonths.length >
+                                                    0 &&
                                                   selectedCount ===
-                                                  yearMonths.length;
+                                                    selectableYearMonths.length;
                                                 const someSelected =
                                                   selectedCount >
                                                     0 &&
                                                   selectedCount <
-                                                    yearMonths.length;
+                                                    selectableYearMonths.length;
     
                                                 return (
                                                   <div
@@ -808,10 +818,11 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                               [
                                                                 ...selectedMonths,
                                                               ];
-                                                            yearMonths.forEach(
-                                                              (
-                                                                m,
-                                                              ) => {
+                                                            getSelectableMonthsForYear(
+                                                              yearMonths,
+                                                              analysisMode,
+                                                            ).forEach(
+                                                              (m) => {
                                                                 if (
                                                                   !newSelection.includes(
                                                                     m,
@@ -951,6 +962,13 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                                   ) => {
                                                                     e.preventDefault();
                                                                     if (
+                                                                      isMonthPeriodBlocked(
+                                                                        month,
+                                                                        analysisMode,
+                                                                      )
+                                                                    )
+                                                                      return;
+                                                                    if (
                                                                       isChecked
                                                                     )
                                                                       setSelectedMonths(
@@ -1021,10 +1039,20 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                 selectedYears.includes(
                                                   year,
                                                 );
-                                              return (
+                                              const yearBlocked =
+                                                isYearPeriodBlocked(
+                                                  year,
+                                                  analysisMode,
+                                                );
+                                              const yearRow = (
                                                 <label
                                                   key={year}
-                                                  className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg cursor-pointer group transition-colors"
+                                                  className={cn(
+                                                    "flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg group transition-colors",
+                                                    yearBlocked
+                                                      ? "opacity-50 cursor-not-allowed"
+                                                      : "cursor-pointer",
+                                                  )}
                                                 >
                                                   <div
                                                     className={cn(
@@ -1037,6 +1065,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                       e,
                                                     ) => {
                                                       e.preventDefault();
+                                                      if (yearBlocked) return;
                                                       if (isChecked)
                                                         setSelectedYears(
                                                           selectedYears.filter(
@@ -1076,6 +1105,14 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                   </span>
                                                 </label>
                                               );
+                                              return (
+                                                <PeriodBlockedOptionTooltip
+                                                  key={year}
+                                                  blocked={yearBlocked}
+                                                >
+                                                  {yearRow}
+                                                </PeriodBlockedOptionTooltip>
+                                              );
                                             },
                                           )}
                                         </div>
@@ -1099,6 +1136,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               </span>
                                             </div>
                                             <DateRangePicker
+                                              analysisMode={analysisMode}
                                               startDate={
                                                 compDateRange1.start
                                               }
@@ -1147,6 +1185,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               </div>
                                             </div>
                                             <DateRangePicker
+                                              analysisMode={analysisMode}
                                               startDate={
                                                 compDateRange2.start
                                               }
@@ -1190,7 +1229,8 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               </div>
                                               <div className="shrink-0 w-fit">
                                                 <Calendar
-                                                  className="p-2 w-[245px]"
+                                              analysisMode={analysisMode}
+                                              className="p-2 w-[245px]"
                                                   mode="multiple"
                                                   selected={compSpecificDays1.map(
                                                     (s) => {
@@ -1229,12 +1269,6 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                         f,
                                                       );
                                                   }}
-                                                  disabled={(
-                                                    date,
-                                                  ) =>
-                                                    date >
-                                                    getToday()
-                                                  }
                                                   classNames={{
                                                     months:
                                                       "flex flex-col",
@@ -1330,7 +1364,8 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               </div>
                                               <div className="shrink-0 w-fit">
                                                 <Calendar
-                                                  className="p-2 w-[245px]"
+                                              analysisMode={analysisMode}
+                                              className="p-2 w-[245px]"
                                                   mode="multiple"
                                                   selected={compSpecificDays2.map(
                                                     (s) => {
@@ -1369,12 +1404,6 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                         f,
                                                       );
                                                   }}
-                                                  disabled={(
-                                                    date,
-                                                  ) =>
-                                                    date >
-                                                    getToday()
-                                                  }
                                                   classNames={{
                                                     months:
                                                       "flex flex-col",
@@ -1466,7 +1495,8 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                             </div>
                                             <div className="shrink-0 w-fit">
                                               <Calendar
-                                                className="p-2 w-[245px]"
+                                              analysisMode={analysisMode}
+                                              className="p-2 w-[245px]"
                                                 mode="multiple"
                                                 selected={compSpecificDays1.map(
                                                   (s) => {
@@ -1502,9 +1532,6 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                       f,
                                                     );
                                                 }}
-                                                disabled={(date) =>
-                                                  date > getToday()
-                                                }
                                                 classNames={{
                                                   months:
                                                     "flex flex-col",
@@ -1597,6 +1624,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                             </div>
                                             <div className="shrink-0 w-fit">
                                               <Calendar
+                                                analysisMode={analysisMode}
                                                 key={
                                                   compSpecificDays2.length >
                                                   0
@@ -1639,9 +1667,6 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                       f,
                                                     );
                                                 }}
-                                                disabled={(date) =>
-                                                  date > getToday()
-                                                }
                                                 defaultMonth={
                                                   compSpecificDays2.length >
                                                   0
@@ -1776,21 +1801,28 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                       );
                                                     const yearMonths =
                                                       months;
+                                                    const selectableYearMonths =
+                                                      getSelectableMonthsForYear(
+                                                        yearMonths,
+                                                        analysisMode,
+                                                      );
                                                     const selectedCount =
-                                                      yearMonths.filter(
+                                                      selectableYearMonths.filter(
                                                         (m) =>
                                                           compMonths1.includes(
                                                             m,
                                                           ),
                                                       ).length;
                                                     const allSelected =
+                                                      selectableYearMonths.length >
+                                                        0 &&
                                                       selectedCount ===
-                                                      yearMonths.length;
+                                                        selectableYearMonths.length;
                                                     const someSelected =
                                                       selectedCount >
                                                         0 &&
                                                       selectedCount <
-                                                        yearMonths.length;
+                                                        selectableYearMonths.length;
     
                                                     return (
                                                       <div
@@ -1824,10 +1856,11 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                                   [
                                                                     ...compMonths1,
                                                                   ];
-                                                                yearMonths.forEach(
-                                                                  (
-                                                                    m,
-                                                                  ) => {
+                                                                getSelectableMonthsForYear(
+                                                                  yearMonths,
+                                                                  analysisMode,
+                                                                ).forEach(
+                                                                  (m) => {
                                                                     if (
                                                                       !newSelection.includes(
                                                                         m,
@@ -1969,6 +2002,13 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                                       ) => {
                                                                         e.preventDefault();
                                                                         if (
+                                                                          isMonthPeriodBlocked(
+                                                                            month,
+                                                                            analysisMode,
+                                                                          )
+                                                                        )
+                                                                          return;
+                                                                        if (
                                                                           isChecked
                                                                         )
                                                                           setCompMonths1(
@@ -2076,21 +2116,28 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                       );
                                                     const yearMonths =
                                                       months;
+                                                    const selectableYearMonths =
+                                                      getSelectableMonthsForYear(
+                                                        yearMonths,
+                                                        analysisMode,
+                                                      );
                                                     const selectedCount =
-                                                      yearMonths.filter(
+                                                      selectableYearMonths.filter(
                                                         (m) =>
                                                           compMonths2.includes(
                                                             m,
                                                           ),
                                                       ).length;
                                                     const allSelected =
+                                                      selectableYearMonths.length >
+                                                        0 &&
                                                       selectedCount ===
-                                                      yearMonths.length;
+                                                        selectableYearMonths.length;
                                                     const someSelected =
                                                       selectedCount >
                                                         0 &&
                                                       selectedCount <
-                                                        yearMonths.length;
+                                                        selectableYearMonths.length;
     
                                                     return (
                                                       <div
@@ -2124,10 +2171,11 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                                   [
                                                                     ...compMonths2,
                                                                   ];
-                                                                yearMonths.forEach(
-                                                                  (
-                                                                    m,
-                                                                  ) => {
+                                                                getSelectableMonthsForYear(
+                                                                  yearMonths,
+                                                                  analysisMode,
+                                                                ).forEach(
+                                                                  (m) => {
                                                                     if (
                                                                       !newSelection.includes(
                                                                         m,
@@ -2269,6 +2317,13 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                                       ) => {
                                                                         e.preventDefault();
                                                                         if (
+                                                                          isMonthPeriodBlocked(
+                                                                            month,
+                                                                            analysisMode,
+                                                                          )
+                                                                        )
+                                                                          return;
+                                                                        if (
                                                                           isChecked
                                                                         )
                                                                           handleManualP2MonthsChange(
@@ -2354,10 +2409,20 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                     compYears1.includes(
                                                       year,
                                                     );
-                                                  return (
+                                                  const yearBlocked =
+                                                    isYearPeriodBlocked(
+                                                      year,
+                                                      analysisMode,
+                                                    );
+                                                  const yearRow = (
                                                     <label
                                                       key={year}
-                                                      className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg cursor-pointer group transition-colors"
+                                                      className={cn(
+                                                        "flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg group transition-colors",
+                                                        yearBlocked
+                                                          ? "opacity-50 cursor-not-allowed"
+                                                          : "cursor-pointer",
+                                                      )}
                                                     >
                                                       <div
                                                         className={cn(
@@ -2370,6 +2435,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                           e,
                                                         ) => {
                                                           e.preventDefault();
+                                                          if (yearBlocked) return;
                                                           if (
                                                             isChecked
                                                           )
@@ -2444,7 +2510,12 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                     compYears2.includes(
                                                       year,
                                                     );
-                                                  return (
+                                                  const yearBlocked =
+                                                    isYearPeriodBlocked(
+                                                      year,
+                                                      analysisMode,
+                                                    );
+                                                  const yearRow = (
                                                     <label
                                                       key={year}
                                                       className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg cursor-pointer group transition-colors"
@@ -2460,9 +2531,8 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                           e,
                                                         ) => {
                                                           e.preventDefault();
-                                                          if (
-                                                            isChecked
-                                                          )
+                                                          if (yearBlocked) return;
+                                                          if (isChecked)
                                                             handleManualP2YearsChange(
                                                               compYears2.filter(
                                                                 (
@@ -2569,23 +2639,9 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                   <div className="flex items-center gap-2 mt-3 shrink-0">
                                     <div className="w-1 h-1 rounded-full bg-[#90a1b9]" />
                                     <p className="text-[11px] font-normal text-[#62748e]">
-                                      Intraday contempla 24h (00h
-                                      às 23h). As horas podem ser
-                                      selecionadas na aba Resultado.
-                                    </p>
-                                  </div>
-                                );
-                              }
-    
-                              // Outras análises: só mostra se incluir dia atual
-                              if (includesToday) {
-                                return (
-                                  <div className="flex items-center gap-2 mt-3 shrink-0">
-                                    <div className="w-1 h-1 rounded-full bg-[#90a1b9]" />
-                                    <p className="text-[11px] font-normal text-[#62748e]">
-                                      A seleção inclui dados do dia
-                                      atual | atualização a cada
-                                      30min
+                                      24h disponíveis: seleção das faixas de
+                                      horas na Tela de Resultado | Atualização
+                                      a cada 30min.
                                     </p>
                                   </div>
                                 );

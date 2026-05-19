@@ -11,11 +11,11 @@
 //   2. Adicionar o id em `metricDisplayOrder` na posição desejada
 //   3. Criar array MOCK_IND_* em referenceData.ts
 //   4. Adicionar entrada em METRIC_CONFIG em referenceData.ts
-//   5. Adicionar abreviação em METRIC_ABBREVIATIONS em referenceData.ts
+//   5. Adicionar entrada em data/metricNaming.ts (sidebar + tabela)
 //   Nenhuma outra alteração necessária.
 //
 // Para alterar nome no menu lateral: editar `label` em `metrics`
-// Para alterar título na tabela: editar METRIC_ABBREVIATIONS em referenceData.ts
+// Para alterar título na tabela: editar metricNaming.ts (campo table)
 // `metricDisplayOrder`: ordem canônica no módulo; colunas na tabela seguem a ordem de clique no menu.
 // Para alterar atributos: editar `domainAttributes` + getDomainAttributeOptions
 // ─────────────────────────────────────────────────────────────
@@ -205,16 +205,16 @@ export const indicadoresModule: ModuleConfig = {
   // label = nome exibido no menu lateral da sidebar.
   // metricDisplayOrder: referência canônica; colunas na tabela = ordem de seleção no menu lateral.
   metrics: [
-    { id: 'ind_tkm',           label: 'Ticket Médio',             icon: ShoppingCart },
-    { id: 'ind_pmi',           label: 'Preço Médio de Item',      icon: Tag          },
-    { id: 'ind_ipc',           label: 'Itens por Cliente',        icon: Users        },
+    { id: 'ind_tkm',           label: 'Ticket Médio (TKM)',        icon: ShoppingCart },
+    { id: 'ind_pmi',           label: 'Preço Médio Item (PMI)',   icon: Tag          },
+    { id: 'ind_ipc',           label: 'Itens por Cliente (IPC)',  icon: Users        },
     { id: 'ind_paridade',      label: 'Paridade',                 icon: Activity     },
     { id: 'ind_cupons_mistos', label: 'Cupons Mistos',            icon: Percent      },
     { id: 'ind_fluxo',         label: 'Fluxo',                    icon: TrendingUp   },
     { id: 'ind_pmr',           label: 'PMR',                      icon: Clock        },
     { id: 'ind_nps',           label: 'NPS',                      icon: Star         },
     { id: 'ind_ruptura',       label: 'Ruptura',                  icon: Hash         },
-    { id: 'ind_ee',            label: 'Encomenda Expressa (%)',   icon: Zap          },
+    { id: 'ind_ee',            label: '% Encomenda Expressa (EE)', icon: Zap         },
     {
       id: 'ind_ppa',
       label: 'Alteração de Preço (PPA)',
@@ -222,31 +222,31 @@ export const indicadoresModule: ModuleConfig = {
       tooltip:
         'Do total de alterações de preço necessárias para realizar, representa o percentual de alterações que foram feitas pela loja.',
     },
-    { id: 'ind_cko_movel',     label: 'Utilização Cko Móvel',     icon: Smartphone   },
-    { id: 'ind_conv_click',    label: 'Conversão Click & Retire', icon: Activity     },
+    { id: 'ind_cko_movel',     label: 'Utilização CKO Móvel',      icon: Smartphone   },
+    { id: 'ind_conv_click',    label: 'Conversão Desconto Click', icon: Activity    },
     {
       id: 'ind_match_preco',
-      label: 'Match de Preço %',
+      label: '% Match de Preço',
       icon: Percent,
       tooltip:
         'Do total de vendas realizadas, representa o percentual de vendas feitas com desconto igualando o preço praticado no site.',
     },
     {
       id: 'ind_match_preco_valor',
-      label: 'Match de Preço valor',
+      label: 'Vlr Match de Preço',
       icon: CircleDollarSign,
       tooltip:
         'Valor (R$) de vendas com match de preço; mock entre 10% e 15% do ROB da posição.',
     },
     {
       id: 'ind_qtd_personalizacoes',
-      label: 'Qtd de Personalizações',
+      label: 'Qtd Personalizações',
       icon: ClipboardList,
       tooltip: 'Quantidade de personalizações realizadas pela loja no período (referência mensal).',
     },
     {
       id: 'ind_vlr_personalizacoes',
-      label: 'Valor Personalizações',
+      label: 'Vlr Personalizações',
       icon: CircleDollarSign,
       tooltip: 'Valor total das personalizações (custo unitário de referência R$ 17,00).',
     },
