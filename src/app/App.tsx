@@ -258,10 +258,14 @@ export default function App() {
       setTimeout(() => {
         setIsGenerating(false);
         setCurrentStep("analysis");
+        setMetricsCollapsed(true);
         setShowSharePct(false);
         setAveragePeriodType(null);
       }, 3000);
       return;
+    }
+    if (currentStep === "analysis") {
+      setMetricsCollapsed(false);
     }
     setCurrentStep(targetStep);
   };

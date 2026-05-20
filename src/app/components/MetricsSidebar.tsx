@@ -285,19 +285,12 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       >
         <div className="flex items-center justify-between gap-2">
           {!metricsCollapsed && (
-            <motion.div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={14} className="shrink-0 text-[#90A1B9]" />
-                <h3 className="min-w-0 flex-1 truncate text-[14px] font-bold uppercase tracking-wider text-[rgb(49,65,88)]">
-                  {isResultStep ? "Métricas selecionadas" : "Métricas"}
-                </h3>
-              </div>
-              {isResultStep ? (
-                <p className="mt-2 text-[12px] leading-snug text-[#62748E] pr-1">
-                  Para selecionar novas métricas, retorne às etapas anteriores.
-                </p>
-              ) : null}
-            </motion.div>
+            <div className="flex min-h-[21px] min-w-0 flex-1 items-center gap-2">
+              <TrendingUp size={14} className="shrink-0 text-[#90A1B9]" />
+              <h3 className="min-w-0 truncate text-[14px] font-bold uppercase leading-[21px] tracking-wider text-[rgb(49,65,88)]">
+                Métricas
+              </h3>
+            </div>
           )}
           <button
             type="button"
@@ -312,6 +305,11 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
             )}
           </button>
         </div>
+        {!metricsCollapsed && isResultStep ? (
+          <p className="mt-2 text-[12px] leading-[18px] text-[#62748E] pr-8">
+            Para selecionar novas métricas, retorne às etapas anteriores.
+          </p>
+        ) : null}
       </div>
 
       {!metricsCollapsed && (
@@ -337,7 +335,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
             </div>
           </div>
           ) : null}
-          <div className={cn("min-h-0 flex-1 overflow-y-auto", isResultStep && "pt-1")}>
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="space-y-4">
               {isSearchMode ? (
                 searchClusters.length === 0 ? (

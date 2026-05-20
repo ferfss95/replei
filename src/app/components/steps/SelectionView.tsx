@@ -2481,6 +2481,14 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                       </span>
                                                     </label>
                                                   );
+                                                  return (
+                                                    <PeriodBlockedOptionTooltip
+                                                      key={year}
+                                                      blocked={yearBlocked}
+                                                    >
+                                                      {yearRow}
+                                                    </PeriodBlockedOptionTooltip>
+                                                  );
                                                 },
                                               )}
                                             </div>
@@ -2517,8 +2525,12 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                     );
                                                   const yearRow = (
                                                     <label
-                                                      key={year}
-                                                      className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg cursor-pointer group transition-colors"
+                                                      className={cn(
+                                                        "flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg group transition-colors",
+                                                        yearBlocked
+                                                          ? "opacity-50 cursor-not-allowed"
+                                                          : "cursor-pointer",
+                                                      )}
                                                     >
                                                       <div
                                                         className={cn(
@@ -2574,6 +2586,14 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                                         {year}
                                                       </span>
                                                     </label>
+                                                  );
+                                                  return (
+                                                    <PeriodBlockedOptionTooltip
+                                                      key={year}
+                                                      blocked={yearBlocked}
+                                                    >
+                                                      {yearRow}
+                                                    </PeriodBlockedOptionTooltip>
                                                   );
                                                 },
                                               )}
