@@ -60,6 +60,7 @@ import {
   MONTHS_OPTIONS,
   HORA_A_HORA_HOURS,
   WEEKDAY_FULL,
+  type Module,
 } from "../../constants";
 import {
   getToday,
@@ -70,6 +71,11 @@ import {
 } from "../../dateUtils";
 import { computePeriodDisplayText } from "../../utils/analysisPeriodSummary";
 import { IntradaySyncMetadata } from "../IntradaySyncMetadata";
+import { AnalysisSummaryChipsShell } from "./AnalysisSummaryChipsShell";
+import {
+  ANALYSIS_SUMMARY_TAG_BTN_CLASS,
+  ANALYSIS_SUMMARY_TAG_STYLE,
+} from "./analysisSummaryTagStyles";
 import {
   METRIC_CONFIG,
   METRIC_ABBREVIATIONS,
@@ -102,6 +108,13 @@ import {
 } from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
 import type { AnalysisMode, AveragePeriodType } from "../../types/wizard";
+import {
+  ANALYSIS_TABLE_CLASS,
+  ANALYSIS_TABLE_STYLE,
+  getTableDataRowBg,
+  getTableModuleTheme,
+} from "../../constants/tableModuleTheme";
+import { TableHatchSurface } from "./tableHatchCells";
 import {
   COMPARATIVO_PERIOD_LABELS,
   getComparativoPeriodLabel,
@@ -197,15 +210,34 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     string,
     string
   >;
-  const TABLE_HEADER_BG = "#314158";
-  const TABLE_HEADER_TEXT = "#F1F1F1";
-  const PIVOT_DERIVED_HEADER_BG = moduleColors.accentColor;
-  const PIVOT_DERIVED_HEADER_TEXT = "#314158";
-  const DEFAULT_TOTAL_COLUMN_BG = "#F8FAFC";
+  const tableTheme = getTableModuleTheme(
+    moduleConfig.id === "PRODUTO" ||
+      moduleConfig.id === "LOJA" ||
+      moduleConfig.id === "INDICADORES" ||
+      moduleConfig.id === "EXTRAVIOS"
+      ? (moduleConfig.id as Module)
+      : "PRODUTO",
+  );
+  const TABLE_HEADER_BG = tableTheme.headerBg;
+  const TABLE_HEADER_TEXT = tableTheme.headerText;
+  const PIVOT_DERIVED_HEADER_BG = tableTheme.subHeaderBg;
+  const PIVOT_DERIVED_HEADER_TEXT = tableTheme.subHeaderText;
   const totalColumnBg =
-    analysisMode === "evolucao" || analysisMode === "horaahora"
-        ? PIVOT_DERIVED_HEADER_BG
-        : DEFAULT_TOTAL_COLUMN_BG;
+    analysisMode === "evolucao" ||
+    analysisMode === "horaahora" ||
+    analysisMode === "comparativo"
+      ? tableTheme.subHeaderBg
+      : tableTheme.rowEvenBg;
+
+  const resolveTableRowBg = (
+    rowId: string,
+    dataRowIndex: number,
+    isTotalRow = false,
+  ): string => {
+    if (isTotalRow) return tableTheme.rowEvenBg;
+    if (hoveredTableRowId === rowId) return tableTheme.rowHoverBg;
+    return getTableDataRowBg(tableTheme, dataRowIndex);
+  };
 
   // Attribute label/icon helpers — resolved via active module domain + shared location
   const getAttributeLabel = (id: string): string => {
@@ -273,9 +305,9 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
   const tableContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Table pagination state
-  const [tableRowsPerPage, setTableRowsPerPage] = useState(10);
-  const [tableCurrentPage, setTableCurrentPage] = useState(0);
+  const [hoveredTableRowId, setHoveredTableRowId] = React.useState<string | null>(
+    null,
+  );
 
   // Chart control states — multi-metric (up to 3)
   const [chartMetricIds, setChartMetricIds] = useState<string[]>([]);
@@ -2115,25 +2147,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // Show share % only when there are 2+ data rows (single row is always 100% — redundant)
   const hasMultipleRows = rawRows.length >= 2;
 
-  // Paginated rows for table
-  const tableTotalPages = Math.max(
-    1,
-    Math.ceil(finalRows.length / tableRowsPerPage),
-  );
-  const safeCurrentPage = Math.min(
-    tableCurrentPage,
-    tableTotalPages - 1,
-  );
-  const paginatedRows = React.useMemo(() => {
-    const start = safeCurrentPage * tableRowsPerPage;
-    return finalRows.slice(start, start + tableRowsPerPage);
-  }, [finalRows, safeCurrentPage, tableRowsPerPage]);
-
-  // Reset page when source data or page size changes (expand/collapse handled by safeCurrentPage)
-  React.useEffect(() => {
-    setTableCurrentPage(0);
-  }, [sortedRows, tableRowsPerPage]);
-
   const toggleRow = (id: string) => {
     setExpandedRows((prev) =>
       prev.includes(id)
@@ -2846,6 +2859,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const renderEvoPeriodFirstPivotDataCells = (
     row: any,
     depth: number,
+    rowBg: string,
   ): React.ReactNode => (
     <>
       {periods.flatMap((period, pIdx) =>
@@ -2862,12 +2876,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             <td
               key={key}
               className={cn(
-                "px-2 pr-3 py-2.5 text-right text-[14px] transition-colors group-hover:bg-slate-50/60 whitespace-nowrap",
+                "whitespace-nowrap px-2 py-2.5 pr-3 text-right text-[14px] transition-colors",
                 depth === 0
-                  ? "text-slate-700 font-medium"
-                  : "text-slate-600 font-normal",
+                  ? "font-medium text-slate-700"
+                  : "font-normal text-slate-600",
               )}
               style={{
+                backgroundColor: rowBg,
                 width: getPivotMetricWidth(mId),
                 borderBottomWidth: 1,
                 borderBottomStyle: "solid",
@@ -2955,12 +2970,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               <td
                 key={`${key}__avg`}
                 className={cn(
-                  "px-2 pr-3 py-2.5 text-right text-[13px] transition-colors group-hover:bg-slate-50/60 whitespace-nowrap",
+                  "whitespace-nowrap px-2 py-2.5 pr-3 text-right text-[13px] transition-colors",
                   depth === 0
-                    ? "text-slate-600 font-medium"
-                    : "text-slate-500 font-normal",
+                    ? "font-medium text-slate-600"
+                    : "font-normal text-slate-500",
                 )}
                 style={{
+                  backgroundColor: rowBg,
                   width: AVG_COL_WIDTH,
                   borderBottomWidth: 1,
                   borderBottomStyle: "solid",
@@ -3000,8 +3016,9 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             out.push(
               <td
                 key={`${key}__pct`}
-                className="px-2 py-2.5 text-center text-[12px] text-slate-500 transition-colors group-hover:bg-slate-50/60"
+                className="px-2 py-2.5 text-center text-[12px] text-slate-500 transition-colors"
                 style={{
+                  backgroundColor: rowBg,
                   width: PCT_COL_WIDTH,
                   borderBottomWidth: 1,
                   borderBottomStyle: "solid",
@@ -3596,39 +3613,21 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   ]);
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in duration-500">
-      {/* ═══════════════ RESUMO DA ANÁLISE ═══════════════ */}
-      <div
-        className="flex-none bg-white rounded-[14px] px-5 py-4"
-        style={{
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor: "#D9D9D9",
-          boxShadow:
-            "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
-        }}
+    <div className="flex min-h-0 flex-1 flex-col gap-4 animate-in fade-in duration-500">
+      {/* ═══════════════ RESUMO DA ANÁLISE (chips no fundo cinza) ═══════════════ */}
+      <AnalysisSummaryChipsShell
+        metaSlot={
+          analysisMode === "horaahora" ? <IntradaySyncMetadata /> : undefined
+        }
       >
-        <div className="flex items-center justify-between gap-4 mb-3">
-          <h3 className="text-[14px] font-bold uppercase tracking-wide text-[#314158] shrink-0">
-            Resumo da análise
-          </h3>
-          {analysisMode === "horaahora" && <IntradaySyncMetadata />}
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
           {/* Period tag(s) */}
           {analysisMode === "comparativo" ? (
             <React.Fragment>
               <Popover.Root>
                 <Popover.Trigger asChild>
                   <button
-                    className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                    style={{
-                      backgroundColor: "#F1F1F1",
-                      color: "#2C2C2C",
-                      borderWidth: 1,
-                      borderStyle: "solid",
-                      ...bc("#D9D9D9"),
-                    }}
+                    className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                    style={ANALYSIS_SUMMARY_TAG_STYLE}
                   >
                     <CalendarIcon size={10} />
                     <span>{getComparativoPeriodLabel(1)}</span>
@@ -3670,14 +3669,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               <Popover.Root>
                 <Popover.Trigger asChild>
                   <button
-                    className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                    style={{
-                      backgroundColor: "#F1F1F1",
-                      color: "#2C2C2C",
-                      borderWidth: 1,
-                      borderStyle: "solid",
-                      ...bc("#D9D9D9"),
-                    }}
+                    className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                    style={ANALYSIS_SUMMARY_TAG_STYLE}
                   >
                     <CalendarIcon size={10} />
                     <span>{getComparativoPeriodLabel(2)}</span>
@@ -3721,14 +3714,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             <Popover.Root>
               <Popover.Trigger asChild>
                 <button
-                  className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: "#F1F1F1",
-                    color: "#2C2C2C",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc("#D9D9D9"),
-                  }}
+                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                  style={ANALYSIS_SUMMARY_TAG_STYLE}
                 >
                   <CalendarIcon size={10} />
                   <span className="uppercase">
@@ -3950,14 +3937,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             <Popover.Root>
               <Popover.Trigger asChild>
                 <button
-                  className="text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1.5 font-medium hover:brightness-95 transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: "#F1F1F1",
-                    color: "#2C2C2C",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc("#D9D9D9"),
-                  }}
+                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                  style={ANALYSIS_SUMMARY_TAG_STYLE}
                 >
                   <Clock size={10} />
                   <span className="uppercase">Faixa Horária:</span>
@@ -4006,14 +3987,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               <Popover.Trigger asChild>
                 <button
                   type="button"
-                  className="text-[11px] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 font-medium hover:brightness-[0.97] transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: "#F1F1F1",
-                    color: "#2C2C2C",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc("#D9D9D9"),
-                  }}
+                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                  style={ANALYSIS_SUMMARY_TAG_STYLE}
                 >
                   <Filter size={10} className="shrink-0 text-[#2C2C2C]" />
                   <span className="uppercase">{getAttributeLabel(filter.key)}:</span>
@@ -4058,14 +4033,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               <Popover.Trigger asChild>
                 <button
                   type="button"
-                  className="text-[11px] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 font-medium hover:brightness-[0.97] transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: "#F1F1F1",
-                    color: "#2C2C2C",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc("#D9D9D9"),
-                  }}
+                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                  style={ANALYSIS_SUMMARY_TAG_STYLE}
                 >
                   <Anchor size={10} className="shrink-0 text-[#2C2C2C]" strokeWidth={2.25} />
                   <span className="uppercase">Agrupamento:</span>
@@ -4116,14 +4085,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               <Popover.Trigger asChild>
                 <button
                   type="button"
-                  className="text-[11px] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 font-medium hover:brightness-[0.97] transition-all cursor-pointer"
-                  style={{
-                    backgroundColor: "#F1F1F1",
-                    color: "#2C2C2C",
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    ...bc("#D9D9D9"),
-                  }}
+                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                  style={ANALYSIS_SUMMARY_TAG_STYLE}
                 >
                   <Ban size={10} className="shrink-0 text-red-600" />
                   <span className="uppercase">{getAttributeLabel(filter.key)}:</span>
@@ -4164,8 +4127,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               </Popover.Portal>
             </Popover.Root>
           ))}
-        </div>
-      </div>
+      </AnalysisSummaryChipsShell>
 
       {/* ═══════════════ HEADER CARD: Title + Ações + Info tempo ═══════════════ */}
       <div
@@ -6422,28 +6384,20 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
       {/* ═══════════════ TABELA Section ═══════════════ */}
       <div
-        className="flex flex-col bg-white rounded-[14px] overflow-hidden"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[14px]"
         style={{
           borderWidth: 1,
           borderStyle: "solid",
+          borderBottomWidth: 0,
           ...bc("#d5dbe3"),
           boxShadow:
             "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
-          minHeight: 500,
         }}
       >
-        {/* ── Toggle Header ── */}
-
         {showTable && (
-          <div className="flex flex-col">
-            {/* ── Table Scroll Area ── */}
+          <div className="flex min-h-0 flex-1 flex-col" ref={tableContainerRef}>
             <div
-              className="flex flex-col relative"
-              ref={tableContainerRef}
-              style={{
-                maxHeight: "calc(100vh - 300px)",
-                minHeight: 450,
-              }}
+              className="relative flex min-h-0 flex-1 flex-col"
             >
               {/* Scroll shadow indicators */}
               {scrollShadows.right && (
@@ -6457,13 +6411,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               )}
               <div
                 ref={scrollContainerRef}
-                className="overflow-x-auto overflow-y-auto relative"
+                className="relative flex min-h-0 flex-1 flex-col overflow-x-auto overflow-y-auto"
               >
+                <TableHatchSurface>
                 {/* ─── PIVOT TABLE ─── */}
                 {isPivot ? (
                   <table
-                    className="border-separate border-spacing-0 min-w-max"
-                    style={{ width: "auto" }}
+                    className={ANALYSIS_TABLE_CLASS}
+                    style={ANALYSIS_TABLE_STYLE}
                   >
                     <colgroup>
                       <col
@@ -7581,7 +7536,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     {/* PIVOT TOTALS ROW — sticky below 2-row header (~75px) */}
                     {pivotTotals && (
                       <tbody
-                        className="bg-white relative z-[30]"
+                        className="relative z-[30]"
                         style={{
                           boxShadow:
                             "0 2px 6px -1px rgba(0,0,0,0.07)",
@@ -8467,8 +8422,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     )}
 
                     {/* PIVOT DATA ROWS */}
-                    <tbody className="bg-white z-0">
-                      {paginatedRows.map((row: any) => {
+                    <tbody>
+                      {finalRows.map((row: any, dataRowIndex: number) => {
                         const depth = row.depth ?? 0;
                         const isExpanded =
                           expandedRows.includes(row.id);
@@ -8476,16 +8431,27 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                           row.hasChildren ||
                           row.children?.length > 0;
                         const indentPx = 16 + depth * 32;
+                        const rowBg = resolveTableRowBg(
+                          row.id,
+                          dataRowIndex,
+                        );
                         return (
                           <tr
                             key={row.id}
-                            className="transition-colors group"
+                            className="transition-colors"
+                            onMouseEnter={() =>
+                              setHoveredTableRowId(row.id)
+                            }
+                            onMouseLeave={() =>
+                              setHoveredTableRowId(null)
+                            }
                           >
                             <td
                               style={{
                                 width:
                                   columnWidths["grouping"] ||
                                   350,
+                                backgroundColor: rowBg,
                                 ...bc("#e2e8f0"),
                                 borderRightWidth: 1,
                                 borderRightStyle: "solid",
@@ -8495,10 +8461,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                               }}
                               className={cn(
-                                "py-2 text-sm whitespace-nowrap sticky left-0 z-[35] overflow-hidden",
-                                depth === 0
-                                  ? "bg-white group-hover:bg-slate-50"
-                                  : "bg-[#f8fafc] group-hover:bg-slate-50",
+                                "sticky left-0 z-[35] overflow-hidden py-2 text-sm whitespace-nowrap",
                                 depth === 0
                                   ? "font-semibold text-slate-800"
                                   : "font-medium text-slate-700",
@@ -8580,12 +8543,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       <td
                                         key={key}
                                         className={cn(
-                                          "px-2 pr-3 py-2.5 text-right text-[14px] transition-colors group-hover:bg-slate-50/60 whitespace-nowrap",
+                                          "px-2 pr-3 py-2.5 text-right text-[14px] transition-colors  whitespace-nowrap",
                                           depth === 0
                                             ? "text-slate-700 font-medium"
                                             : "text-slate-600 font-normal",
                                         )}
                                         style={{
+                                          backgroundColor: rowBg,
                                           width:
                                             getPivotMetricWidth(
                                               mId,
@@ -8704,12 +8668,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                         <td
                                           key={`${key}__avg`}
                                           className={cn(
-                                            "px-2 pr-3 py-2.5 text-right text-[13px] transition-colors group-hover:bg-slate-50/60 whitespace-nowrap",
+                                            "px-2 pr-3 py-2.5 text-right text-[13px] transition-colors  whitespace-nowrap",
                                             depth === 0
                                               ? "text-slate-600 font-medium"
                                               : "text-slate-500 font-normal",
                                           )}
                                           style={{
+                                            backgroundColor: rowBg,
                                             width:
                                               AVG_COL_WIDTH,
                                             borderBottomWidth: 1,
@@ -8741,8 +8706,9 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       cells.push(
                                         <td
                                           key={`${key}__pct`}
-                                          className="px-2 py-2.5 text-center text-[12px] text-slate-500 transition-colors group-hover:bg-slate-50/60"
+                                          className="px-2 py-2.5 text-center text-[12px] text-slate-500 transition-colors "
                                           style={{
+                                            backgroundColor: rowBg,
                                             width:
                                               PCT_COL_WIDTH,
                                             borderBottomWidth: 1,
@@ -8787,13 +8753,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     <td
                                       key={`__diff__${mId}`}
                                       className={cn(
-                                        "px-2 pr-3 py-2.5 whitespace-nowrap text-right text-[13px] transition-colors group-hover:bg-slate-50/60",
+                                        "px-2 pr-3 py-2.5 whitespace-nowrap text-right text-[13px] transition-colors ",
                                         fv.color,
                                         depth === 0
                                           ? "font-medium"
                                           : "font-normal",
                                       )}
                                       style={{
+                                        backgroundColor: rowBg,
                                         width:
                                           getPivotMetricWidth(
                                             mId,
@@ -8840,13 +8807,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     <td
                                       key={`__growth__${mId}`}
                                       className={cn(
-                                        "px-2 pr-3 py-2.5 whitespace-nowrap text-right text-[13px] transition-colors group-hover:bg-slate-50/60",
+                                        "px-2 pr-3 py-2.5 whitespace-nowrap text-right text-[13px] transition-colors ",
                                         fg.color,
                                         depth === 0
                                           ? "font-medium"
                                           : "font-normal",
                                       )}
                                       style={{
+                                        backgroundColor: rowBg,
                                         width:
                                           getPivotMetricWidth(
                                             mId,
@@ -9117,6 +9085,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               renderEvoPeriodFirstPivotDataCells(
                                 row,
                                 depth,
+                                rowBg,
                               )
                             )}
                           </tr>
@@ -9127,8 +9096,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                 ) : (
                   /* ─── STANDARD TABLE (non-pivot) ─── */
                   <table
-                    className="border-separate border-spacing-0 min-w-max"
-                    style={{ width: "auto" }}
+                    className={ANALYSIS_TABLE_CLASS}
+                    style={ANALYSIS_TABLE_STYLE}
                   >
                     <thead className="sticky top-0 z-[40]">
                       <tr>
@@ -9235,7 +9204,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                                 "#e2e8f0",
                                             }),
                                       }}
-                                      className="relative cursor-pointer px-3 py-3 text-left text-xs font-bold uppercase tracking-wider group transition-colors hover:bg-[#3b4f6b]"
+                                      className="relative cursor-pointer px-3 py-3 text-left text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-90"
                                       onClick={() =>
                                         handleSort(metric.id)
                                       }
@@ -9357,7 +9326,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                       </tr>
                     </thead>
 
-                    <tbody className="bg-white">
+                    <tbody>
                       {totals && (
                         <tr
                           className="font-bold text-slate-800"
@@ -9374,7 +9343,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               left: 0,
                               top: 41,
                               zIndex: 40,
-                              backgroundColor: "#f8fafc",
+                              backgroundColor: tableTheme.rowEvenBg,
                               ...bc("#e2e8f0"),
                               borderBottomWidth: 2,
                               borderBottomStyle: "solid",
@@ -9414,7 +9383,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       top: 41,
                                       zIndex: 30,
                                       backgroundColor:
-                                        "#f8fafc",
+                                        tableTheme.rowEvenBg,
                                       ...bc("#e2e8f0"),
                                       borderBottomWidth: 2,
                                       borderBottomStyle:
@@ -9449,7 +9418,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                         top: 41,
                                         zIndex: 30,
                                         backgroundColor:
-                                          "#f8fafc",
+                                          tableTheme.rowEvenBg,
                                         ...bc("#e2e8f0"),
                                         borderBottomWidth: 2,
                                         borderBottomStyle:
@@ -9492,7 +9461,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                         top: 41,
                                         zIndex: 30,
                                         backgroundColor:
-                                          "#f8fafc",
+                                          tableTheme.rowEvenBg,
                                         ...bc("#e2e8f0"),
                                         borderBottomWidth: 2,
                                         borderBottomStyle:
@@ -9517,30 +9486,37 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                           )}
                         </tr>
                       )}
-                      {paginatedRows.map((row: any) => {
+                      {finalRows.map((row: any, dataRowIndex: number) => {
                         const depth = row.depth ?? 0;
                         const isExpanded =
                           expandedRows.includes(row.id);
                         const hasChildren =
                           row.hasChildren ||
                           row.children?.length > 0;
-                        const isNested = depth > 0;
 
                         const indentPx = 16 + depth * 32;
+                        const rowBg = resolveTableRowBg(
+                          row.id,
+                          dataRowIndex,
+                        );
 
                         return (
                           <tr
                             key={row.id}
-                            className={cn(
-                              "transition-colors group",
-                              isNested && "",
-                            )}
+                            className="transition-colors"
+                            onMouseEnter={() =>
+                              setHoveredTableRowId(row.id)
+                            }
+                            onMouseLeave={() =>
+                              setHoveredTableRowId(null)
+                            }
                           >
                             <td
                               style={{
                                 width:
                                   columnWidths["grouping"] ||
                                   350,
+                                backgroundColor: rowBg,
                                 ...bc("#e2e8f0"),
                                 borderRightWidth: 1,
                                 borderRightStyle: "solid",
@@ -9551,10 +9527,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                               }}
                               className={cn(
-                                "py-2 text-sm whitespace-nowrap sticky left-0 z-[35] overflow-hidden",
-                                depth === 0
-                                  ? "bg-white group-hover:bg-slate-50"
-                                  : "bg-[#f8fafc] group-hover:bg-slate-50",
+                                "sticky left-0 z-[35] overflow-hidden py-2 text-sm whitespace-nowrap",
                                 depth === 0
                                   ? "font-semibold text-slate-800"
                                   : "font-medium text-slate-700",
@@ -9613,6 +9586,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     {/* Coluna do valor */}
                                     <td
                                       style={{
+                                        backgroundColor: rowBg,
                                         width:
                                           getStdMetricWidth(
                                             metricId,
@@ -9637,7 +9611,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             }),
                                       }}
                                       className={cn(
-                                        "px-3 py-3 text-right text-[13px] transition-colors group-hover:bg-slate-50/60 whitespace-nowrap overflow-hidden text-ellipsis",
+                                        "overflow-hidden text-ellipsis whitespace-nowrap px-3 py-3 text-right text-[13px] transition-colors",
                                         depth === 0
                                           ? "text-slate-700 font-medium"
                                           : "text-slate-600 font-normal",
@@ -9652,13 +9626,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     {showAverage && (
                                       <td
                                         style={{
+                                          backgroundColor: rowBg,
                                           width: AVG_COL_WIDTH,
                                           ...bc("#e2e8f0"),
                                           borderBottomWidth: 1,
                                           borderBottomStyle: "solid",
                                           borderBottomColor: "#e2e8f0",
                                         }}
-                                        className="px-2 py-3 text-center text-[12px] text-slate-600 bg-slate-50 transition-colors group-hover:bg-slate-100/60"
+                                        className="px-2 py-3 text-center text-[12px] text-slate-600 transition-colors"
                                       >
                                         {(() => {
                                           const avgValue = calculateAverageForTotal(
@@ -9674,6 +9649,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     {canShowPct && (
                                       <td
                                         style={{
+                                          backgroundColor: rowBg,
                                           width: PCT_COL_WIDTH,
                                           ...bc("#e2e8f0"),
                                           borderBottomWidth: 1,
@@ -9690,7 +9666,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                           borderRightColor:
                                             "#e2e8f0",
                                         }}
-                                        className="px-2 py-3 text-center text-[12px] text-slate-500 transition-colors group-hover:bg-slate-50/60"
+                                        className="px-2 py-3 text-center text-[12px] text-slate-500 transition-colors"
                                       >
                                         {renderPctValue(
                                           row[metricId] ?? 0,
@@ -9710,7 +9686,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                 )}
 
                 {finalRows.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-64 text-slate-400 absolute inset-0 top-[85px] z-0">
+                  <div className="absolute inset-0 top-[85px] z-0 flex h-64 flex-col items-center justify-center text-slate-400">
                     <Package
                       size={32}
                       className="mb-2 text-slate-300"
@@ -9721,105 +9697,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     </p>
                   </div>
                 )}
+                </TableHatchSurface>
               </div>
-
-              {/* Table Footer — Pagination */}
-              {finalRows.length > 0 && (
-                <div
-                  className="flex-none flex items-center justify-between px-4 py-2 bg-slate-50 text-xs text-slate-500 select-none flex-wrap gap-y-2"
-                  style={{
-                    ...bc("#e2e8f0"),
-                    borderTopWidth: 1,
-                    borderTopStyle: "solid",
-                  }}
-                >
-                  {/* Left: row range indicator */}
-                  <span className="tabular-nums">
-                    {safeCurrentPage * tableRowsPerPage + 1}–
-                    {Math.min(
-                      (safeCurrentPage + 1) * tableRowsPerPage,
-                      finalRows.length,
-                    )}{" "}
-                    de {finalRows.length} linha
-                    {finalRows.length !== 1 ? "s" : ""}
-                  </span>
-
-                  {/* Right: page size + navigation */}
-                  <div className="flex items-center gap-3">
-                    {/* Rows per page selector */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-400">
-                        Linhas:
-                      </span>
-                      {[10, 25, 50].map((n) => (
-                        <button
-                          key={n}
-                          onClick={() => {
-                            setTableRowsPerPage(n);
-                            setTableCurrentPage(0);
-                          }}
-                          className={cn(
-                            "min-w-[32px] h-[30px] rounded-lg px-2 text-[12px] transition-colors cursor-pointer",
-                            tableRowsPerPage === n
-                              ? "bg-slate-700 text-white font-bold"
-                              : "text-slate-500 hover:bg-slate-200",
-                          )}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Divider */}
-                    <div className="w-px h-5 bg-slate-200" />
-
-                    {/* Page navigation */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() =>
-                          setTableCurrentPage((p) =>
-                            Math.max(0, p - 1),
-                          )
-                        }
-                        disabled={safeCurrentPage === 0}
-                        className={cn(
-                          "p-1 rounded transition-colors cursor-pointer",
-                          safeCurrentPage === 0
-                            ? "text-slate-300 cursor-not-allowed"
-                            : "text-slate-500 hover:bg-slate-200",
-                        )}
-                      >
-                        <ChevronLeft size={14} />
-                      </button>
-                      <span className="text-slate-500 tabular-nums px-1">
-                        {safeCurrentPage + 1} /{" "}
-                        {tableTotalPages}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setTableCurrentPage((p) =>
-                            Math.min(
-                              tableTotalPages - 1,
-                              p + 1,
-                            ),
-                          )
-                        }
-                        disabled={
-                          safeCurrentPage >= tableTotalPages - 1
-                        }
-                        className={cn(
-                          "p-1 rounded transition-colors cursor-pointer",
-                          safeCurrentPage >= tableTotalPages - 1
-                            ? "text-slate-300 cursor-not-allowed"
-                            : "text-slate-500 hover:bg-slate-200",
-                        )}
-                      >
-                        <ChevronRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}

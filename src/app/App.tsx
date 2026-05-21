@@ -354,7 +354,10 @@ export default function App() {
 
               <div
                 className={cn(
-                  "px-6 pb-6 w-full flex-1 flex flex-col gap-4 overflow-y-auto",
+                  "w-full flex-1 flex flex-col gap-4 px-6",
+                  currentStep === "analysis"
+                    ? "min-h-0 overflow-hidden pb-0"
+                    : "overflow-y-auto pb-6",
                 )}
               >
                 {/* Config Panel - Modo de Análise + Período */}
@@ -454,6 +457,7 @@ export default function App() {
 
                 {/* Analysis View */}
                 {currentStep === "analysis" && (
+                  <div className="flex min-h-0 flex-1 flex-col">
                   <AnalysisView
                     actionsContainer={actionsContainer}
                     moduleConfig={currentModuleConfig}
@@ -490,6 +494,7 @@ export default function App() {
                     showSharePct={showSharePct}
                     setShowSharePct={setShowSharePct}
                   />
+                  </div>
                 )}
               </div>
             </div>

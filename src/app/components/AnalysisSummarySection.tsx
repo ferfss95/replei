@@ -19,14 +19,11 @@ import {
   type PeriodSummaryInput,
 } from "../utils/analysisPeriodSummary";
 import { formatDate } from "../dateUtils";
-
-const TAG_SURFACE = {
-  backgroundColor: "#F1F1F1",
-  color: "#2C2C2C",
-  borderWidth: 1,
-  borderStyle: "solid" as const,
-  borderColor: "#D9D9D9",
-};
+import { AnalysisSummaryChipsShell } from "./analysis/AnalysisSummaryChipsShell";
+import {
+  ANALYSIS_SUMMARY_TAG_BTN_CLASS,
+  ANALYSIS_SUMMARY_TAG_STYLE,
+} from "./analysis/analysisSummaryTagStyles";
 
 export interface AnalysisSummarySectionProps {
   moduleConfig: ModuleConfig;
@@ -205,29 +202,18 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
     return [];
   };
 
-  const tagBtnClass =
-    "text-[11px] px-2.5 py-1.5 rounded-md flex items-center gap-1.5 font-medium hover:brightness-[0.97] transition-all cursor-pointer";
-
   return (
-    <div
-      className="flex-none bg-white rounded-[14px] px-5 py-4 mb-0"
-      style={{
-        borderWidth: 1,
-        borderStyle: "solid",
-        borderColor: "#D9D9D9",
-        boxShadow: "0px 1px 4px 0px rgba(0,0,0,0.07), 0px 1px 2px -1px rgba(0,0,0,0.05)",
-      }}
-    >
-      <h3 className="text-[14px] font-bold uppercase tracking-wide text-[#314158] mb-3">
-        Resumo da análise
-      </h3>
-      <div className="flex items-center gap-2 flex-wrap">
+    <AnalysisSummaryChipsShell>
         {analysisMode === "comparativo" ? (
           <>
             {([1, 2] as const).map((idx) => (
               <Popover.Root key={`p${idx}`}>
                 <Popover.Trigger asChild>
-                  <button type="button" className={tagBtnClass} style={TAG_SURFACE}>
+                  <button
+                    type="button"
+                    className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                    style={ANALYSIS_SUMMARY_TAG_STYLE}
+                  >
                     <CalendarIcon size={10} className="shrink-0 text-[#2C2C2C]" />
                     <span>{getComparativoPeriodLabel(idx)}</span>
                     <span className="font-normal ml-0.5">
@@ -263,7 +249,11 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
         ) : (
           <Popover.Root>
             <Popover.Trigger asChild>
-              <button type="button" className={tagBtnClass} style={TAG_SURFACE}>
+              <button
+                type="button"
+                className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                style={ANALYSIS_SUMMARY_TAG_STYLE}
+              >
                 <CalendarIcon size={10} className="shrink-0 text-[#2C2C2C]" />
                 <span className="uppercase">
                   {periodType === "Semanal"
@@ -304,7 +294,11 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
         {includeEntries.map(([key, vals]) => (
           <Popover.Root key={`inc-${key}`}>
             <Popover.Trigger asChild>
-              <button type="button" className={tagBtnClass} style={TAG_SURFACE}>
+              <button
+                type="button"
+                className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                style={ANALYSIS_SUMMARY_TAG_STYLE}
+              >
                 <Filter size={10} className="shrink-0 text-[#2C2C2C]" />
                 <span className="uppercase">{labelForAttr(moduleConfig, key)}:</span>
                 <span className="font-normal ml-0.5">
@@ -339,7 +333,11 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
         {grouping.length > 0 && (
           <Popover.Root>
             <Popover.Trigger asChild>
-              <button type="button" className={tagBtnClass} style={TAG_SURFACE}>
+              <button
+                type="button"
+                className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                style={ANALYSIS_SUMMARY_TAG_STYLE}
+              >
                 <Anchor size={10} className="shrink-0 text-[#2C2C2C]" strokeWidth={2.25} />
                 <span className="uppercase">Agrupamento:</span>
                 <span className="font-normal ml-0.5">
@@ -377,7 +375,11 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
         {excludeEntries.map(([key, vals]) => (
           <Popover.Root key={`exc-${key}`}>
             <Popover.Trigger asChild>
-              <button type="button" className={tagBtnClass} style={TAG_SURFACE}>
+              <button
+                type="button"
+                className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                style={ANALYSIS_SUMMARY_TAG_STYLE}
+              >
                 <Ban size={10} className="shrink-0 text-red-600" />
                 <span className="uppercase">{labelForAttr(moduleConfig, key)}:</span>
                 <span className="font-normal ml-0.5">
@@ -409,7 +411,6 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
             </Popover.Portal>
           </Popover.Root>
         ))}
-      </div>
-    </div>
+    </AnalysisSummaryChipsShell>
   );
 });

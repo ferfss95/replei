@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { RotateCcw, LogOut, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { STEPS, type Step, type Module } from "../constants";
 import { getModuleTitle } from "../constants/labels";
@@ -181,10 +181,9 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
             onClick={onClear}
             onMouseEnter={() => setHoveredAction("clear")}
             onMouseLeave={() => setHoveredAction(null)}
-            className="flex items-center gap-2 px-3.5 py-[6px] rounded-lg text-sm font-medium transition-all duration-150"
+            className="px-3.5 py-[6px] rounded-lg text-sm font-medium transition-all duration-150"
             style={getActionStyle(hoveredAction === "clear")}
           >
-            <RotateCcw size={14} />
             Limpar
           </button>
 
@@ -192,10 +191,9 @@ export const AppHeader = React.memo<AppHeaderProps>(function AppHeader({
             onClick={onExit}
             onMouseEnter={() => setHoveredAction("exit")}
             onMouseLeave={() => setHoveredAction(null)}
-            className="flex items-center gap-2 px-3.5 py-[6px] rounded-lg text-sm font-medium transition-all duration-150"
+            className="px-3.5 py-[6px] rounded-lg text-sm font-medium transition-all duration-150"
             style={getActionStyle(hoveredAction === "exit")}
           >
-            <LogOut size={14} />
             Sair
           </button>
         </div>
