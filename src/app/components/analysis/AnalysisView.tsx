@@ -69,13 +69,6 @@ import {
   getCurrentYearString,
   formatDate,
 } from "../../dateUtils";
-import { computePeriodDisplayText } from "../../utils/analysisPeriodSummary";
-import { IntradaySyncMetadata } from "../IntradaySyncMetadata";
-import { AnalysisSummaryChipsShell } from "./AnalysisSummaryChipsShell";
-import {
-  ANALYSIS_SUMMARY_TAG_BTN_CLASS,
-  ANALYSIS_SUMMARY_TAG_STYLE,
-} from "./analysisSummaryTagStyles";
 import {
   METRIC_CONFIG,
   METRIC_ABBREVIATIONS,
@@ -114,6 +107,10 @@ import {
   getTableDataRowBg,
   getTableModuleTheme,
 } from "../../constants/tableModuleTheme";
+import {
+  pivotTableStickyVars,
+  standardTableStickyVars,
+} from "../../constants/analysisTableSticky";
 import { TableHatchSurface } from "./tableHatchCells";
 import {
   COMPARATIVO_PERIOD_LABELS,
@@ -2750,28 +2747,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     );
   }, [chartMetricIds]);
 
-  const includeSummaryFilters = React.useMemo(
-    () =>
-      Object.entries(selections || {})
-        .filter(([, vals]) => vals && vals.length > 0)
-        .map(([k, v]) => ({ key: k, vals: v as string[], type: "include" as const }))
-        .sort((a, b) =>
-          getAttributeLabel(a.key).localeCompare(getAttributeLabel(b.key), "pt-BR"),
-        ),
-    [selections, moduleConfig],
-  );
-
-  const excludeSummaryFilters = React.useMemo(
-    () =>
-      Object.entries(exclusions || {})
-        .filter(([, vals]) => vals && vals.length > 0)
-        .map(([k, v]) => ({ key: k, vals: v as string[], type: "exclude" as const }))
-        .sort((a, b) =>
-          getAttributeLabel(a.key).localeCompare(getAttributeLabel(b.key), "pt-BR"),
-        ),
-    [exclusions, moduleConfig],
-  );
-
   // Pivot mode flag & config
   const isPivot =
     (isTimeDrilldownEnabled ||
@@ -3503,30 +3478,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     }
   }, [analysisMode, isPivot]);
 
-  const periodDisplayText = React.useMemo(
-    () =>
-      computePeriodDisplayText({
-    analysisMode,
-    periodType,
-    dateRange,
-        weeklyMode,
-        weeklyComputedDays,
-        selectedSpecificDays,
-    selectedMonths,
-        selectedYears,
-      }),
-    [
-      analysisMode,
-      periodType,
-      dateRange,
-    weeklyMode,
-    weeklyComputedDays,
-    selectedSpecificDays,
-      selectedMonths,
-      selectedYears,
-    ],
-  );
-
   const hasCurrentTimeInfo = React.useMemo(() => {
     const today = getTodayFormatted();
 
@@ -3614,521 +3565,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 animate-in fade-in duration-500">
-      {/* ═══════════════ RESUMO DA ANÁLISE (chips no fundo cinza) ═══════════════ */}
-      <AnalysisSummaryChipsShell
-        metaSlot={
-          analysisMode === "horaahora" ? <IntradaySyncMetadata /> : undefined
-        }
-      >
-          {/* Period tag(s) */}
-          {analysisMode === "comparativo" ? (
-            <React.Fragment>
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <button
-                    className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
-                    style={ANALYSIS_SUMMARY_TAG_STYLE}
-                  >
-                    <CalendarIcon size={10} />
-                    <span>{getComparativoPeriodLabel(1)}</span>
-                    <span className="font-normal ml-0.5">
-                      {compPeriodSmartSummary(1)}
-                    </span>
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[260px] animate-in zoom-in-95"
-                    sideOffset={5}
-                    align="start"
-                  >
-                    <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
-                      <CalendarIcon
-                        size={12}
-                        className="text-slate-400"
-                      />
-                      Per��odo 1
-                    </h4>
-                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                      {compPeriodDetailItems(1).map(
-                        (item: string, idx: number) => (
-                          <div
-                            key={idx}
-                            className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                            {item}
-                          </div>
-                        ),
-                      )}
-                    </div>
-                    <Popover.Arrow className="fill-white" />
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <button
-                    className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
-                    style={ANALYSIS_SUMMARY_TAG_STYLE}
-                  >
-                    <CalendarIcon size={10} />
-                    <span>{getComparativoPeriodLabel(2)}</span>
-                    <span className="font-normal ml-0.5">
-                      {compPeriodSmartSummary(2)}
-                    </span>
-                  </button>
-                </Popover.Trigger>
-                <Popover.Portal>
-                  <Popover.Content
-                    className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[260px] animate-in zoom-in-95"
-                    sideOffset={5}
-                    align="start"
-                  >
-                    <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
-                      <CalendarIcon
-                        size={12}
-                        className="text-slate-400"
-                      />
-                      Período 2
-                    </h4>
-                    <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                      {compPeriodDetailItems(2).map(
-                        (item: string, idx: number) => (
-                          <div
-                            key={idx}
-                            className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                          >
-                            <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#45556c]" />
-                            {item}
-                          </div>
-                        ),
-                      )}
-                    </div>
-                    <Popover.Arrow className="fill-white" />
-                  </Popover.Content>
-                </Popover.Portal>
-              </Popover.Root>
-            </React.Fragment>
-          ) : (
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <button
-                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
-                  style={ANALYSIS_SUMMARY_TAG_STYLE}
-                >
-                  <CalendarIcon size={10} />
-                  <span className="uppercase">
-                    {periodType === "Semanal"
-                      ? "Dias da Semana"
-                      : periodType === "Diário"
-                        ? "Período"
-                        : periodType}
-                  </span>
-                  <span className="font-normal ml-0.5">
-                    {periodDisplayText}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-4 rounded-lg shadow-xl border border-slate-200 w-[280px] animate-in zoom-in-95"
-                  sideOffset={5}
-                  align="start"
-                >
-                  <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide border-b border-slate-100 pb-2 flex items-center gap-2">
-                    <CalendarIcon
-                      size={12}
-                      className="text-slate-400"
-                    />
-                    Período do Relatório
-                  </h4>
-                  {periodType === "Diário" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                          Tipo
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          Período
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                          Início
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          {dateRange.start}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                          Fim
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          {dateRange.end}
-                        </span>
-                      </div>
-                      {analysisMode !== "padrao" && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
-                          {analysisMode === "evolucao" ? (
-                            <TrendingUp size={10} />
-                          ) : (
-                            <ArrowLeftRight size={10} />
-                          )}
-                          <span className="font-medium">
-                            {analysisMode === "evolucao"
-                              ? "Visualização Evolutiva ativa"
-                              : "Visualização Comparativa ativa"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {periodType === "Mensal" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-slate-500">
-                          Tipo
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          Mensal — {selectedMonths.length}{" "}
-                          {selectedMonths.length > 1
-                            ? "meses"
-                            : "mês"}
-                        </span>
-                      </div>
-                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                        {selectedMonths.map(
-                          (m: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                              {m}
-                            </div>
-                          ),
-                        )}
-                      </div>
-                      {analysisMode !== "padrao" && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
-                          {analysisMode === "evolucao" ? (
-                            <TrendingUp size={10} />
-                          ) : (
-                            <ArrowLeftRight size={10} />
-                          )}
-                          <span className="font-medium">
-                            {analysisMode === "evolucao"
-                              ? "Visualização Evolutiva ativa"
-                              : "Visualização Comparativa ativa"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {periodType === "Semanal" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-slate-500">
-                          Tipo
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          Período fechado — {periods.length}{" "}
-                          {periods.length !== 1
-                            ? "dias"
-                            : "dia"}
-                        </span>
-                      </div>
-                      {weeklyMode === "weekday" && (
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-500">
-                            Dias
-                          </span>
-                          <span className="text-slate-800 font-medium">
-                            {WEEKDAY_FULL.filter(
-                              (_: string, i: number) =>
-                                (weeklyComputedDays || []).some(
-                                  (d: Date) => d.getDay() === i,
-                                ),
-                            ).join(", ") || "—"}
-                          </span>
-                        </div>
-                      )}
-                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                        {periods.map(
-                          (p: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                              {p}
-                            </div>
-                          ),
-                        )}
-                      </div>
-                      {analysisMode !== "padrao" && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
-                          {analysisMode === "evolucao" ? (
-                            <TrendingUp size={10} />
-                          ) : (
-                            <ArrowLeftRight size={10} />
-                          )}
-                          <span className="font-medium">
-                            {analysisMode === "evolucao"
-                              ? "Visualização Evolutiva ativa"
-                              : "Visualização Comparativa ativa"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {periodType === "Anual" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-slate-500">
-                          Tipo
-                        </span>
-                        <span className="text-slate-800 font-medium">
-                          Anual — {selectedYears.length}{" "}
-                          {selectedYears.length > 1
-                            ? "anos"
-                            : "ano"}
-                        </span>
-                      </div>
-                      <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                        {selectedYears.map(
-                          (y: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                              {y}
-                            </div>
-                          ),
-                        )}
-                      </div>
-                      {analysisMode !== "padrao" && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[10px] text-[#314158]">
-                          {analysisMode === "evolucao" ? (
-                            <TrendingUp size={10} />
-                          ) : (
-                            <ArrowLeftRight size={10} />
-                          )}
-                          <span className="font-medium">
-                            {analysisMode === "evolucao"
-                              ? "Visualização Evolutiva ativa"
-                              : "Visualização Comparativa ativa"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          )}
-
-          {/* Faixa Horária badge (only for hora a hora mode) */}
-          {analysisMode === "horaahora" && (
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <button
-                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
-                  style={ANALYSIS_SUMMARY_TAG_STYLE}
-                >
-                  <Clock size={10} />
-                  <span className="uppercase">Faixa Horária:</span>
-                  <span className="font-normal ml-0.5">
-                    {intradayHoursLabel}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-slate-200 w-[250px] animate-in zoom-in-95"
-                  sideOffset={5}
-                >
-                  <h4 className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide border-b border-slate-100 pb-1 flex items-center justify-between">
-                    <span>Horas Selecionadas</span>
-                    <span className="text-[10px] opacity-70 bg-white/50 px-1.5 py-0.5 rounded-full">
-                      {selectedIntradayHours.length}
-                    </span>
-                  </h4>
-                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-0.5">
-                    {[...selectedIntradayHours]
-                      .sort(
-                        (a, b) =>
-                          parseInt(a.replace("h", ""), 10) -
-                          parseInt(b.replace("h", ""), 10),
-                      )
-                      .map((hour, idx) => (
-                        <div
-                          key={`${hour}-${idx}`}
-                          className="text-xs text-slate-600 py-1.5 border-b border-slate-50 last:border-0 flex items-start gap-2"
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#314158]" />
-                          {hour}
-                        </div>
-                      ))}
-                  </div>
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          )}
-
-          {/* Filtros de inclusão */}
-          {includeSummaryFilters.map((filter) => (
-            <Popover.Root key={`hdr-inc-${filter.key}`}>
-              <Popover.Trigger asChild>
-                <button
-                  type="button"
-                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
-                  style={ANALYSIS_SUMMARY_TAG_STYLE}
-                >
-                  <Filter size={10} className="shrink-0 text-[#2C2C2C]" />
-                  <span className="uppercase">{getAttributeLabel(filter.key)}:</span>
-                  <span className="font-normal ml-0.5">
-                    {filter.vals.length > 1
-                      ? `${filter.vals.length} itens`
-                      : filter.vals[0]}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-[#D9D9D9] w-[250px] animate-in zoom-in-95"
-                  sideOffset={5}
-                >
-                  <h4 className="text-xs font-bold mb-2 uppercase tracking-wide border-b border-[#D9D9D9] pb-1 flex items-center justify-between text-[#314158]">
-                    <span>{getAttributeLabel(filter.key)} (inclusão)</span>
-                    <span className="text-[10px] opacity-70 bg-[#F1F1F1] px-1.5 py-0.5 rounded-full text-[#2C2C2C]">
-                      {filter.vals.length}
-                    </span>
-                  </h4>
-                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
-                    {filter.vals.map((val: string, idx: number) => (
-                      <div
-                        key={idx}
-                        className="text-xs text-[#2C2C2C] py-1.5 border-b border-[#F1F1F1] last:border-0 flex items-start gap-2 leading-relaxed"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#D9D9D9]" />
-                        {val}
-                      </div>
-                    ))}
-                  </div>
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          ))}
-
-          {/* Agrupamento */}
-          {groupingArr.length > 0 && (
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <button
-                  type="button"
-                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
-                  style={ANALYSIS_SUMMARY_TAG_STYLE}
-                >
-                  <Anchor size={10} className="shrink-0 text-[#2C2C2C]" strokeWidth={2.25} />
-                  <span className="uppercase">Agrupamento:</span>
-                  <span className="font-normal ml-0.5">
-                    {groupingArr.length > 1
-                      ? `${groupingArr.length} níveis`
-                      : getAttributeLabel(groupingArr[0])}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-[#D9D9D9] w-[250px] animate-in zoom-in-95"
-                  sideOffset={5}
-                >
-                  <h4 className="text-xs font-bold text-[#314158] mb-2 uppercase tracking-wide border-b border-[#D9D9D9] pb-1 flex items-center justify-between">
-                    <span>Níveis de Agrupamento</span>
-                    <span className="text-[10px] opacity-70 bg-[#F1F1F1] px-1.5 py-0.5 rounded-full text-[#2C2C2C]">
-                      {groupingArr.length}
-                    </span>
-                  </h4>
-                  <div className="space-y-1">
-                    {groupingArr.map((gId: string, gIdx: number) => {
-                      const GIcon = getAttributeIcon(gId);
-                      return (
-                        <div
-                          key={gId}
-                          className="text-xs text-[#2C2C2C] py-1.5 border-b border-[#F1F1F1] last:border-0 flex items-center gap-2"
-                        >
-                          <span className="text-[10px] text-[#808080] w-4 text-center shrink-0">
-                            {gIdx + 1}.
-                          </span>
-                          <GIcon size={12} className="text-[#566878] shrink-0" />
-                          <span className="uppercase">{getAttributeLabel(gId)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          )}
-
-          {/* Filtros de exclusão */}
-          {excludeSummaryFilters.map((filter) => (
-            <Popover.Root key={`hdr-exc-${filter.key}`}>
-              <Popover.Trigger asChild>
-                <button
-                  type="button"
-                  className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
-                  style={ANALYSIS_SUMMARY_TAG_STYLE}
-                >
-                  <Ban size={10} className="shrink-0 text-red-600" />
-                  <span className="uppercase">{getAttributeLabel(filter.key)}:</span>
-                  <span className="font-normal ml-0.5">
-                    {filter.vals.length > 1
-                      ? `${filter.vals.length} itens`
-                      : filter.vals[0]}
-                  </span>
-                </button>
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  className="z-50 bg-white p-3 rounded-lg shadow-xl border border-[#D9D9D9] w-[250px] animate-in zoom-in-95"
-                  sideOffset={5}
-                >
-                  <h4 className="text-xs font-bold mb-2 uppercase tracking-wide border-b border-[#D9D9D9] pb-1 flex items-center justify-between text-[#314158]">
-                    <span className="flex items-center gap-2">
-                      <Ban size={12} className="text-red-600 shrink-0" />
-                      {getAttributeLabel(filter.key)} (exclusão)
-                    </span>
-                    <span className="text-[10px] opacity-70 bg-[#F1F1F1] px-1.5 py-0.5 rounded-full text-[#2C2C2C]">
-                      {filter.vals.length}
-                    </span>
-                  </h4>
-                  <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
-                    {filter.vals.map((val: string, idx: number) => (
-                      <div
-                        key={idx}
-                        className="text-xs text-[#2C2C2C] py-1.5 border-b border-[#F1F1F1] last:border-0 flex items-start gap-2 leading-relaxed"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full mt-1 shrink-0 bg-[#D9D9D9]" />
-                        {val}
-                      </div>
-                    ))}
-                  </div>
-                  <Popover.Arrow className="fill-white" />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          ))}
-      </AnalysisSummaryChipsShell>
-
       {/* ═══════════════ HEADER CARD: Title + Ações + Info tempo ═══════════════ */}
       <div
         className={cn(
@@ -6411,14 +5847,20 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               )}
               <div
                 ref={scrollContainerRef}
-                className="relative flex min-h-0 flex-1 flex-col overflow-x-auto overflow-y-auto"
+                className="relative flex min-h-0 flex-1 flex-col overflow-x-auto overflow-y-auto bg-[#F1F1F1]"
               >
                 <TableHatchSurface>
                 {/* ─── PIVOT TABLE ─── */}
                 {isPivot ? (
                   <table
-                    className={ANALYSIS_TABLE_CLASS}
-                    style={ANALYSIS_TABLE_STYLE}
+                    className={cn(
+                      ANALYSIS_TABLE_CLASS,
+                      "replei-analysis-table--pivot",
+                    )}
+                    style={{
+                      ...ANALYSIS_TABLE_STYLE,
+                      ...pivotTableStickyVars,
+                    }}
                   >
                     <colgroup>
                       <col
@@ -6624,11 +6066,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             })}
                     </colgroup>
 
-                    <thead className="sticky top-0 z-[40]">
+                    <thead>
                       {/* HEADER ROW 1: Metric groups (metric-first pivot) */}
                       <tr>
                         <th
-                          rowSpan={2}
                           style={{
                             width:
                               columnWidths["grouping"] || 350,
@@ -6645,7 +6086,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             boxShadow:
                               "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                           }}
-                          className="relative px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider sticky left-0 top-0 z-[50] select-none align-middle"
+                          className="relative px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wider select-none align-middle"
                         >
                           <div
                             className="group flex cursor-pointer items-center gap-2 overflow-hidden pr-1 transition-colors hover:opacity-90"
@@ -6775,6 +6216,24 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
                       {/* HEADER ROW 2: Period/derived sub-headers under each metric */}
                       <tr>
+                        <th
+                          className="replei-pivot-corner-r2"
+                          style={{
+                            width:
+                              columnWidths["grouping"] || 350,
+                            borderTopWidth: 0,
+                            borderLeftWidth: 0,
+                            backgroundColor: TABLE_HEADER_BG,
+                            borderBottomWidth: 2,
+                            borderBottomStyle: "solid",
+                            borderBottomColor: "rgba(241, 241, 241, 0.25)",
+                            borderRightWidth: 1,
+                            borderRightStyle: "solid",
+                            boxShadow:
+                              "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
+                          }}
+                          aria-hidden
+                        />
                         {!isPeriodFirstPivot ? (
                           orderedMetrics.map(
                             (mId: string, mIdx: number) => {
@@ -7536,7 +6995,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     {/* PIVOT TOTALS ROW — sticky below 2-row header (~75px) */}
                     {pivotTotals && (
                       <tbody
-                        className="relative z-[30]"
+                        className="replei-pivot-totals-row relative z-[30]"
                         style={{
                           boxShadow:
                             "0 2px 6px -1px rgba(0,0,0,0.07)",
@@ -7557,7 +7016,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               boxShadow:
                                 "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                             }}
-                            className="h-[46px] px-4 py-2.5 sticky left-0 top-[75px] z-[45] overflow-hidden text-ellipsis whitespace-nowrap text-[13px] uppercase tracking-wide"
+                            className="h-[46px] px-4 py-2.5 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] uppercase tracking-wide"
                           >
                             Total
                           </td>
@@ -7587,7 +7046,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   cells.push(
                                     <td
                                       key={key}
-                                      className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[13px] bg-slate-50 whitespace-nowrap"
+                                      className="h-[46px] px-2 pr-3 py-2.5 text-right text-[13px] bg-slate-50 whitespace-nowrap"
                                       style={{
                                         width:
                                           getPivotMetricWidth(
@@ -7696,7 +7155,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     cells.push(
                                       <td
                                         key={`${key}__avg`}
-                                        className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[12px] text-slate-600 bg-slate-50 whitespace-nowrap"
+                                        className="h-[46px] px-2 pr-3 py-2.5 text-right text-[12px] text-slate-600 bg-slate-50 whitespace-nowrap"
                                         style={{
                                           width: AVG_COL_WIDTH,
                                           borderBottomWidth: 2,
@@ -7728,7 +7187,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     cells.push(
                                       <td
                                         key={`${key}__pct`}
-                                        className="h-[46px] px-2 py-2.5 text-center sticky top-[75px] z-[30] text-[12px] text-slate-500 bg-slate-50"
+                                        className="h-[46px] px-2 py-2.5 text-center text-[12px] text-slate-500 bg-slate-50"
                                         style={{
                                           width: PCT_COL_WIDTH,
                                           borderBottomWidth: 2,
@@ -7772,7 +7231,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   <td
                                     key={`__diff__${mId}`}
                                     className={cn(
-                                      "h-[46px] px-2 pr-3 py-2.5 whitespace-nowrap text-right text-[13px] sticky top-[75px] z-[30] bg-slate-50",
+                                      "h-[46px] px-2 pr-3 py-2.5 whitespace-nowrap text-right text-[13px] bg-slate-50",
                                       fv.color,
                                     )}
                                     style={{
@@ -7820,7 +7279,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   <td
                                     key={`__growth__${mId}`}
                                     className={cn(
-                                      "h-[46px] px-2 pr-3 py-2.5 whitespace-nowrap text-right text-[13px] sticky top-[75px] z-[30] bg-slate-50",
+                                      "h-[46px] px-2 pr-3 py-2.5 whitespace-nowrap text-right text-[13px] bg-slate-50",
                                       fg.color,
                                     )}
                                     style={{
@@ -7879,7 +7338,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 cells.push(
                                   <td
                                     key={totalKey}
-                                    className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[13px] whitespace-nowrap"
+                                    className="h-[46px] px-2 pr-3 py-2.5 text-right text-[13px] whitespace-nowrap"
                                     style={{
                                       backgroundColor:
                                         totalColumnBg,
@@ -7986,7 +7445,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   cells.push(
                                     <td
                                       key={`${totalKey}__avg`}
-                                      className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[12px] text-slate-600 whitespace-nowrap"
+                                      className="h-[46px] px-2 pr-3 py-2.5 text-right text-[12px] text-slate-600 whitespace-nowrap"
                                       style={{
                                         backgroundColor:
                                           totalColumnBg,
@@ -8018,7 +7477,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   cells.push(
                                     <td
                                       key={`${totalKey}__pct`}
-                                      className="h-[46px] px-2 py-2.5 text-center sticky top-[75px] z-[30] text-[12px] text-slate-500"
+                                      className="h-[46px] px-2 py-2.5 text-center text-[12px] text-slate-500"
                                       style={{
                                         backgroundColor:
                                           totalColumnBg,
@@ -8065,7 +7524,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     out.push(
                                       <td
                                         key={key}
-                                        className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[13px] bg-slate-50 whitespace-nowrap"
+                                        className="h-[46px] px-2 pr-3 py-2.5 text-right text-[13px] bg-slate-50 whitespace-nowrap"
                                         style={{
                                           width:
                                             getPivotMetricWidth(mId),
@@ -8181,7 +7640,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       out.push(
                                         <td
                                           key={`${key}__avg`}
-                                          className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[12px] text-slate-600 bg-slate-50 whitespace-nowrap"
+                                          className="h-[46px] px-2 pr-3 py-2.5 text-right text-[12px] text-slate-600 bg-slate-50 whitespace-nowrap"
                                           style={{
                                             width: AVG_COL_WIDTH,
                                             borderBottomWidth: 2,
@@ -8225,7 +7684,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       out.push(
                                         <td
                                           key={`${key}__pct`}
-                                          className="h-[46px] px-2 py-2.5 text-center sticky top-[75px] z-[30] text-[12px] text-slate-500 bg-slate-50"
+                                          className="h-[46px] px-2 py-2.5 text-center text-[12px] text-slate-500 bg-slate-50"
                                           style={{
                                             width: PCT_COL_WIDTH,
                                             borderBottomWidth: 2,
@@ -8271,7 +7730,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   out.push(
                                     <td
                                       key={totalKey}
-                                      className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[13px] whitespace-nowrap"
+                                      className="h-[46px] px-2 pr-3 py-2.5 text-right text-[13px] whitespace-nowrap"
                                       style={{
                                         backgroundColor: totalColumnBg,
                                         width:
@@ -8367,7 +7826,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     out.push(
                                       <td
                                         key={`${totalKey}__avg`}
-                                        className="h-[46px] px-2 pr-3 py-2.5 text-right sticky top-[75px] z-[30] text-[12px] text-slate-600 whitespace-nowrap"
+                                        className="h-[46px] px-2 pr-3 py-2.5 text-right text-[12px] text-slate-600 whitespace-nowrap"
                                         style={{
                                           backgroundColor: totalColumnBg,
                                           width: AVG_COL_WIDTH,
@@ -8392,7 +7851,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     out.push(
                                       <td
                                         key={`${totalKey}__pct`}
-                                        className="h-[46px] px-2 py-2.5 text-center sticky top-[75px] z-[30] text-[12px] text-slate-500"
+                                        className="h-[46px] px-2 py-2.5 text-center text-[12px] text-slate-500"
                                         style={{
                                           backgroundColor: totalColumnBg,
                                           width: PCT_COL_WIDTH,
@@ -9096,10 +8555,16 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                 ) : (
                   /* ─── STANDARD TABLE (non-pivot) ─── */
                   <table
-                    className={ANALYSIS_TABLE_CLASS}
-                    style={ANALYSIS_TABLE_STYLE}
+                    className={cn(
+                      ANALYSIS_TABLE_CLASS,
+                      "replei-analysis-table--standard",
+                    )}
+                    style={{
+                      ...ANALYSIS_TABLE_STYLE,
+                      ...standardTableStickyVars,
+                    }}
                   >
-                    <thead className="sticky top-0 z-[40]">
+                    <thead>
                       <tr>
                         <th
                           style={{
@@ -9116,10 +8581,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             boxShadow:
                               "1px 0 0 0 rgba(148,163,184,0.18), 6px 0 16px -4px rgba(0,0,0,0.08), 2px 0 6px -2px rgba(0,0,0,0.05)",
                           }}
-                          className="relative px-4 py-3 text-left text-xs font-bold uppercase tracking-wider sticky left-0 top-0 z-[50] group select-none"
+                          className="relative px-4 py-0 text-left text-xs font-bold uppercase tracking-wider group select-none"
                         >
                           <div
-                            className="group flex cursor-pointer items-center gap-2 overflow-hidden pr-1 transition-colors hover:opacity-90"
+                            className="group flex h-full min-h-0 cursor-pointer items-center gap-2 overflow-hidden pr-1 transition-colors hover:opacity-90"
                             onClick={() =>
                               handleSort(ANALYSIS_ATTRIBUTE_SORT_KEY)
                             }
@@ -9329,7 +8794,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     <tbody>
                       {totals && (
                         <tr
-                          className="font-bold text-slate-800"
+                          className="replei-total-row font-bold text-slate-800"
                           style={{
                             boxShadow:
                               "0 2px 6px -1px rgba(0,0,0,0.07)",
@@ -9339,10 +8804,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             style={{
                               width:
                                 columnWidths["grouping"] || 350,
-                              position: "sticky",
-                              left: 0,
-                              top: 41,
-                              zIndex: 40,
                               backgroundColor: tableTheme.rowEvenBg,
                               ...bc("#e2e8f0"),
                               borderBottomWidth: 2,
@@ -9379,9 +8840,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                         getStdMetricWidth(
                                           metricId,
                                         ),
-                                      position: "sticky",
-                                      top: 41,
-                                      zIndex: 30,
                                       backgroundColor:
                                         tableTheme.rowEvenBg,
                                       ...bc("#e2e8f0"),
@@ -9414,9 +8872,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     <td
                                       style={{
                                         width: AVG_COL_WIDTH,
-                                        position: "sticky",
-                                        top: 41,
-                                        zIndex: 30,
                                         backgroundColor:
                                           tableTheme.rowEvenBg,
                                         ...bc("#e2e8f0"),
@@ -9457,9 +8912,6 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     <td
                                       style={{
                                         width: PCT_COL_WIDTH,
-                                        position: "sticky",
-                                        top: 41,
-                                        zIndex: 30,
                                         backgroundColor:
                                           tableTheme.rowEvenBg,
                                         ...bc("#e2e8f0"),

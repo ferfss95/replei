@@ -1,0 +1,70 @@
+/**
+ * Sticky header / total — evita “dente” entre coluna fixa e demais colunas no scroll.
+ * Alturas alinhadas via variáveis CSS no elemento <table>.
+ */
+
+.replei-analysis-table--standard thead th {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-sizing: border-box;
+  height: var(--replei-header-h, 48px);
+  max-height: var(--replei-header-h, 48px);
+  vertical-align: middle;
+}
+
+.replei-analysis-table--standard thead th:first-child {
+  left: 0;
+  z-index: 50;
+}
+
+.replei-analysis-table--standard tbody tr.replei-total-row > td {
+  position: sticky;
+  top: var(--replei-header-h, 48px);
+  z-index: 30;
+  box-sizing: border-box;
+}
+
+.replei-analysis-table--standard tbody tr.replei-total-row > td:first-child {
+  left: 0;
+  z-index: 45;
+}
+
+/* Pivot: 2 linhas de cabeçalho */
+.replei-analysis-table--pivot thead tr:nth-child(1) > th {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-sizing: border-box;
+  height: var(--replei-pivot-h1, 41px);
+  max-height: var(--replei-pivot-h1, 41px);
+  vertical-align: middle;
+}
+
+.replei-analysis-table--pivot thead tr:nth-child(2) > th {
+  position: sticky;
+  top: var(--replei-pivot-h1, 41px);
+  z-index: 40;
+  box-sizing: border-box;
+  height: var(--replei-pivot-h2, 34px);
+  max-height: var(--replei-pivot-h2, 34px);
+  vertical-align: middle;
+}
+
+.replei-analysis-table--pivot thead tr:nth-child(1) > th:first-child,
+.replei-analysis-table--pivot thead tr:nth-child(2) > th.replei-pivot-corner-r2 {
+  left: 0;
+  z-index: 50;
+}
+
+.replei-analysis-table--pivot tbody.replei-pivot-totals-row > tr > td {
+  position: sticky;
+  top: var(--replei-pivot-header-h, 75px);
+  z-index: 30;
+  box-sizing: border-box;
+}
+
+.replei-analysis-table--pivot tbody.replei-pivot-totals-row > tr > td:first-child {
+  left: 0;
+  z-index: 45;
+}

@@ -2,21 +2,20 @@ import React from 'react';
 import { TABLE_HATCH_FILL_STYLE } from '../../constants/tableModuleTheme';
 
 /**
- * Superfície de hachura: acompanha a largura real da tabela (max-content)
- * e, no mínimo, 100% do viewport — evita ruptura quando há scroll horizontal.
+ * Faixa de hachura lateral: mesma altura da tabela (fit-content), largura mínima 100%.
+ * O vazio abaixo das linhas fica com o fundo cinza do scroll (#F1F1F1), sem hachura.
  */
 export const TABLE_HATCH_SURFACE_STYLE: React.CSSProperties = {
   minWidth: '100%',
   width: 'max-content',
-  minHeight: '100%',
+  height: 'fit-content',
   ...TABLE_HATCH_FILL_STYLE,
 };
 
 export function TableHatchSurface({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-full flex-col" style={TABLE_HATCH_SURFACE_STYLE}>
+    <div className="shrink-0 align-top" style={TABLE_HATCH_SURFACE_STYLE}>
       {children}
-      <div className="min-h-[120px] flex-1 shrink-0" aria-hidden />
     </div>
   );
 }

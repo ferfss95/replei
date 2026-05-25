@@ -1,6 +1,6 @@
 /**
- * Resumo da análise (etapas do assistente): período, filtros de inclusão,
- * agrupamento e exclusões — sempre acima do grid de atributos.
+ * Resumo da análise: período, filtros, agrupamento e exclusões —
+ * exibido abaixo do título (SecondaryHeader) em todas as etapas.
  */
 import React, { useMemo } from "react";
 import * as Popover from "@radix-ui/react-popover";
@@ -48,6 +48,8 @@ export interface AnalysisSummarySectionProps {
   compSpecificDays2: string[];
   compWeeklyComputedDays1: Date[];
   compWeeklyComputedDays2: Date[];
+  /** Faixa opcional acima das chips (ex.: metadados Intraday na etapa Resultado). */
+  metaSlot?: React.ReactNode;
 }
 
 function labelForAttr(moduleConfig: ModuleConfig, id: string): string {
@@ -80,6 +82,7 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
   compSpecificDays2,
   compWeeklyComputedDays1,
   compWeeklyComputedDays2,
+  metaSlot,
 }: AnalysisSummarySectionProps) {
   const periodInput: PeriodSummaryInput = useMemo(
     () => ({
@@ -203,7 +206,7 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
   };
 
   return (
-    <AnalysisSummaryChipsShell>
+    <AnalysisSummaryChipsShell metaSlot={metaSlot}>
         {analysisMode === "comparativo" ? (
           <>
             {([1, 2] as const).map((idx) => (

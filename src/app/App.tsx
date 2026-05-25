@@ -25,6 +25,7 @@ import { MetricsSidebar } from "./components/MetricsSidebar";
 import { AppHeader } from "./components/AppHeader";
 import { SecondaryHeader } from "./components/SecondaryHeader";
 import { AnalysisSummarySection } from "./components/AnalysisSummarySection";
+import { IntradaySyncMetadata } from "./components/IntradaySyncMetadata";
 import { getModuleColors } from "./constants/moduleColors";
 import { useDateRange } from "./hooks/useDateRange";
 import {
@@ -352,6 +353,38 @@ export default function App() {
                 onActionsMount={handleActionsMount}
               />
 
+              <div className="flex-none px-6 pb-3">
+                <AnalysisSummarySection
+                  moduleConfig={currentModuleConfig}
+                  selections={selections}
+                  exclusions={exclusions}
+                  grouping={grouping}
+                  analysisMode={analysisMode}
+                  periodType={periodType}
+                  dateRange={dateRange}
+                  selectedMonths={selectedMonths}
+                  selectedYears={selectedYears}
+                  weeklyMode={weeklyMode}
+                  weeklyComputedDays={weeklyComputedDays}
+                  selectedSpecificDays={selectedSpecificDays}
+                  compDateRange1={compDateRange1}
+                  compDateRange2={compDateRange2}
+                  compMonths1={compMonths1}
+                  compMonths2={compMonths2}
+                  compYears1={compYears1}
+                  compYears2={compYears2}
+                  compSpecificDays1={compSpecificDays1}
+                  compSpecificDays2={compSpecificDays2}
+                  compWeeklyComputedDays1={compWeeklyComputedDays1}
+                  compWeeklyComputedDays2={compWeeklyComputedDays2}
+                  metaSlot={
+                    currentStep === "analysis" && analysisMode === "horaahora" ? (
+                      <IntradaySyncMetadata />
+                    ) : undefined
+                  }
+                />
+              </div>
+
               <div
                 className={cn(
                   "w-full flex-1 flex flex-col gap-4 px-6",
@@ -408,33 +441,6 @@ export default function App() {
                     handleManualP2SpecificDaysChange={handleManualP2SpecificDaysChange}
                     handleManualP2MonthsChange={handleManualP2MonthsChange}
                     handleManualP2YearsChange={handleManualP2YearsChange}
-                  />
-                )}
-
-                {currentStep !== "analysis" && (
-                  <AnalysisSummarySection
-                    moduleConfig={currentModuleConfig}
-                    selections={selections}
-                    exclusions={exclusions}
-                    grouping={grouping}
-                    analysisMode={analysisMode}
-                    periodType={periodType}
-                    dateRange={dateRange}
-                    selectedMonths={selectedMonths}
-                    selectedYears={selectedYears}
-                    weeklyMode={weeklyMode}
-                    weeklyComputedDays={weeklyComputedDays}
-                    selectedSpecificDays={selectedSpecificDays}
-                    compDateRange1={compDateRange1}
-                    compDateRange2={compDateRange2}
-                    compMonths1={compMonths1}
-                    compMonths2={compMonths2}
-                    compYears1={compYears1}
-                    compYears2={compYears2}
-                    compSpecificDays1={compSpecificDays1}
-                    compSpecificDays2={compSpecificDays2}
-                    compWeeklyComputedDays1={compWeeklyComputedDays1}
-                    compWeeklyComputedDays2={compWeeklyComputedDays2}
                   />
                 )}
 
