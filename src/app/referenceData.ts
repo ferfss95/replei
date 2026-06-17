@@ -2835,6 +2835,101 @@ export const MOCK_IND_CONV_CLICK = [
   0.0845, 0.0978, 0.0667, 0.0834, 0.0912, 0.0645, 0.0823,
 ];
 
+// ══════════════════════════════════════════════════════════════
+// Mock data — Módulo EXTRAVIOS
+// Prefixo MOCK_EXT_ em todos os arrays para isolamento total.
+// Valores calibrados para faixas plausíveis de inventário, recebimento e sucata no varejo.
+// Mantenha 37 valores por array (mesma quantidade dos outros módulos).
+// ══════════════════════════════════════════════════════════════
+
+// ── Inventário ─────────────────────────────────────────────────
+
+// Qtd Faltas — integer | range: 10–95 unidades
+export const MOCK_EXT_QTD_FALTAS = [
+  42, 28, 67, 81, 19, 53, 36, 74, 58, 24,
+  47, 63, 31, 79, 39, 56, 71, 22, 49, 34,
+  76, 27, 61, 44, 88, 17, 41, 69, 32, 54,
+  25, 83, 46, 60, 35, 72, 38,
+];
+
+// Qtd Sobras — integer | range: 5–50 unidades
+export const MOCK_EXT_QTD_SOBRAS = [
+  18, 11, 29, 36, 8, 23, 15, 32, 26, 10,
+  20, 28, 13, 34, 17, 25, 31, 9, 22, 14,
+  33, 12, 27, 19, 39, 7, 18, 30, 14, 24,
+  11, 37, 21, 26, 16, 32, 17,
+];
+
+// Qtd Total Inventário — integer | faltas + sobras (derivado)
+export const MOCK_EXT_QTD_TOTAL_INV = MOCK_EXT_QTD_FALTAS.map(
+  (f, i) => f + MOCK_EXT_QTD_SOBRAS[i],
+);
+
+// Vlr Faltas — currency | range: R$ 2.000 – R$ 18.000
+export const MOCK_EXT_VLR_FALTAS = [
+  6420, 3850, 11250, 14780, 2640, 8340, 5210, 12820, 9150, 3520,
+  7380, 10670, 4560, 13230, 6240, 9050, 11980, 2950, 7720, 5380,
+  13350, 4130, 10120, 6870, 16140, 2350, 6510, 11930, 4720, 8470,
+  3680, 14820, 7240, 9680, 5450, 12120, 6020,
+];
+
+// Vlr Sobras — currency | range: R$ 800 – R$ 8.000
+export const MOCK_EXT_VLR_SOBRAS = [
+  2840, 1620, 4980, 6230, 980, 3540, 2210, 5320, 4150, 1320,
+  3180, 4670, 1960, 5830, 2640, 3850, 4980, 1150, 3120, 2180,
+  5650, 1530, 4220, 2870, 7140, 850, 2710, 5130, 1920, 3670,
+  1280, 6220, 3140, 4080, 2350, 5320, 2620,
+];
+
+// Vlr Total Inventário — currency | faltas - sobras (perda líquida, derivado)
+export const MOCK_EXT_VLR_TOTAL_INV = MOCK_EXT_VLR_FALTAS.map(
+  (f, i) => f - MOCK_EXT_VLR_SOBRAS[i],
+);
+
+// % Acuracidade Inventário — percent1 | range: 92%–99%
+export const MOCK_EXT_PCT_ACURACIDADE_INV = [
+  0.962, 0.978, 0.941, 0.927, 0.985, 0.953, 0.969, 0.935, 0.948, 0.974,
+  0.957, 0.943, 0.971, 0.929, 0.964, 0.951, 0.937, 0.981, 0.955, 0.967,
+  0.933, 0.976, 0.946, 0.959, 0.921, 0.987, 0.961, 0.939, 0.972, 0.952,
+  0.978, 0.925, 0.963, 0.945, 0.968, 0.934, 0.957,
+];
+
+// ── Divergência de Recebimento ─────────────────────────────────
+
+// Qtd Divergências — integer | range: 3–35 ocorrências
+export const MOCK_EXT_QTD_DIVERGENCIAS = [
+  14, 8, 22, 27, 5, 18, 11, 24, 19, 7,
+  16, 21, 9, 26, 13, 19, 23, 6, 17, 11,
+  25, 8, 20, 15, 30, 4, 14, 22, 10, 18,
+  7, 28, 16, 20, 12, 24, 13,
+];
+
+// Vlr Divergências — currency | range: R$ 1.500 – R$ 14.000
+export const MOCK_EXT_VLR_DIVERGENCIAS = [
+  4820, 2340, 8650, 11240, 1680, 6320, 3870, 9520, 7180, 2540,
+  5640, 8120, 3210, 10480, 4720, 7050, 9280, 1980, 5820, 4080,
+  10350, 2810, 7670, 5170, 12640, 1520, 4910, 9230, 3520, 6470,
+  2280, 11620, 5440, 7380, 4150, 9120, 4820,
+];
+
+// ── Sucata ─────────────────────────────────────────────────────
+
+// Qtd Sucatas — integer | range: 5–55 unidades
+export const MOCK_EXT_QTD_SUCATAS = [
+  22, 13, 34, 41, 9, 27, 17, 38, 30, 11,
+  24, 32, 14, 43, 19, 28, 36, 8, 25, 16,
+  39, 12, 31, 21, 48, 6, 23, 35, 15, 29,
+  10, 45, 26, 33, 18, 37, 20,
+];
+
+// Vlr Sucatas — currency | range: R$ 1.000 – R$ 12.000
+export const MOCK_EXT_VLR_SUCATAS = [
+  3820, 2140, 6480, 8730, 1280, 4980, 2870, 7320, 5680, 1840,
+  4280, 6320, 2540, 8480, 3640, 5450, 7280, 1480, 4520, 2980,
+  7980, 2240, 5870, 3970, 10140, 980, 3810, 7130, 2620, 4870,
+  1680, 9020, 4140, 5780, 3050, 7320, 3520,
+];
+
 export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' | 'percent' | 'percent0' | 'integer' | 'days' | 'decimal' | 'decimal1' | 'percent1' | 'variation' }> = {
   // Produto metrics
   'venda': { data: MOCK_ROB, format: 'currency' },
@@ -2916,6 +3011,22 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'ind_qtd_personalizacoes': { data: MOCK_IND_QTD_PERSONALIZACOES, format: 'integer' },
   'ind_vlr_personalizacoes': { data: MOCK_IND_VLR_PERSONALIZACOES, format: 'currency' },
   'ind_conv_click':    { data: MOCK_IND_CONV_CLICK,    format: 'percent'  },
+  // ── Extravios metrics ────────────────────────────────────
+  // Prefixo ext_ — sem colisão com PRODUTO, LOJA ou INDICADORES.
+  // Inventário
+  'ext_qtd_faltas':          { data: MOCK_EXT_QTD_FALTAS,          format: 'integer'  },
+  'ext_qtd_sobras':          { data: MOCK_EXT_QTD_SOBRAS,          format: 'integer'  },
+  'ext_qtd_total_inv':       { data: MOCK_EXT_QTD_TOTAL_INV,       format: 'integer'  },
+  'ext_vlr_faltas':          { data: MOCK_EXT_VLR_FALTAS,          format: 'currency' },
+  'ext_vlr_sobras':          { data: MOCK_EXT_VLR_SOBRAS,          format: 'currency' },
+  'ext_vlr_total_inv':       { data: MOCK_EXT_VLR_TOTAL_INV,       format: 'currency' },
+  'ext_pct_acuracidade_inv': { data: MOCK_EXT_PCT_ACURACIDADE_INV, format: 'percent1' },
+  // Divergência de Recebimento
+  'ext_qtd_divergencias':    { data: MOCK_EXT_QTD_DIVERGENCIAS,    format: 'integer'  },
+  'ext_vlr_divergencias':    { data: MOCK_EXT_VLR_DIVERGENCIAS,    format: 'currency' },
+  // Sucata
+  'ext_qtd_sucatas':         { data: MOCK_EXT_QTD_SUCATAS,         format: 'integer'  },
+  'ext_vlr_sucatas':         { data: MOCK_EXT_VLR_SUCATAS,         format: 'currency' },
 };
 
 // Abreviações oficiais para cabeçalhos da tabela (fonte: data/metricNaming.ts)

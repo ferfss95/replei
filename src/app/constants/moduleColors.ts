@@ -90,14 +90,14 @@ export const MODULE_COLORS: Record<Module, ModuleColors> = {
     topBarColor: '#9D7F20',     // @deprecated — alias de iconColor
   },
 
-  // ── EXTRAVIOS (Neutro — sem paleta dedicada na spec P15) ──────────────────
+  // ── EXTRAVIOS (Vermelho/Quente — Motriz 3.0 Semantic Colors) ──────────────
   EXTRAVIOS: {
-    primaryColor: '#314158',
-    iconColor: '#314158',
-    highlightColor: '#D9D9D9',
-    accentColor: '#D9D9D9',
-    backgroundColor: '#F4EFF0',
-    topBarColor: '#314158',     // @deprecated
+    primaryColor: '#D83915',    // COR1 — Module-brand (Header global, bordas ativas)
+    iconColor: '#9B260C',       // COR2 — Module-brand-strong (texto destaque, hover)
+    highlightColor: '#FEEFEF',  // COR3 — Module-surface-2 (hover de tabelas, estado ativo)
+    accentColor: '#DDD7D6',     // COR4 — Module-surface-1 (subheader da tabela, cards)
+    backgroundColor: '#FEEFEF', // COR5 — Module-surface-2 (fundo avermelhado claro)
+    topBarColor: '#9B260C',     // @deprecated — alias de iconColor
   },
 };
 

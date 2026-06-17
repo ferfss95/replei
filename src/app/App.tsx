@@ -44,6 +44,15 @@ function getMetricsSidebarDefaultsForModule(module: Module): Record<string, bool
   if (module === "PRODUTO") {
     return { ...base, exposicao_produtos: false };
   }
+  if (module === "EXTRAVIOS") {
+    // EXTRAVIOS não usa venda_estoque/planejamento — todas as métricas estão em
+    // 3 seções extras próprias, abertas por padrão.
+    return {
+      inventario: true,
+      divergencia_recebimento: true,
+      sucata: true,
+    };
+  }
   return { ...base };
 }
 

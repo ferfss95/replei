@@ -125,9 +125,9 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   }, [extraSidebarSections, isResultStep, resultCatalogSet]);
 
   const showVendaEstoqueAccordion =
-    !isLojaFlatMetrics && (!isResultStep || vendaEstoqueMetrics.length > 0);
+    !isLojaFlatMetrics && vendaEstoqueMetrics.length > 0;
   const showFlatMetricsList =
-    isLojaFlatMetrics && (!isResultStep || vendaEstoqueMetrics.length > 0);
+    isLojaFlatMetrics && vendaEstoqueMetrics.length > 0;
   const showPlanejamentoDivider =
     hasOutrasAccordion &&
     (showVendaEstoqueAccordion ||
@@ -375,7 +375,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                     <button
                       type="button"
                       onClick={() => toggleMetricsGroup("venda_estoque")}
-                      className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
+                      className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
                     >
                       <div className="flex items-center gap-2">
                         <ChevronRight
@@ -416,7 +416,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                           <button
                             type="button"
                             onClick={() => toggleMetricsGroup(groupId)}
-                            className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
+                            className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
                           >
                             <div className="flex items-center gap-2">
                               <ChevronRight
@@ -437,14 +437,16 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                               transition={{ duration: 0.2 }}
                               className="space-y-6 pl-1"
                             >
-                              {groups.map((group) => (
-                                <div key={group.subtitle} className="space-y-1.5">
-                                  <p
-                                    className="px-2 text-[10px] font-semibold tracking-wide"
-                                    style={{ color: "rgba(86, 104, 120, 0.6)" }}
-                                  >
-                                    {group.subtitle}
-                                  </p>
+                              {groups.map((group, groupIdx) => (
+                                <div key={group.subtitle || `group_${groupIdx}`} className="space-y-1.5">
+                                  {group.subtitle ? (
+                                    <p
+                                      className="px-2 text-[10px] font-semibold tracking-wide"
+                                      style={{ color: "rgba(86, 104, 120, 0.6)" }}
+                                    >
+                                      {group.subtitle}
+                                    </p>
+                                  ) : null}
                                   <div className="space-y-1.5">
                                     {group.metricIds.map((metricId) => {
                                       const metric = currentModuleConfig.metrics.find(
@@ -474,7 +476,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                         <button
                           type="button"
                           onClick={() => toggleMetricsGroup("planejamento")}
-                          className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
+                          className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
                         >
                           <div className="flex items-center gap-2">
                             <ChevronRight

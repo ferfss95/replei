@@ -17,7 +17,7 @@ export function InteractiveMandala({ selectedModule, onModuleSelect }: Interacti
   const isActive = (module: Module) => selectedModule === module || hoveredModule === module;
 
   const handleModuleClick = (module: Module) => {
-    if (module === 'PRODUTO' || module === 'LOJA' || module === 'INDICADORES') {
+    if (!isModuleDisabled(module)) {
       onModuleSelect(module);
     }
   };
@@ -31,8 +31,8 @@ export function InteractiveMandala({ selectedModule, onModuleSelect }: Interacti
     setTooltipPosition({ x: event.clientX, y: event.clientY });
   };
 
-  const isModuleDisabled = (module: Module) => {
-    return module === 'EXTRAVIOS';
+  const isModuleDisabled = (_module: Module) => {
+    return false;
   };
 
   return (

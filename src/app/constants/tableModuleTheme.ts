@@ -59,11 +59,11 @@ const TABLE_MODULE_THEMES: Record<Module, TableModuleTheme> = {
     rowEvenBg: TABLE_ROW_EVEN_BG,
   },
   EXTRAVIOS: {
-    headerBg: '#9B260C',
+    headerBg: '#9B260C',          // Module-brand-strong
     headerText: '#FFFFFF',
-    subHeaderBg: '#DDD7D6',
-    subHeaderText: '#9B260C',
-    rowHoverBg: '#FEEFEF',
+    subHeaderBg: '#DDD7D6',       // Module-surface-1
+    subHeaderText: '#9B260C',     // Module-brand-strong
+    rowHoverBg: '#FEEFEF',        // Module-surface-2
     rowOddBg: TABLE_ROW_ODD_BG,
     rowEvenBg: TABLE_ROW_EVEN_BG,
   },

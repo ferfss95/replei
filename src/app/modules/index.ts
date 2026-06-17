@@ -1,7 +1,8 @@
 import type { ModuleConfig } from './types';
-import { produtoModule, EXPOSICAO_PRODUTO_METRIC_IDS } from './produto';
+import { produtoModule } from './produto';
 import { lojaModule } from './loja';
 import { indicadoresModule } from './indicadores';
+import { extraviosModule } from './extravios';
 
 // ──────────────────────────────────────────────────────────────
 // Module registry
@@ -11,33 +12,11 @@ import { indicadoresModule } from './indicadores';
 
 export type ModuleId = 'PRODUTO' | 'LOJA' | 'EXTRAVIOS' | 'INDICADORES';
 
-const exposicaoMetricIdSet = new Set<string>(EXPOSICAO_PRODUTO_METRIC_IDS);
-const produtoOutrasPrecoIds = new Set<string>(['ppa', 'match_preco', 'match_preco_valor']);
-
-/** PRODUTO sem métricas de exposição (placeholder EXTRAVIOS não deve exibir esse bloco). */
-const produtoSemExposicao: ModuleConfig = {
-  ...produtoModule,
-  metrics: produtoModule.metrics.filter(
-    (m) => !exposicaoMetricIdSet.has(m.id) && !produtoOutrasPrecoIds.has(m.id),
-  ),
-  metricDisplayOrder: produtoModule.metricDisplayOrder.filter(
-    (id) => !exposicaoMetricIdSet.has(id) && !produtoOutrasPrecoIds.has(id),
-  ),
-  metricsSidebarExcludeFromVendaEstoque: undefined,
-  metricSidebarExtraSections: undefined,
-  metricsSidebarPlanningGroupLabel: undefined,
-  metricsSidebarPlanningSubgroupLabel: undefined,
-  metricsSidebarOutrasAfterPlanning: undefined,
-};
-
 export const MODULE_REGISTRY: Record<ModuleId, ModuleConfig> = {
   PRODUTO:     produtoModule,
   LOJA:        lojaModule,
-
-  // Placeholders — will be replaced by real configs when each module is built.
-  // They inherit PRODUTO's config as a safe fallback so the wizard stays functional.
-  EXTRAVIOS:   { ...produtoSemExposicao, id: 'EXTRAVIOS', label: 'EXTRAVIOS' },
-  INDICADORES: indicadoresModule,                                          // módulo real
+  EXTRAVIOS:   extraviosModule,
+  INDICADORES: indicadoresModule,
 };
 
 export type { ModuleConfig };

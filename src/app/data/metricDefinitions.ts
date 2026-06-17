@@ -66,4 +66,20 @@ export const METRIC_DEFINITIONS: Record<string, string> = {
   vlr_plano: 'Meta de receita planejada para o período de análise',
   vlr_projecao_venda: 'Estimativa de fechamento do mês corrente, calculada a partir das vendas já realizadas até o dia anterior (D-1) mais a tendência linear projetada para os dias restantes do mês.',
   vlr_target: 'Alvo de receita complementar ao plano, número mais agressivo e/ou revisado ao longo do período, usado para acompanhamento de metas de curto prazo ou campanhas específicas.',
+
+  // ── EXTRAVIOS ─────────────────────────────────────────────────
+  // Inventário
+  ext_qtd_faltas: 'Quantidade de unidades faltantes apuradas no inventário (estoque físico menor que o sistêmico). Representa perdas não explicadas por movimentações registradas.',
+  ext_qtd_sobras: 'Quantidade de unidades sobrantes apuradas no inventário (estoque físico maior que o sistêmico). Sinaliza falhas de baixa ou erros de movimentação.',
+  ext_qtd_total_inv: 'Total absoluto de divergências de inventário no período: soma de Qtd Faltas + Qtd Sobras. Mede o volume bruto de unidades fora de consistência.',
+  ext_vlr_faltas: 'Valor monetário das faltas de inventário no período, calculado pelo custo de referência das unidades faltantes.',
+  ext_vlr_sobras: 'Valor monetário das sobras de inventário no período, calculado pelo custo de referência das unidades sobrantes.',
+  ext_vlr_total_inv: 'Impacto financeiro líquido do inventário: Vlr Faltas menos Vlr Sobras. Representa a perda monetária efetiva apurada na contagem.',
+  ext_pct_acuracidade_inv: 'Percentual de unidades em consistência entre estoque físico e sistêmico no inventário. Quanto maior, melhor a qualidade do controle de estoque.',
+  // Divergência de Recebimento
+  ext_qtd_divergencias: 'Quantidade de unidades com divergência identificada no recebimento (entre NF e contagem física). Inclui faltas, sobras e avarias de transporte.',
+  ext_vlr_divergencias: 'Valor monetário das divergências apuradas no recebimento, calculado pelo custo de referência das unidades impactadas.',
+  // Sucata
+  ext_qtd_sucatas: 'Quantidade de unidades baixadas como sucata no período (produtos avariados, vencidos ou inservíveis para venda).',
+  ext_vlr_sucatas: 'Valor monetário das unidades baixadas como sucata, calculado pelo custo de referência do produto.',
 };

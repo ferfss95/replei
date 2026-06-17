@@ -90,6 +90,22 @@ export const METRIC_NAMING: Record<string, MetricNamingEntry> = {
   ind_match_preco_valor: { sidebar: 'Vlr Match de Preço', table: 'Vlr Match' },
   ind_qtd_personalizacoes: { sidebar: 'Qtd Personalizações', table: 'Qtd Pers.' },
   ind_vlr_personalizacoes: { sidebar: 'Vlr Personalizações', table: 'Vlr Pers.' },
+
+  // ── EXTRAVIOS (prefixo ext_) ──────────────────────────────────
+  // Inventário
+  ext_qtd_faltas:          { sidebar: 'Qtd Faltas Inv.',         table: 'Qtd Faltas Inv.' },
+  ext_qtd_sobras:          { sidebar: 'Qtd Sobras Inv.',         table: 'Qtd Sobras Inv.' },
+  ext_qtd_total_inv:       { sidebar: 'Qtd Total Inv.',          table: 'Qtd Total Inv.' },
+  ext_vlr_faltas:          { sidebar: 'Vlr Faltas Inv.',         table: 'Vlr Faltas Inv.' },
+  ext_vlr_sobras:          { sidebar: 'Vlr Sobras Inv.',         table: 'Vlr Sobras Inv.' },
+  ext_vlr_total_inv:       { sidebar: 'Vlr Total Inv.',          table: 'Vlr Total Inv.' },
+  ext_pct_acuracidade_inv: { sidebar: '% Acuracidade Inv.',      table: '% Acuracidade Inv.' },
+  // Divergência de Recebimento
+  ext_qtd_divergencias:    { sidebar: 'Qtd Divergências Rec.',   table: 'Qtd Divergências Rec.' },
+  ext_vlr_divergencias:    { sidebar: 'Vlr Divergências Rec.',   table: 'Vlr Divergências Rec.' },
+  // Sucata
+  ext_qtd_sucatas:         { sidebar: 'Qtd Sucatas',             table: 'Qtd Sucatas' },
+  ext_vlr_sucatas:         { sidebar: 'Vlr Sucatas',             table: 'Vlr Sucatas' },
 };
 
 export function getMetricSidebarLabel(metricId: string, fallback?: string): string {
