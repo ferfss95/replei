@@ -4,21 +4,12 @@
 // Mecânica idêntica ao módulo INDICADORES (reutiliza LOJA + PRODUTO como dimensões).
 // Atributos: rede, tipo, estado, regional, cidade, loja, setor
 //            + linha extra "Produto" com SALA…SABOR (PRODUTO_DOMAIN_ATTRIBUTE_DEFS).
-// Métricas: prefixo ext_ — organizadas em 3 accordions próprios na sidebar
-//           (Inventário, Divergência de Recebimento, Sucata).
+// Métricas: prefixo ext_ — renderizadas direto na sidebar (flat, sem accordion).
 // ─────────────────────────────────────────────────────────────
 
 import {
-  AlertTriangle,
-  ArrowDownCircle,
-  ArrowUpCircle,
   Boxes,
   CircleDollarSign,
-  Wallet,
-  Percent,
-  PackageX,
-  Recycle,
-  TrendingDown,
   Building2,
   MapPin,
   Briefcase,
@@ -59,14 +50,6 @@ const DIVERGENCIA_OPTIONS_EXT = [
   'Sucata',
   'Divergência de Recebimento',
 ];
-
-// ── IDs das seções da sidebar (referenciados em App.tsx para defaults abertos) ──
-export const EXTRAVIOS_SIDEBAR_GROUP_IDS = {
-  teste: 'teste_validacao',
-  inventario: 'inventario',
-  divergencia: 'divergencia_recebimento',
-  sucata: 'sucata',
-} as const;
 
 // ── Configuração do módulo ────────────────────────────────────
 
@@ -177,111 +160,16 @@ export const extraviosModule: ModuleConfig = {
   },
 
   // ── Métricas ──────────────────────────────────────────────
-  // Prefixo ext_ para isolamento total. Organizadas em 3 accordions
-  // (Inventário, Divergência de Recebimento, Sucata) via metricSidebarExtraSections.
+  // Prefixo ext_ para isolamento total. Exibidas direto na sidebar (flat),
+  // sem accordion (mesma renderização de LOJA/INDICADORES).
   metrics: [
-    // ── Teste para validação ──
     { id: 'ext_teste_qtd_itens',     label: 'Qtd de itens',            icon: Boxes           },
     { id: 'ext_teste_valor',         label: 'Valor',                   icon: CircleDollarSign },
-    // ── Inventário ──
-    { id: 'ext_qtd_faltas',          label: 'Qtd Faltas',              icon: ArrowDownCircle },
-    { id: 'ext_qtd_sobras',          label: 'Qtd Sobras',              icon: ArrowUpCircle   },
-    { id: 'ext_qtd_total_inv',       label: 'Qtd Total Inventário',    icon: Boxes           },
-    { id: 'ext_vlr_faltas',          label: 'Vlr Faltas',              icon: TrendingDown    },
-    { id: 'ext_vlr_sobras',          label: 'Vlr Sobras',              icon: Wallet          },
-    { id: 'ext_vlr_total_inv',       label: 'Vlr Total Inventário',    icon: CircleDollarSign },
-    { id: 'ext_pct_acuracidade_inv', label: '% Acuracidade Inventário', icon: Percent        },
-    // ── Divergência de Recebimento ──
-    { id: 'ext_qtd_divergencias',    label: 'Qtd Divergências',        icon: AlertTriangle   },
-    { id: 'ext_vlr_divergencias',    label: 'Vlr Divergências',        icon: CircleDollarSign },
-    // ── Sucata ──
-    { id: 'ext_qtd_sucatas',         label: 'Qtd Sucatas',             icon: PackageX        },
-    { id: 'ext_vlr_sucatas',         label: 'Vlr Sucatas',             icon: Recycle         },
   ],
 
   metricDisplayOrder: [
     'ext_teste_qtd_itens',
     'ext_teste_valor',
-    'ext_qtd_faltas',
-    'ext_qtd_sobras',
-    'ext_qtd_total_inv',
-    'ext_vlr_faltas',
-    'ext_vlr_sobras',
-    'ext_vlr_total_inv',
-    'ext_pct_acuracidade_inv',
-    'ext_qtd_divergencias',
-    'ext_vlr_divergencias',
-    'ext_qtd_sucatas',
-    'ext_vlr_sucatas',
-  ],
-
-  // ── Sidebar: 3 seções dedicadas (sem "Venda e Estoque" nem "Planejamento") ──
-  // Todas as métricas ficam fora de venda_estoque para que esse accordion não apareça.
-  metricsSidebarExcludeFromVendaEstoque: [
-    'ext_teste_qtd_itens',
-    'ext_teste_valor',
-    'ext_qtd_faltas',
-    'ext_qtd_sobras',
-    'ext_qtd_total_inv',
-    'ext_vlr_faltas',
-    'ext_vlr_sobras',
-    'ext_vlr_total_inv',
-    'ext_pct_acuracidade_inv',
-    'ext_qtd_divergencias',
-    'ext_vlr_divergencias',
-    'ext_qtd_sucatas',
-    'ext_vlr_sucatas',
-  ],
-
-  metricSidebarExtraSections: [
-    {
-      title: 'Teste para validação',
-      sidebarGroupId: EXTRAVIOS_SIDEBAR_GROUP_IDS.teste,
-      groups: [
-        {
-          subtitle: '',
-          metricIds: ['ext_teste_qtd_itens', 'ext_teste_valor'],
-        },
-      ],
-    },
-    {
-      title: 'Inventário',
-      sidebarGroupId: EXTRAVIOS_SIDEBAR_GROUP_IDS.inventario,
-      groups: [
-        {
-          subtitle: '',
-          metricIds: [
-            'ext_qtd_faltas',
-            'ext_qtd_sobras',
-            'ext_qtd_total_inv',
-            'ext_vlr_faltas',
-            'ext_vlr_sobras',
-            'ext_vlr_total_inv',
-            'ext_pct_acuracidade_inv',
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Recebimento',
-      sidebarGroupId: EXTRAVIOS_SIDEBAR_GROUP_IDS.divergencia,
-      groups: [
-        {
-          subtitle: '',
-          metricIds: ['ext_qtd_divergencias', 'ext_vlr_divergencias'],
-        },
-      ],
-    },
-    {
-      title: 'Sucata',
-      sidebarGroupId: EXTRAVIOS_SIDEBAR_GROUP_IDS.sucata,
-      groups: [
-        {
-          subtitle: '',
-          metricIds: ['ext_qtd_sucatas', 'ext_vlr_sucatas'],
-        },
-      ],
-    },
   ],
 
   // ── Títulos por modo de análise ───────────────────────────

@@ -2887,7 +2887,7 @@ export const MOCK_EXT_TESTE_VALOR = [
 // %Capacidade Modelo/Cor e %Capacidade Modelo/Cor/Tamanho exibam tanto
 // posições abaixo de 100% (vermelho) quanto acima (verde).
 
-// Qtd de Expositores — integer | range: 50–160
+// Qtd Expositores — integer | range: 50–160
 export const MOCK_CAP_QTD_EXPOSITORES = [
   80, 60, 100, 150, 70, 120, 90, 130, 110, 55,
   85, 95, 140, 75, 105, 145, 65, 115, 125, 50,
@@ -2895,7 +2895,7 @@ export const MOCK_CAP_QTD_EXPOSITORES = [
   145, 95, 105, 85, 115, 100, 90,
 ];
 
-// Qtd de Modelo/Cor — integer | mix proposital: ratios entre ~40% e ~250%.
+// Qtd Modelo/Cor — integer | mix proposital: ratios entre ~40% e ~250%.
 export const MOCK_CAP_QTD_MODELO_COR = [
   48,  90,  85,  195, 35,  216, 72,  247, 132, 28,
   153, 76,  224, 60,  168, 232, 39,  184, 100, 30,
@@ -2903,7 +2903,7 @@ export const MOCK_CAP_QTD_MODELO_COR = [
   232, 76,  168, 68,  207, 95,  117,
 ];
 
-// Qtd de Modelo/Cor/Tamanho — integer | também com mix abaixo/acima de 100%.
+// Qtd Modelo/Cor/Tamanho — integer | também com mix abaixo/acima de 100%.
 export const MOCK_CAP_QTD_MODELO_COR_TAM = [
   120, 48,  250, 105, 126, 108, 220, 380, 80,  64,
   92,  220, 95,  195, 70,  350, 110, 122, 280, 90,

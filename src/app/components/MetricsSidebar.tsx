@@ -140,7 +140,10 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   const hasOutrasAccordion =
     planejamentoMetrics.length > 0 || outrasAfterPlanningMetrics.length > 0;
   // Módulos que exibem métricas diretamente, sem accordion "Venda e Estoque"
-  const isLojaFlatMetrics = currentModule === "LOJA" || currentModule === "INDICADORES";
+  const isLojaFlatMetrics =
+    currentModule === "LOJA" ||
+    currentModule === "INDICADORES" ||
+    currentModule === "EXTRAVIOS";
   const extraSidebarSections = (currentModuleConfig.metricSidebarExtraSections || []).filter(
     (section) => {
       if (hideExposicaoProdutos && section.sidebarGroupId === "exposicao_produtos") return false;

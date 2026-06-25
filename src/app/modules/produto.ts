@@ -364,9 +364,9 @@ export const produtoModule: ModuleConfig = {
         'Quantidade de geladeiras que a loja possui para expor bebidas.',
     },
     // Capacidade de Exposição (análise dedicada)
-    { id: 'cap_qtd_expositores',          label: 'Qtd de Expositores',             icon: LayoutGrid },
-    { id: 'cap_qtd_modelo_cor',           label: 'Qtd de Modelo/Cor',              icon: Palette    },
-    { id: 'cap_qtd_modelo_cor_tam',       label: 'Qtd de Modelo/Cor/Tamanho',      icon: Ruler      },
+    { id: 'cap_qtd_expositores',          label: 'Qtd Expositores',                icon: LayoutGrid },
+    { id: 'cap_qtd_modelo_cor',           label: 'Qtd Modelo/Cor',                 icon: Palette    },
+    { id: 'cap_qtd_modelo_cor_tam',       label: 'Qtd Modelo/Cor/Tamanho',         icon: Ruler      },
     // Colunas calculadas pelo sistema (mod/cor ÷ expositores e mod/cor/tam ÷ expositores)
     { id: 'cap_pct_capacidade_mod_cor',     label: '% Capacidade Modelo/Cor',          icon: Percent },
     { id: 'cap_pct_capacidade_mod_cor_tam', label: '% Capacidade Modelo/Cor/Tamanho',  icon: Percent },
