@@ -253,7 +253,9 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // Helper to check if average is active
   const showAverage = averagePeriodType !== null;
 
-  // Colunas da tabela = ordem em que o usuário clicou nas métricas (selectedMetrics)
+  // Colunas da tabela = ordem em que o usuário clicou nas métricas (selectedMetrics).
+  // PRODUTO + Capacidade de Exposição: as 2 colunas calculadas (% Cap. Mod/Cor e
+  // % Cap. Mod/Cor/Tam) são sempre forçadas como as duas últimas colunas.
   const orderedMetrics = React.useMemo(() => {
     const valid = new Set(METRICS_LIST.map((m) => m.id));
     const seen = new Set<string>();
@@ -263,7 +265,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       seen.add(id);
       out.push(id);
     }
-    return out;
+    const FORCED_LAST = ["cap_pct_capacidade_mod_cor", "cap_pct_capacidade_mod_cor_tam"];
+    const remaining = out.filter((id) => !FORCED_LAST.includes(id));
+    const tail = FORCED_LAST.filter((id) => out.includes(id));
+    return [...remaining, ...tail];
   }, [selectedMetrics, METRICS_LIST]);
 
   // Sort State
@@ -828,6 +833,25 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         >
           {formatted}
           {ArrowIcon && <ArrowIcon size={14} />}
+        </span>
+      );
+    }
+
+    // Coluna calculada de Capacidade — ≥ 100% verde ↑, < 100% vermelho ↓.
+    if (config?.format === "percent_capacity") {
+      const v = value ?? 0;
+      if (!Number.isFinite(v) || v <= 0) {
+        return <span className="text-slate-400">{formatted}</span>;
+      }
+      const isAbove = v >= 1;
+      const colorClass = isAbove ? "text-[#276749]" : "text-[#9B2C2C]";
+      const ArrowIcon = isAbove ? ArrowUp : ArrowDown;
+      return (
+        <span
+          className={`flex items-center justify-end gap-1.5 font-semibold ${colorClass}`}
+        >
+          <ArrowIcon size={14} />
+          {formatted}
         </span>
       );
     }
@@ -3591,7 +3615,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                 className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
                 style={{ backgroundColor: "#eef1f5" }}
               >
-                {analysisMode === "padrao" && <BarChart3 size={18} className="text-[#314158]" />}
+                {(analysisMode === "padrao" || analysisMode === "capacidade_exposicao") && <BarChart3 size={18} className="text-[#314158]" />}
                 {analysisMode === "evolucao" && <TrendingUp size={18} className="text-[#314158]" />}
                 {analysisMode === "comparativo" && <ArrowLeftRight size={18} className="text-[#314158]" />}
                 {analysisMode === "horaahora" && <Clock size={18} className="text-[#314158]" />}
@@ -4060,7 +4084,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     />
                     <div className="flex flex-col">
                       <span className="font-medium">
-                        {analysisMode === "padrao"
+                        {(analysisMode === "padrao" || analysisMode === "capacidade_exposicao")
                           ? "Gráfico"
                           : analysisMode === "evolucao"
                             ? "Gráfico evolutivo"
@@ -4133,7 +4157,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               <div className="flex flex-col gap-[4px] min-w-0">
                 <div className="flex items-center gap-2.5">
                   <span className="font-medium text-[#45556c] text-[18px] tracking-[0.45px] leading-[16px]">
-                    {analysisMode === "padrao" &&
+                    {(analysisMode === "padrao" || analysisMode === "capacidade_exposicao") &&
                       "Gráfico"}
                     {analysisMode === "evolucao" &&
                       "Gráfico evolutivo"}
@@ -4398,7 +4422,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                 )}
 
                 {/* ── Legend (padrão) — centered above chart ── */}
-                {analysisMode === "padrao" &&
+                {(analysisMode === "padrao" || analysisMode === "capacidade_exposicao") &&
                   chartMetricIds.length > 0 &&
                   null}
 
@@ -8633,6 +8657,15 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               orderedMetrics[
                                 orderedMetrics.length - 1
                               ];
+                            // Colunas calculadas pelo sistema (% Capacidade Modelo/Cor e
+                            // % Capacidade Modelo/Cor/Tamanho): fundo azul #1743A6 + texto branco,
+                            // padrão visual da imagem de referência. Reforçado inline para
+                            // sobrescrever o tema do módulo em qualquer cenário.
+                            const isCapacityCalcCol =
+                              metricId === "cap_pct_capacidade_mod_cor" ||
+                              metricId === "cap_pct_capacidade_mod_cor_tam";
+                            const calcHeaderBg = "#1743A6";
+                            const calcHeaderText = "#FFFFFF";
 
                             return (
                               <React.Fragment key={metric.id}>
@@ -8642,15 +8675,19 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 >
                                   <RadixTooltip.Trigger asChild>
                                     <th
+                                      data-calc-col={isCapacityCalcCol ? "1" : undefined}
                                       style={{
                                         width:
                                           getStdMetricWidth(
                                             metricId,
                                           ),
                                         ...bc("#e2e8f0"),
-                                        backgroundColor:
-                                          TABLE_HEADER_BG,
-                                        color: TABLE_HEADER_TEXT,
+                                        backgroundColor: isCapacityCalcCol
+                                          ? "#1743A6"
+                                          : TABLE_HEADER_BG,
+                                        color: isCapacityCalcCol
+                                          ? "#FFFFFF"
+                                          : TABLE_HEADER_TEXT,
                                         borderBottomWidth: 2,
                                         borderBottomStyle:
                                           "solid",
@@ -8669,7 +8706,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                                 "#e2e8f0",
                                             }),
                                       }}
-                                      className="relative cursor-pointer px-3 py-3 text-left text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-90"
+                                      className={cn(
+                                        "relative cursor-pointer px-3 py-3 text-left text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-90",
+                                        isCapacityCalcCol && "bg-[#1743A6] text-white",
+                                      )}
                                       onClick={() =>
                                         handleSort(metric.id)
                                       }

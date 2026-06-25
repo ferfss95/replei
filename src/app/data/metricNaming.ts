@@ -19,7 +19,11 @@ export const METRIC_NAMING: Record<string, MetricNamingEntry> = {
   qtd_itens: { sidebar: 'Qtd Itens', table: 'Qtd Itens' },
   sss: { sidebar: '% SSS', table: '% SSS' },
   cmv: { sidebar: 'CMV', table: 'CMV' },
-  cmv_comercial: { sidebar: 'CMV Comercial', table: 'CMV Com.' },
+  cap_qtd_expositores:            { sidebar: 'Qtd de Expositores',             table: 'Qtd Expositores' },
+  cap_qtd_modelo_cor:             { sidebar: 'Qtd de Modelo/Cor',              table: 'Qtd Mod/Cor' },
+  cap_qtd_modelo_cor_tam:         { sidebar: 'Qtd de Modelo/Cor/Tamanho',      table: 'Qtd Mod/Cor/Tam' },
+  cap_pct_capacidade_mod_cor:     { sidebar: '% Capacidade Modelo/Cor',         table: '% CAP MOD/COR' },
+  cap_pct_capacidade_mod_cor_tam: { sidebar: '% Capacidade Modelo/Cor/Tamanho', table: '% CAP MOD/COR/TAM' },
   lucro_bruto: { sidebar: 'Lucro Bruto (LB)', table: 'LB' },
   margem: { sidebar: '% Margem Bruta (MB)', table: '% MB' },
   margem_liquida: { sidebar: 'Margem Líquida (ML)', table: 'ML' },
@@ -92,6 +96,9 @@ export const METRIC_NAMING: Record<string, MetricNamingEntry> = {
   ind_vlr_personalizacoes: { sidebar: 'Vlr Personalizações', table: 'Vlr Pers.' },
 
   // ── EXTRAVIOS (prefixo ext_) ──────────────────────────────────
+  // Teste para validação
+  ext_teste_qtd_itens:     { sidebar: 'Qtd de itens',            table: 'Qtd de itens' },
+  ext_teste_valor:         { sidebar: 'Valor',                   table: 'Valor' },
   // Inventário
   ext_qtd_faltas:          { sidebar: 'Qtd Faltas Inv.',         table: 'Qtd Faltas Inv.' },
   ext_qtd_sobras:          { sidebar: 'Qtd Sobras Inv.',         table: 'Qtd Sobras Inv.' },

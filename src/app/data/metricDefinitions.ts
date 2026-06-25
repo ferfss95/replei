@@ -5,7 +5,6 @@
 
 export const METRIC_DEFINITIONS: Record<string, string> = {
   cmv: 'Soma dos custos de aquisição dos produtos vendidos no período.',
-  cmv_comercial: 'Versão do CMV ajustada por acordos e políticas comerciais, trata-se do custo efetivo sob a ótica comercial da negociação',
   conversao: 'Taxa de conversão de visitantes em compradores, é o percentual de pessoas que entraram na loja e efetivaram pelo menos uma compra. Principal indicador de eficiência do atendimento e da experiência de loja.',
   conversao_vendex: 'Indicador de conversão medido pelo sistema Vendex, captura a taxa de atendimento com intenção de compra convertida em venda. Complementa a Conversão tradicional com uma ótica de atendimento ativo no setor de Calçados',
   def: 'Dias de Estoque da Posição em valor financeiro, equivale ao DEP, mas calculado sobre o valor do estoque vs. a receita diária média.',

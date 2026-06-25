@@ -270,7 +270,6 @@ export const produtoModule: ModuleConfig = {
     },
     { id: 'sss', label: '% SSS', icon: Activity },
     { id: 'cmv',             label: 'CMV',                 icon: DollarSign  },
-    { id: 'cmv_comercial',   label: 'CMV Comercial',       icon: DollarSign  },
     { id: 'lucro_bruto',     label: 'Lucro Bruto (LB)',    icon: DollarSign  },
     { id: 'margem',          label: '% Margem Bruta (MB)', icon: Percent     },
     { id: 'margem_liquida',  label: 'Margem Líquida (ML)', icon: Percent     },
@@ -284,20 +283,6 @@ export const produtoModule: ModuleConfig = {
       icon: BarChart3,
       tooltip:
         'Do total de alterações de preço necessárias para realizar, representa o percentual de alterações que foram feitas pela loja.',
-    },
-    {
-      id: 'match_preco',
-      label: '% Match de Preço',
-      icon: Tag,
-      tooltip:
-        'Do total de vendas realizadas, representa o percentual de vendas feitas com desconto igualando o preço praticado no site.',
-    },
-    {
-      id: 'match_preco_valor',
-      label: 'Vlr Match de Preço',
-      icon: DollarSign,
-      tooltip:
-        'Valor (R$) correspondente à participação de vendas com match de preço; mock entre 10% e 15% da venda (ROB) da posição.',
     },
     // Planejamento group divider
     { id: 'vlr_plano',         label: 'Vlr Plano',         icon: Target },
@@ -378,15 +363,27 @@ export const produtoModule: ModuleConfig = {
       tooltip:
         'Quantidade de geladeiras que a loja possui para expor bebidas.',
     },
+    // Capacidade de Exposição (análise dedicada)
+    { id: 'cap_qtd_expositores',          label: 'Qtd de Expositores',             icon: LayoutGrid },
+    { id: 'cap_qtd_modelo_cor',           label: 'Qtd de Modelo/Cor',              icon: Palette    },
+    { id: 'cap_qtd_modelo_cor_tam',       label: 'Qtd de Modelo/Cor/Tamanho',      icon: Ruler      },
+    // Colunas calculadas pelo sistema (mod/cor ÷ expositores e mod/cor/tam ÷ expositores)
+    { id: 'cap_pct_capacidade_mod_cor',     label: '% Capacidade Modelo/Cor',          icon: Percent },
+    { id: 'cap_pct_capacidade_mod_cor_tam', label: '% Capacidade Modelo/Cor/Tamanho',  icon: Percent },
   ],
 
   metricDisplayOrder: [
-    'venda', 'qtd_venda', 'qtd_itens', 'sss', 'cmv', 'cmv_comercial', 'lucro_bruto', 'margem', 'margem_liquida',
+    'venda', 'qtd_venda', 'qtd_itens', 'sss', 'cmv', 'lucro_bruto', 'margem', 'margem_liquida',
     'qtd_estoque', 'vlr_estoque', 'dep', 'def',
-    'ppa', 'match_preco', 'match_preco_valor',
+    'ppa',
     'vlr_plano', 'qtd_plano', 'qtd_desvio_plano', 'vlr_desvio_plano',
     'vlr_target', 'qtd_target', 'qtd_desvio_target', 'vlr_desvio_target',
     ...EXPOSICAO_PRODUTO_METRIC_IDS,
+    'cap_qtd_expositores',
+    'cap_qtd_modelo_cor',
+    'cap_pct_capacidade_mod_cor',
+    'cap_qtd_modelo_cor_tam',
+    'cap_pct_capacidade_mod_cor_tam',
   ],
 
   // ── Planning metrics group (for visual divider in UI) ────
@@ -394,9 +391,30 @@ export const produtoModule: ModuleConfig = {
 
   metricsSidebarPlanningGroupLabel: 'Planejamento',
 
-  metricsSidebarExcludeFromVendaEstoque: [...EXPOSICAO_PRODUTO_METRIC_IDS],
+  metricsSidebarExcludeFromVendaEstoque: [
+    ...EXPOSICAO_PRODUTO_METRIC_IDS,
+    'cap_qtd_expositores',
+    'cap_qtd_modelo_cor',
+    'cap_pct_capacidade_mod_cor',
+    'cap_qtd_modelo_cor_tam',
+    'cap_pct_capacidade_mod_cor_tam',
+  ],
 
   metricSidebarExtraSections: [
+    {
+      title: 'Capacidade de Exposição',
+      sidebarGroupId: 'capacidade_exposicao_metrics',
+      groups: [
+        {
+          subtitle: '',
+          metricIds: [
+            'cap_qtd_expositores',
+            'cap_qtd_modelo_cor',
+            'cap_qtd_modelo_cor_tam',
+          ],
+        },
+      ],
+    },
     {
       title: 'Exposição de produtos',
       sidebarGroupId: 'exposicao_produtos',
@@ -426,9 +444,10 @@ export const produtoModule: ModuleConfig = {
 
   // ── Analysis titles ───────────────────────────────────────
   analysisTitles: {
-    padrao:      'Análise Geral de Venda e Estoque',
-    evolucao:    'Análise Evolutiva de Venda e Estoque',
-    comparativo: 'Análise Comparativa de Venda e Estoque',
-    horaahora:   'Análise hora a hora de Venda e Estoque',
+    padrao:               'Análise Geral de Venda e Estoque',
+    capacidade_exposicao: 'Análise de Capacidade de Exposição',
+    evolucao:             'Análise Evolutiva de Venda e Estoque',
+    comparativo:          'Análise Comparativa de Venda e Estoque',
+    horaahora:            'Análise hora a hora de Venda e Estoque',
   },
 };

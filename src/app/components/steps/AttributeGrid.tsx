@@ -2,11 +2,12 @@ import React from "react";
 import { Filter, Anchor, Ban } from "lucide-react";
 import { cn } from "../../utils";
 import {
-  LOCATION_ATTRIBUTES,
+  getVisibleLocationAttributes,
   MAX_GROUPING_LEVELS,
   type Module,
   type Step,
 } from "../../constants";
+import type { AnalysisMode } from "../../types/wizard";
 import { ScrollableRow } from "../ScrollableRow";
 import { AttributeCard as SmartAttributeCard } from "../AttributeCard";
 import type { ModuleConfig } from "../../modules/types";
@@ -24,6 +25,7 @@ interface AttributeGridProps {
   setExclusions: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
   getAttributeOptions: (attrId: string) => string[];
   handleAttributeClick: (attrId: string) => void;
+  analysisMode?: AnalysisMode;
 }
 
 export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGrid({
@@ -38,7 +40,36 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
   setExclusions,
   getAttributeOptions,
   handleAttributeClick,
+  analysisMode,
 }: AttributeGridProps) {
+  const visibleLocationAttributes = getVisibleLocationAttributes(currentModule, analysisMode);
+  /**
+   * PRODUTO + "Capacidade de Exposição" oculta um subconjunto de atributos de
+   * domínio (categoria, modalidade, subgrupo, marca, franquia, genero,
+   * faixa_etaria, sabor).
+   */
+  const PRODUTO_CAPACIDADE_HIDDEN_DOMAIN_IDS = new Set([
+    "categoria",
+    "modalidade",
+    "subgrupo",
+    "marca",
+    "franquia",
+    "genero",
+    "faixa_etaria",
+    "sabor",
+    "modelo",
+    "cor",
+    "tamanho",
+  ]);
+  const filterDomainForAnalysis = <T extends { id: string }>(attrs: T[]): T[] => {
+    if (currentModule === "PRODUTO" && analysisMode === "capacidade_exposicao") {
+      return attrs.filter((a) => !PRODUTO_CAPACIDADE_HIDDEN_DOMAIN_IDS.has(a.id));
+    }
+    return attrs;
+  };
+  const visibleDomainAttributes = filterDomainForAnalysis(
+    currentModuleConfig.domainAttributes,
+  );
   return (
     <div className="bg-white rounded-xl border border-[#D9D9D9] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden shrink-0">
       {/* Header */}
@@ -81,7 +112,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
               </div>
             )}
             <ScrollableRow>
-              {currentModuleConfig.domainAttributes.map((attr) => (
+              {visibleDomainAttributes.map((attr) => (
                 <SmartAttributeCard
                   key={attr.id}
                   attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
@@ -159,7 +190,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
                 <div className="h-px flex-1 bg-slate-200" />
               </div>
               <ScrollableRow>
-                {LOCATION_ATTRIBUTES.map((attr) => (
+                {visibleLocationAttributes.map((attr) => (
                   <SmartAttributeCard
                     key={attr.id}
                     attribute={{ ...attr, options: getAttributeOptions(attr.id) }}

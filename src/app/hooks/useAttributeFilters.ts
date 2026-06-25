@@ -15,8 +15,10 @@ import { useState, useCallback, useMemo } from 'react';
 import {
   LOCATION_ATTRIBUTES,
   MAX_GROUPING_LEVELS,
+  type Module,
   type Step,
 } from '../constants';
+import type { AnalysisMode } from '../types/wizard';
 import {
   collectAllDomainAttributes,
   type ModuleConfig,
@@ -29,6 +31,7 @@ import {
   LOCALIZACAO_OPTIONS,
   VENDEDOR_OPTIONS,
   ORIGEM_OPTIONS,
+  EXPOSITORES_OPTIONS,
   ORDERED_LOJAS_LIST,
   STATE_TO_UF,
   CIDADES_BY_ESTADO,
@@ -46,6 +49,8 @@ import {
 interface UseAttributeFiltersProps {
   currentModuleConfig: ModuleConfig;
   currentStep: Step;
+  currentModule?: Module;
+  analysisMode?: AnalysisMode;
 }
 
 interface ActiveFilter {
@@ -59,7 +64,9 @@ interface ActiveFilter {
 // ══════════════════════════════════════════════════════════════════
 
 export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
-  const { currentModuleConfig, currentStep } = props;
+  const { currentModuleConfig, currentStep, currentModule, analysisMode } = props;
+  const isProdutoCapacidadeExposicao =
+    currentModule === 'PRODUTO' && analysisMode === 'capacidade_exposicao';
 
   // ─── STATES ───
   const [selections, setSelections] = useState<Record<string, string[]>>({});
@@ -84,7 +91,11 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
         case 'rede':
           return REDE_OPTIONS;
         case 'canal':
-          return CANAL_OPTIONS;
+          return isProdutoCapacidadeExposicao
+            ? CANAL_OPTIONS.filter(
+                (c) => c !== 'Digital Centauro' && c !== 'Digital Nike',
+              )
+            : CANAL_OPTIONS;
         case 'tipo':
           return TIPO_OPTIONS;
         case 'regional':
@@ -95,6 +106,8 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
           return VENDEDOR_OPTIONS;
         case 'origem':
           return ORIGEM_OPTIONS;
+        case 'expositores':
+          return EXPOSITORES_OPTIONS;
         case 'loja':
           return filterStoresByKnownLinks(ORDERED_LOJAS_LIST, selections);
         case 'estado': {
@@ -154,7 +167,7 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
           return currentModuleConfig.getDomainAttributeOptions(attrId, selections);
       }
     },
-    [selections, currentModuleConfig],
+    [selections, currentModuleConfig, isProdutoCapacidadeExposicao],
   );
 
   // ─── HANDLE ATTRIBUTE CLICK (Grouping toggle) ───

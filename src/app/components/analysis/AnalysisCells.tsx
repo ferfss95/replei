@@ -93,6 +93,25 @@ export const MetricCell = React.memo<MetricCellProps>(
       );
     }
 
+    // Coluna calculada de Capacidade — ≥ 100% verde com seta ↑, < 100% vermelho com seta ↓.
+    if (format === 'percent_capacity') {
+      const v = value ?? 0;
+      if (!Number.isFinite(v) || v <= 0) {
+        return <span className={`${CELL_COLORS.muted} ${className}`}>{formatted}</span>;
+      }
+      const isAbove = v >= 1;
+      const colorClass = isAbove ? CELL_COLORS.positive : CELL_COLORS.negative;
+      const ArrowIcon = isAbove ? ArrowUp : ArrowDown;
+      return (
+        <span
+          className={`flex items-center justify-end gap-1.5 font-semibold ${colorClass} ${className}`}
+        >
+          <ArrowIcon size={14} />
+          {formatted}
+        </span>
+      );
+    }
+
     return <span className={className}>{formatted}</span>;
   }
 );

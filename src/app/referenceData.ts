@@ -22,6 +22,20 @@ export const CANAL_GROUP_CENTAURO_IDS: readonly string[] = [
 /** Modal Canal — seleção rápida “Todos Nike”. */
 export const CANAL_GROUP_NIKE_IDS: readonly string[] = ["NVS", "NDIS", "Digital Nike"];
 
+/**
+ * ORIGEM — variante do módulo EXTRAVIOS.
+ * Ordem: Loja (standalone) · Transportadora (standalone) · CD (Jarinu/Extrema) · CDS (Lapa).
+ */
+export const ORIGEM_EXTRAVIOS_GROUP_CD_IDS: readonly string[] = ["Jarinu", "Extrema"];
+export const ORIGEM_EXTRAVIOS_GROUP_CDS_IDS: readonly string[] = ["Lapa"];
+export const ORIGEM_EXTRAVIOS_STANDALONE_IDS: readonly string[] = ["Loja", "Transportadora"];
+
+export const ORIGEM_EXTRAVIOS_OPTIONS: readonly string[] = [
+  ...ORIGEM_EXTRAVIOS_STANDALONE_IDS,
+  ...ORIGEM_EXTRAVIOS_GROUP_CD_IDS,
+  ...ORIGEM_EXTRAVIOS_GROUP_CDS_IDS,
+];
+
 export const FATURAMENTO_OPTIONS = [
   "Loja Física",
   "Digital"
@@ -142,6 +156,20 @@ export const VENDEDOR_OPTIONS = [
 export const ORIGEM_OPTIONS = [
   "Nacional",
   "Importado",
+];
+
+/** EXPOSITORES (PRODUTO + Capacidade de Exposição). */
+export const EXPOSITORES_OPTIONS = [
+  "Clicks de Tênis",
+  "Clicks de Chuteiras",
+  "Braços Exposição",
+  "Mesas",
+  "Braços Meias",
+  "Expositores Relógios",
+  "Expositores Óculos",
+  "Cestos Bolas",
+  "Módulos Checkstand",
+  "Geladeiras",
 ];
 
 /**
@@ -2404,12 +2432,6 @@ function mockFactor10to20PctLess(i: number, salt: number): number {
   return 0.8 + n / 100;
 }
 
-/** CMV Comercial (PRODUTO): base MOCK_CMV com redução de 10–20% por posição. */
-export const MOCK_CMV_COMERCIAL = MOCK_CMV.map((v, i) => {
-  const f = mockFactor10to20PctLess(i, Math.floor(v) % 9973);
-  return Math.round(v * f * 100) / 100;
-});
-
 /** Margem Líquida (PRODUTO): base MOCK_MARGEM (MB), 10–20% a menos por posição. */
 export const MOCK_MARGEM_LIQUIDA = MOCK_MARGEM.map((m, i) => {
   const f = mockFactor10to20PctLess(i, Math.floor(m * 10000) % 9973);
@@ -2842,6 +2864,69 @@ export const MOCK_IND_CONV_CLICK = [
 // Mantenha 37 valores por array (mesma quantidade dos outros módulos).
 // ══════════════════════════════════════════════════════════════
 
+// ── Teste para validação ───────────────────────────────────────
+
+// Qtd de itens — integer | range: 50–280 unidades
+export const MOCK_EXT_TESTE_QTD_ITENS = [
+  142, 87, 215, 268, 64, 178, 121, 247, 196, 78,
+  158, 209, 96, 254, 132, 187, 232, 71, 165, 114,
+  239, 89, 201, 147, 273, 58, 138, 222, 105, 174,
+  82, 261, 154, 196, 119, 234, 128,
+];
+
+// Valor — currency | range: R$ 5.000 – R$ 32.000
+export const MOCK_EXT_TESTE_VALOR = [
+  11820, 6240, 21450, 27680, 4380, 15820, 9540, 24230, 17680, 5840,
+  13970, 19840, 7220, 25740, 11420, 17240, 22580, 5280, 14860, 8920,
+  23950, 6480, 19120, 12780, 30240, 4150, 11960, 22140, 8350, 16240,
+  5680, 28480, 13720, 18620, 9450, 23280, 11140,
+];
+
+// ── Capacidade de Exposição (PRODUTO) ──────────────────────────
+// Os mocks de Qtd estão calibrados para que as colunas calculadas
+// %Capacidade Modelo/Cor e %Capacidade Modelo/Cor/Tamanho exibam tanto
+// posições abaixo de 100% (vermelho) quanto acima (verde).
+
+// Qtd de Expositores — integer | range: 50–160
+export const MOCK_CAP_QTD_EXPOSITORES = [
+  80, 60, 100, 150, 70, 120, 90, 130, 110, 55,
+  85, 95, 140, 75, 105, 145, 65, 115, 125, 50,
+  135, 70, 100, 80, 160, 90, 110, 120, 130, 75,
+  145, 95, 105, 85, 115, 100, 90,
+];
+
+// Qtd de Modelo/Cor — integer | mix proposital: ratios entre ~40% e ~250%.
+export const MOCK_CAP_QTD_MODELO_COR = [
+  48,  90,  85,  195, 35,  216, 72,  247, 132, 28,
+  153, 76,  224, 60,  168, 232, 39,  184, 100, 30,
+  216, 56,  130, 64,  256, 81,  132, 192, 195, 60,
+  232, 76,  168, 68,  207, 95,  117,
+];
+
+// Qtd de Modelo/Cor/Tamanho — integer | também com mix abaixo/acima de 100%.
+export const MOCK_CAP_QTD_MODELO_COR_TAM = [
+  120, 48,  250, 105, 126, 108, 220, 380, 80,  64,
+  92,  220, 95,  195, 70,  350, 110, 122, 280, 90,
+  350, 130, 220, 180, 145, 70,  220, 285, 145, 175,
+  240, 152, 88,  195, 105, 250, 175,
+];
+
+// % Capacidade Modelo/Cor — percent (decimal) | mix proposital abaixo e acima de 100%.
+export const MOCK_CAP_PCT_CAPACIDADE_MOD_COR = [
+  0.60, 1.50, 0.85, 1.30, 0.50, 1.80, 0.80, 1.90, 1.20, 0.51,
+  1.80, 0.80, 1.60, 0.80, 1.60, 1.60, 0.60, 1.60, 0.80, 0.60,
+  1.60, 0.80, 1.30, 0.80, 1.60, 0.90, 1.20, 1.60, 1.50, 0.80,
+  1.60, 0.80, 1.60, 0.80, 1.80, 0.95, 1.30,
+];
+
+// % Capacidade Modelo/Cor/Tamanho — percent (decimal) | mix abaixo e acima de 100%.
+export const MOCK_CAP_PCT_CAPACIDADE_MOD_COR_TAM = [
+  1.50, 0.80, 2.50, 0.70, 1.80, 0.90, 2.44, 2.92, 0.73, 1.16,
+  1.08, 2.32, 0.68, 2.60, 0.67, 2.41, 1.69, 1.06, 2.24, 1.80,
+  2.59, 1.86, 2.20, 2.25, 0.91, 0.78, 2.00, 2.38, 1.12, 2.33,
+  1.66, 1.60, 0.84, 2.29, 0.91, 2.50, 1.94,
+];
+
 // ── Inventário ─────────────────────────────────────────────────
 
 // Qtd Faltas — integer | range: 10–95 unidades
@@ -2930,12 +3015,11 @@ export const MOCK_EXT_VLR_SUCATAS = [
   1680, 9020, 4140, 5780, 3050, 7320, 3520,
 ];
 
-export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' | 'percent' | 'percent0' | 'integer' | 'days' | 'decimal' | 'decimal1' | 'percent1' | 'variation' }> = {
+export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' | 'percent' | 'percent0' | 'integer' | 'days' | 'decimal' | 'decimal1' | 'percent1' | 'variation' | 'percent_capacity' }> = {
   // Produto metrics
   'venda': { data: MOCK_ROB, format: 'currency' },
   'sss': { data: MOCK_SSS, format: 'percent' },
   'cmv': { data: MOCK_CMV, format: 'currency' },
-  'cmv_comercial': { data: MOCK_CMV_COMERCIAL, format: 'currency' },
   'margem': { data: MOCK_MARGEM, format: 'percent' },
   'margem_liquida': { data: MOCK_MARGEM_LIQUIDA, format: 'percent' },
   'lucro_bruto': { data: MOCK_LUCRO_BRUTO, format: 'currency' },
@@ -3014,6 +3098,14 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   // ── Extravios metrics ────────────────────────────────────
   // Prefixo ext_ — sem colisão com PRODUTO, LOJA ou INDICADORES.
   // Inventário
+  'cap_qtd_expositores':         { data: MOCK_CAP_QTD_EXPOSITORES,    format: 'integer'          },
+  'cap_qtd_modelo_cor':          { data: MOCK_CAP_QTD_MODELO_COR,     format: 'integer'          },
+  'cap_qtd_modelo_cor_tam':      { data: MOCK_CAP_QTD_MODELO_COR_TAM, format: 'integer'          },
+  // Colunas calculadas pelo sistema — armazenadas como mocks diretos (percent decimal).
+  'cap_pct_capacidade_mod_cor':     { data: MOCK_CAP_PCT_CAPACIDADE_MOD_COR,     format: 'percent_capacity' },
+  'cap_pct_capacidade_mod_cor_tam': { data: MOCK_CAP_PCT_CAPACIDADE_MOD_COR_TAM, format: 'percent_capacity' },
+  'ext_teste_qtd_itens':     { data: MOCK_EXT_TESTE_QTD_ITENS,     format: 'integer'  },
+  'ext_teste_valor':         { data: MOCK_EXT_TESTE_VALOR,         format: 'currency' },
   'ext_qtd_faltas':          { data: MOCK_EXT_QTD_FALTAS,          format: 'integer'  },
   'ext_qtd_sobras':          { data: MOCK_EXT_QTD_SOBRAS,          format: 'integer'  },
   'ext_qtd_total_inv':       { data: MOCK_EXT_QTD_TOTAL_INV,       format: 'integer'  },
@@ -3048,6 +3140,8 @@ export const formatMetricValue = (
       return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
     case 'percent1':
       return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+    case 'percent_capacity':
+      return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
     case 'integer':
       return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
     case 'decimal':
@@ -3073,5 +3167,9 @@ export const formatMetricValue = (
 export function isPercentRatioAggregatedAverage(
   format: string | undefined,
 ): boolean {
-  return format === 'percent' || format === 'percent0';
+  return (
+    format === 'percent' ||
+    format === 'percent0' ||
+    format === 'percent_capacity'
+  );
 }

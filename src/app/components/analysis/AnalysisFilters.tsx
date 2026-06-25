@@ -15,11 +15,12 @@ import React from 'react';
 import { AttributeCard as SmartAttributeCard } from '../AttributeCard';
 import { ScrollableRow } from '../ScrollableRow';
 import {
-  LOCATION_ATTRIBUTES,
+  getVisibleLocationAttributes,
   MAX_GROUPING_LEVELS,
   type Module,
   type Step,
 } from '../../constants';
+import type { AnalysisMode } from '../../types/wizard';
 import { getModuleColors, type ModuleColors } from '../../constants/moduleColors';
 
 // ══════════════════════════════════════════════════════════════════
@@ -44,6 +45,8 @@ interface AnalysisFiltersProps {
   // Functions (from useAttributeFilters hook)
   getAttributeOptions: (attrId: string) => string[];
   handleAttributeClick: (attrId: string) => void;
+
+  analysisMode?: AnalysisMode;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -63,10 +66,12 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
   setExclusions,
   getAttributeOptions,
   handleAttributeClick,
+  analysisMode,
 }) => {
   const colors = moduleColors ?? getModuleColors(currentModule);
   const groupingLimitReached =
     currentStep === "grouping" && grouping.length >= MAX_GROUPING_LEVELS;
+  const visibleLocationAttributes = getVisibleLocationAttributes(currentModule, analysisMode);
   return (
     <div className="px-6 py-6">
       <div className="space-y-8">
@@ -171,7 +176,7 @@ export const AnalysisFilters: React.FC<AnalysisFiltersProps> = ({
               <div className="h-px flex-1 bg-slate-200" />
             </div>
             <ScrollableRow>
-              {LOCATION_ATTRIBUTES.map((attr) => (
+              {visibleLocationAttributes.map((attr) => (
                 <SmartAttributeCard
                   key={attr.id}
                   attribute={{

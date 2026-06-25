@@ -10,6 +10,7 @@ import { motion } from "motion/react";
 import { cn } from "../utils";
 import type { Module, Step } from "../constants";
 import type { MetricDef, ModuleConfig } from "../modules/types";
+import type { AnalysisMode } from "../types/wizard";
 import { NEUTRAL_PALETTE, type ModuleColors } from "../constants/moduleColors";
 import { Input } from "./ui/input";
 import { stripAccents } from "../utils/searchNormalize";
@@ -51,6 +52,7 @@ interface MetricsSidebarProps {
   currentModule: Module;
   currentModuleConfig: ModuleConfig;
   moduleColors: ModuleColors;
+  analysisMode?: AnalysisMode;
 }
 
 export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSidebar({
@@ -65,7 +67,29 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   currentModule,
   currentModuleConfig,
   moduleColors,
+  analysisMode,
 }: MetricsSidebarProps) {
+  /**
+   * Em PRODUTO + análise "Capacidade de Exposição" só os accordions extras
+   * (ex.: Exposição de produtos) aparecem — "Venda e Estoque" e
+   * "Planejamento" ficam ocultos.
+   */
+  const hideVendaEstoqueAndPlanning =
+    currentModule === "PRODUTO" && analysisMode === "capacidade_exposicao";
+  /**
+   * Em PRODUTO o accordion "Exposição de produtos" fica oculto tanto na
+   * análise "Geral" quanto na "Capacidade de Exposição".
+   */
+  const hideExposicaoProdutos =
+    currentModule === "PRODUTO" &&
+    (analysisMode === "padrao" || analysisMode === "capacidade_exposicao");
+  /**
+   * Em PRODUTO + "Capacidade de Exposição" as métricas dedicadas (3 itens)
+   * são renderizadas como lista direta — sem accordion — no topo da sidebar.
+   * Em qualquer outro modo a seção fica oculta.
+   */
+  const showCapacidadeExposicaoFlat =
+    currentModule === "PRODUTO" && analysisMode === "capacidade_exposicao";
   const [hoveredMetricId, setHoveredMetricId] = React.useState<string | null>(null);
   const [metricsSearchQuery, setMetricsSearchQuery] = React.useState("");
   const isResultStep = currentStep === "analysis";
@@ -79,6 +103,21 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       resultCatalogSet ? metrics.filter((m) => resultCatalogSet.has(m.id)) : metrics,
     [resultCatalogSet],
   );
+
+  // Lista plana das métricas de "Capacidade de Exposição" (PRODUTO), exibidas
+  // sem accordion no topo da sidebar quando a análise correspondente está ativa.
+  const capacidadeExposicaoMetrics: MetricDef[] = React.useMemo(() => {
+    if (!showCapacidadeExposicaoFlat) return [];
+    const section = (currentModuleConfig.metricSidebarExtraSections || []).find(
+      (s) => s.sidebarGroupId === "capacidade_exposicao_metrics",
+    );
+    if (!section) return [];
+    const ids = section.groups.flatMap((g) => g.metricIds);
+    const defs = ids
+      .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
+      .filter((m): m is MetricDef => Boolean(m));
+    return filterByResultCatalog(defs);
+  }, [showCapacidadeExposicaoFlat, currentModuleConfig, filterByResultCatalog]);
 
   const planningMetrics = currentModuleConfig.planningMetrics || [];
   const excludedFromVendaEstoque = new Set(
@@ -102,7 +141,14 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
     planejamentoMetrics.length > 0 || outrasAfterPlanningMetrics.length > 0;
   // Módulos que exibem métricas diretamente, sem accordion "Venda e Estoque"
   const isLojaFlatMetrics = currentModule === "LOJA" || currentModule === "INDICADORES";
-  const extraSidebarSections = currentModuleConfig.metricSidebarExtraSections || [];
+  const extraSidebarSections = (currentModuleConfig.metricSidebarExtraSections || []).filter(
+    (section) => {
+      if (hideExposicaoProdutos && section.sidebarGroupId === "exposicao_produtos") return false;
+      // A seção "Capacidade de Exposição" é renderizada flat no topo (não como accordion).
+      if (section.sidebarGroupId === "capacidade_exposicao_metrics") return false;
+      return true;
+    },
+  );
 
   /** Na etapa Resultado, oculta seções/grupos sem métricas no catálogo de preparação. */
   const visibleExtraSidebarSections = React.useMemo(() => {
@@ -125,11 +171,16 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   }, [extraSidebarSections, isResultStep, resultCatalogSet]);
 
   const showVendaEstoqueAccordion =
-    !isLojaFlatMetrics && vendaEstoqueMetrics.length > 0;
+    !hideVendaEstoqueAndPlanning &&
+    !isLojaFlatMetrics &&
+    vendaEstoqueMetrics.length > 0;
   const showFlatMetricsList =
-    isLojaFlatMetrics && vendaEstoqueMetrics.length > 0;
+    !hideVendaEstoqueAndPlanning &&
+    isLojaFlatMetrics &&
+    vendaEstoqueMetrics.length > 0;
+  const showPlanejamentoAccordion = !hideVendaEstoqueAndPlanning && hasOutrasAccordion;
   const showPlanejamentoDivider =
-    hasOutrasAccordion &&
+    showPlanejamentoAccordion &&
     (showVendaEstoqueAccordion ||
       showFlatMetricsList ||
       visibleExtraSidebarSections.length > 0);
@@ -165,18 +216,44 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
       .filter((m): m is MetricDef => Boolean(m));
     const hasPlanAccordion = planMetrics.length > 0 || outrasMetrics.length > 0;
-    const extras = currentModuleConfig.metricSidebarExtraSections || [];
+    const extras = (currentModuleConfig.metricSidebarExtraSections || []).filter(
+      (section) => {
+        if (hideExposicaoProdutos && section.sidebarGroupId === "exposicao_produtos") return false;
+        // A seção "Capacidade de Exposição" é renderizada flat no topo (não como accordion).
+      if (section.sidebarGroupId === "capacidade_exposicao_metrics") return false;
+        return true;
+      },
+    );
 
     const match = (m: MetricDef) => metricMatchesNormalizedQuery(m, normSearchQuery);
     const clusters: MetricSearchCluster[] = [];
 
-    const veHits = vendaMetrics.filter(match);
-    if (veHits.length > 0) {
-      clusters.push({
-        key: isLojaFlatMetrics ? "metricas_flat" : "venda_estoque",
-        title: isLojaFlatMetrics ? "Métricas" : "Venda e Estoque",
-        metrics: veHits,
-      });
+    // PRODUTO + Capacidade de Exposição: inclui as 3 métricas flat como cluster.
+    if (showCapacidadeExposicaoFlat) {
+      const section = (currentModuleConfig.metricSidebarExtraSections || []).find(
+        (s) => s.sidebarGroupId === "capacidade_exposicao_metrics",
+      );
+      if (section) {
+        const ids = section.groups.flatMap((g) => g.metricIds);
+        const hits = ids
+          .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
+          .filter((m): m is MetricDef => Boolean(m))
+          .filter(match);
+        if (hits.length > 0) {
+          clusters.push({ key: "capacidade_exposicao_flat", title: "Métricas", metrics: hits });
+        }
+      }
+    }
+
+    if (!hideVendaEstoqueAndPlanning) {
+      const veHits = vendaMetrics.filter(match);
+      if (veHits.length > 0) {
+        clusters.push({
+          key: isLojaFlatMetrics ? "metricas_flat" : "venda_estoque",
+          title: isLojaFlatMetrics ? "Métricas" : "Venda e Estoque",
+          metrics: veHits,
+        });
+      }
     }
 
     extras.forEach((section, sectionIdx) => {
@@ -197,7 +274,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       });
     });
 
-    if (hasPlanAccordion) {
+    if (hasPlanAccordion && !hideVendaEstoqueAndPlanning) {
       const planLabel =
         currentModuleConfig.metricsSidebarPlanningGroupLabel ?? "Planejamento";
       const planOrdered: MetricDef[] = [];
@@ -213,7 +290,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
     }
 
     return clusters;
-  }, [normSearchQuery, currentModuleConfig, isLojaFlatMetrics]);
+  }, [normSearchQuery, currentModuleConfig, isLojaFlatMetrics, hideVendaEstoqueAndPlanning, hideExposicaoProdutos, showCapacidadeExposicaoFlat]);
 
   const renderMetricRow = (
     metric: Pick<MetricDef, "id" | "label" | "tooltip" | "orientation" | "formula">,
@@ -366,9 +443,13 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                 )
               ) : showFlatMetricsList ? (
                 <div className="space-y-1.5">{vendaEstoqueMetricRows}</div>
+              ) : showCapacidadeExposicaoFlat && capacidadeExposicaoMetrics.length > 0 ? (
+                <div className="space-y-1.5">
+                  {capacidadeExposicaoMetrics.map((m) => renderMetricRow(m))}
+                </div>
               ) : !showVendaEstoqueAccordion &&
                 visibleExtraSidebarSections.length === 0 &&
-                !hasOutrasAccordion ? null : (
+                !showPlanejamentoAccordion ? null : (
                 <>
                   {showVendaEstoqueAccordion ? (
                   <div className="space-y-2">
@@ -465,7 +546,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                   })}
 
                   {/* 3. Planejamento (rótulo do accordion configurável por módulo) */}
-                  {hasOutrasAccordion && (
+                  {showPlanejamentoAccordion && (
                     <>
                       {showPlanejamentoDivider ? (
                         <div className="py-2">

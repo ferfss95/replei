@@ -1478,6 +1478,12 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
 
                 const cells: React.ReactNode[] = [];
 
+                // Colunas calculadas (%CAP MOD/COR e %CAP MOD/COR/TAM) recebem
+                // o tratamento visual dos subcabeçalhos derivados (fundo azul-escuro
+                // do header de variação) para destacar que são calculadas pelo sistema.
+                const isCapacityCalcCol =
+                  metricId === 'cap_pct_capacidade_mod_cor' ||
+                  metricId === 'cap_pct_capacidade_mod_cor_tam';
                 // Main metric header
                 cells.push(
                   <RadixTooltip.Root key={`${metricId}__val`} delayDuration={300}>
@@ -1496,20 +1502,45 @@ export const AnalysisTable = React.memo<AnalysisTableProps>((props) => {
                                 borderRightStyle: 'solid',
                                 borderRightColor: '#e2e8f0',
                               }),
+                          ...(isCapacityCalcCol
+                            ? { backgroundColor: '#314158', color: '#ffffff' }
+                            : {}),
                         }}
-                        className="px-3 py-3 text-center text-xs font-bold uppercase tracking-wider bg-white select-none cursor-pointer hover:bg-slate-50 transition-colors"
+                        className={cn(
+                          'px-3 py-3 text-center text-xs font-bold uppercase tracking-wider select-none cursor-pointer transition-colors',
+                          isCapacityCalcCol
+                            ? 'hover:bg-[#3b4d63]'
+                            : 'bg-white hover:bg-slate-50',
+                        )}
                         onClick={() => handleSort(metricId)}
                       >
-                        <div className="flex items-center justify-center gap-1.5 text-[rgb(29,41,61)] text-[13px]">
+                        <div
+                          className={cn(
+                            'flex items-center justify-center gap-1.5 text-[13px]',
+                            isCapacityCalcCol ? 'text-white' : 'text-[rgb(29,41,61)]',
+                          )}
+                        >
                           {metric.icon && (
-                            <metric.icon size={12} className="shrink-0 opacity-60" />
+                            <metric.icon
+                              size={12}
+                              className={cn(
+                                'shrink-0',
+                                isCapacityCalcCol ? 'opacity-80' : 'opacity-60',
+                              )}
+                            />
                           )}
                           {abbrev}
                           {sortConfig?.key === metricId &&
                             (sortConfig.direction === 'asc' ? (
-                              <ArrowUp size={12} className="text-slate-400" />
+                              <ArrowUp
+                                size={12}
+                                className={isCapacityCalcCol ? 'text-white/70' : 'text-slate-400'}
+                              />
                             ) : (
-                              <ArrowDown size={12} className="text-slate-400" />
+                              <ArrowDown
+                                size={12}
+                                className={isCapacityCalcCol ? 'text-white/70' : 'text-slate-400'}
+                              />
                             ))}
                         </div>
                       </th>

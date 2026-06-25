@@ -48,7 +48,7 @@ export const SecondaryHeader = React.memo(function SecondaryHeader({
     >
       {/* ── Esquerda: Ícone + Título ── */}
       <div className="flex items-center" style={{ gap: 8 }}>
-        {analysisMode === "padrao" && (
+        {(analysisMode === "padrao" || analysisMode === "capacidade_exposicao") && (
           <BarChart3 size={20} strokeWidth={1.75} style={{ color: "#566878", flexShrink: 0 }} />
         )}
         {analysisMode === "evolucao" && (

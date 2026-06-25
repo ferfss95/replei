@@ -13,6 +13,14 @@
   vertical-align: middle;
 }
 
+/* Colunas calculadas pelo sistema (% Capacidade Modelo/Cor e % Capacidade Modelo/Cor/Tamanho):
+   fundo azul #1743A6 + texto branco — padrão visual da imagem de referência. */
+.replei-analysis-table--standard thead th[data-calc-col="1"],
+.replei-analysis-table--pivot thead th[data-calc-col="1"] {
+  background-color: #1743A6 !important;
+  color: #FFFFFF !important;
+}
+
 .replei-analysis-table--standard thead th:first-child {
   left: 0;
   z-index: 50;

@@ -20,13 +20,16 @@ import {
   Recycle,
   TrendingDown,
   Building2,
-  Truck,
   MapPin,
   Briefcase,
+  Network,
+  AlertOctagon,
+  Warehouse,
 } from 'lucide-react';
 import {
   REDE_OPTIONS,
-  TIPO_OPTIONS_INDICADORES,
+  CANAL_OPTIONS,
+  ORIGEM_EXTRAVIOS_OPTIONS,
   ESTADOS_LIST,
   REGIONAL_OPTIONS,
   LOJAS_LIST,
@@ -49,8 +52,17 @@ import {
 
 const SETOR_OPTIONS_EXT = ['Futebol', 'Corrida', 'Treino'];
 
+const DIVERGENCIA_OPTIONS_EXT = [
+  'Furto',
+  'Deterioração',
+  'Defeito de Fabricação',
+  'Sucata',
+  'Divergência de Recebimento',
+];
+
 // ── IDs das seções da sidebar (referenciados em App.tsx para defaults abertos) ──
 export const EXTRAVIOS_SIDEBAR_GROUP_IDS = {
+  teste: 'teste_validacao',
   inventario: 'inventario',
   divergencia: 'divergencia_recebimento',
   sucata: 'sucata',
@@ -66,7 +78,9 @@ export const extraviosModule: ModuleConfig = {
   // ── Atributos de domínio ──────────────────────────────────
   domainAttributes: [
     { id: 'rede',     label: 'REDE',     icon: Building2,  options: [] },
-    { id: 'tipo',     label: 'TIPO',     icon: Truck,      options: [] },
+    { id: 'canal',    label: 'CANAL',    icon: Network,    options: [] },
+    { id: 'origem',   label: 'ORIGEM DIVERGÊNCIA', icon: Warehouse, options: [] },
+    { id: 'divergencia', label: 'TIPO DIVERGÊNCIA', icon: AlertOctagon, options: [] },
     { id: 'estado',   label: 'ESTADO',   icon: MapPin,     options: [] },
     { id: 'regional', label: 'REGIONAL', icon: Building2,  options: [] },
     { id: 'cidade',   label: 'CIDADE',   icon: MapPin,     options: [] },
@@ -85,7 +99,9 @@ export const extraviosModule: ModuleConfig = {
   getDomainAttributeOptions(attrId, selections) {
     switch (attrId) {
       case 'rede':     return REDE_OPTIONS;
-      case 'tipo':     return TIPO_OPTIONS_INDICADORES;
+      case 'canal':     return [...CANAL_OPTIONS];
+      case 'origem':    return [...ORIGEM_EXTRAVIOS_OPTIONS];
+      case 'divergencia': return DIVERGENCIA_OPTIONS_EXT;
       case 'estado':
         return filterStatesByKnownLinks(ESTADOS_LIST, selections);
       case 'regional':
@@ -164,6 +180,9 @@ export const extraviosModule: ModuleConfig = {
   // Prefixo ext_ para isolamento total. Organizadas em 3 accordions
   // (Inventário, Divergência de Recebimento, Sucata) via metricSidebarExtraSections.
   metrics: [
+    // ── Teste para validação ──
+    { id: 'ext_teste_qtd_itens',     label: 'Qtd de itens',            icon: Boxes           },
+    { id: 'ext_teste_valor',         label: 'Valor',                   icon: CircleDollarSign },
     // ── Inventário ──
     { id: 'ext_qtd_faltas',          label: 'Qtd Faltas',              icon: ArrowDownCircle },
     { id: 'ext_qtd_sobras',          label: 'Qtd Sobras',              icon: ArrowUpCircle   },
@@ -181,6 +200,8 @@ export const extraviosModule: ModuleConfig = {
   ],
 
   metricDisplayOrder: [
+    'ext_teste_qtd_itens',
+    'ext_teste_valor',
     'ext_qtd_faltas',
     'ext_qtd_sobras',
     'ext_qtd_total_inv',
@@ -197,6 +218,8 @@ export const extraviosModule: ModuleConfig = {
   // ── Sidebar: 3 seções dedicadas (sem "Venda e Estoque" nem "Planejamento") ──
   // Todas as métricas ficam fora de venda_estoque para que esse accordion não apareça.
   metricsSidebarExcludeFromVendaEstoque: [
+    'ext_teste_qtd_itens',
+    'ext_teste_valor',
     'ext_qtd_faltas',
     'ext_qtd_sobras',
     'ext_qtd_total_inv',
@@ -211,6 +234,16 @@ export const extraviosModule: ModuleConfig = {
   ],
 
   metricSidebarExtraSections: [
+    {
+      title: 'Teste para validação',
+      sidebarGroupId: EXTRAVIOS_SIDEBAR_GROUP_IDS.teste,
+      groups: [
+        {
+          subtitle: '',
+          metricIds: ['ext_teste_qtd_itens', 'ext_teste_valor'],
+        },
+      ],
+    },
     {
       title: 'Inventário',
       sidebarGroupId: EXTRAVIOS_SIDEBAR_GROUP_IDS.inventario,

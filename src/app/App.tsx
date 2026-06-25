@@ -129,7 +129,7 @@ export default function App() {
     exclusions, setExclusions,
     getAttributeOptions,
     handleAttributeClick,
-  } = useAttributeFilters({ currentModuleConfig, currentStep });
+  } = useAttributeFilters({ currentModuleConfig, currentStep, currentModule, analysisMode });
 
   // Regra de isolamento entre módulos:
   // ao trocar módulo, zera filtros/agrupamentos para evitar "vazamento" de contexto
@@ -248,6 +248,19 @@ export default function App() {
       setPeriodType("Diário");
       setDailySubType("periodo");
       setDateRange({ start: today, end: today });
+    }
+
+    // PRODUTO + Capacidade de Exposição: já vem com as 3 métricas dedicadas +
+    // 2 colunas calculadas pelo sistema (% Capacidade Modelo/Cor e
+    // % Capacidade Modelo/Cor/Tamanho) marcadas.
+    if (mode === "capacidade_exposicao" && currentModule === "PRODUTO") {
+      setSelectedMetrics([
+        "cap_qtd_expositores",
+        "cap_qtd_modelo_cor",
+        "cap_pct_capacidade_mod_cor",
+        "cap_qtd_modelo_cor_tam",
+        "cap_pct_capacidade_mod_cor_tam",
+      ]);
     }
   };
 
@@ -467,6 +480,7 @@ export default function App() {
                     setExclusions={setExclusions}
                     getAttributeOptions={getAttributeOptions}
                     handleAttributeClick={handleAttributeClick}
+                    analysisMode={analysisMode}
                   />
                 )}
 
@@ -527,6 +541,7 @@ export default function App() {
             currentModule={currentModule}
             currentModuleConfig={currentModuleConfig}
             moduleColors={moduleColors}
+            analysisMode={analysisMode}
           />
         </motion.div>
 

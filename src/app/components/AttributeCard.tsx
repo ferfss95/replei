@@ -10,6 +10,9 @@ import {
   modeloListDisplayLabel,
   CANAL_GROUP_CENTAURO_IDS,
   CANAL_GROUP_NIKE_IDS,
+  ORIGEM_EXTRAVIOS_GROUP_CD_IDS,
+  ORIGEM_EXTRAVIOS_GROUP_CDS_IDS,
+  ORIGEM_EXTRAVIOS_STANDALONE_IDS,
 } from "../referenceData";
 
 /** Paleta neutra — default / hover / desativado agrupamento */
@@ -76,6 +79,15 @@ export function AttributeCard({
       opt.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [attribute.options, searchTerm]);
+
+  /**
+   * ORIGEM tem variantes hierárquicas no EXTRAVIOS (Loja/Transportadora/CD/CDS)
+   * e variante plana no PRODUTO (Nacional/Importado). Detecta a variante de
+   * Extravios pela presença de marcadores específicos.
+   */
+  const isOrigemExtravios =
+    attribute.id === "origem" &&
+    attribute.options.some((o) => o === "Jarinu" || o === "Lapa");
 
   /** Grupos visuais (LOCALIZAÇÃO: STATUS/CD/CDS; MARCA: próprias / demais) — filtrados por busca */
   const clusterGroupsFiltered = useMemo(() => {
@@ -201,7 +213,10 @@ export function AttributeCard({
   /** Modal CANAL: hierarquia Todos Centauro / canais + Todos Nike / canais (com busca nos filhos). */
   const renderCanalGroupedPanel = () => {
     const q = searchTerm.trim().toLowerCase();
-    const section = (title: string, members: readonly string[]) => {
+    const allowed = new Set(attribute.options);
+    const section = (title: string, baseMembers: readonly string[]) => {
+      const members = baseMembers.filter((m) => allowed.has(m));
+      if (members.length === 0) return null;
       const visible = q
         ? members.filter((m) => m.toLowerCase().includes(q))
         : [...members];
@@ -236,6 +251,80 @@ export function AttributeCard({
       );
     }
     return <div className="space-y-3 px-0.5 py-1">{centauro}{nike}</div>;
+  };
+
+  /** Render helper compartilhado: item standalone (sem mestre). */
+  const renderExtStandaloneItem = (opt: string) => (
+    <div
+      key={opt}
+      className="overflow-hidden rounded-lg border border-slate-200/90 bg-white"
+    >
+      {renderOptionRow(opt)}
+    </div>
+  );
+
+  /** Render helper compartilhado: grupo com mestre + filhos indentados. */
+  const renderExtGroup = (
+    title: string,
+    members: readonly string[],
+    visible: string[],
+  ) => {
+    if (visible.length === 0) return null;
+    return (
+      <div
+        key={title}
+        className="overflow-hidden rounded-lg border border-slate-200/90 bg-slate-50/50 shadow-sm"
+      >
+        {renderCanalMasterRow(title, members)}
+        <div className="border-t border-slate-200/80 bg-white/90 px-1 py-1">
+          <div className="ml-2 border-l-2 border-slate-200 pl-2.5">
+            <div className="space-y-0.5">
+              {visible.map((opt) => (
+                <div key={opt} className="pl-0.5">
+                  {renderOptionRow(opt)}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /** Modal ORIGEM — variante EXTRAVIOS (Loja, Transportadora, CD, CDS). */
+  const renderOrigemExtraviosPanel = () => {
+    const q = searchTerm.trim().toLowerCase();
+    const filterByQ = (arr: readonly string[]) =>
+      q ? arr.filter((m) => m.toLowerCase().includes(q)) : [...arr];
+
+    const cdVisible = filterByQ(ORIGEM_EXTRAVIOS_GROUP_CD_IDS);
+    const cdsVisible = filterByQ(ORIGEM_EXTRAVIOS_GROUP_CDS_IDS);
+    const standaloneVisible = filterByQ(ORIGEM_EXTRAVIOS_STANDALONE_IDS);
+
+    const lojaItem = standaloneVisible.includes("Loja")
+      ? renderExtStandaloneItem("Loja")
+      : null;
+    const transpItem = standaloneVisible.includes("Transportadora")
+      ? renderExtStandaloneItem("Transportadora")
+      : null;
+    const cdGroup = renderExtGroup("CD", ORIGEM_EXTRAVIOS_GROUP_CD_IDS, cdVisible);
+    const cdsGroup = renderExtGroup("CDS", ORIGEM_EXTRAVIOS_GROUP_CDS_IDS, cdsVisible);
+
+    if (!lojaItem && !transpItem && !cdGroup && !cdsGroup) {
+      return (
+        <div className="py-8 text-center text-slate-400">
+          <p className="text-xs">Nenhum resultado encontrado</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-2 px-0.5 py-1">
+        {lojaItem}
+        {transpItem}
+        {cdGroup}
+        {cdsGroup}
+      </div>
+    );
   };
 
   const isSelected1 =
@@ -446,7 +535,7 @@ export function AttributeCard({
       <Popover.Content
         className={cn(
           "z-50 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl duration-200 animate-in zoom-in-95",
-          attribute.id === "canal" ? "w-[308px]" : "w-[280px]",
+          attribute.id === "canal" || isOrigemExtravios ? "w-[308px]" : "w-[280px]",
         )}
         sideOffset={8}
         side="top"
@@ -536,6 +625,8 @@ export function AttributeCard({
             )
           ) : attribute.id === "canal" ? (
             renderCanalGroupedPanel()
+          ) : isOrigemExtravios ? (
+            renderOrigemExtraviosPanel()
           ) : filteredOptions.length > 0 ? (
             <div className="space-y-0.5">
               {filteredOptions.map((opt) => (
@@ -557,7 +648,7 @@ export function AttributeCard({
                   key={val}
                   className="inline-flex max-w-[80px] items-center truncate rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-600"
                 >
-                  {optionDisplayLabel(val)}
+                  {attribute.id === "canal_ext" ? val : optionDisplayLabel(val)}
                 </span>
               ))}
               {count > 3 && (

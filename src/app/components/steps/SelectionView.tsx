@@ -195,6 +195,7 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                 currentModule === "INDICADORES" ||
                                 currentModule === "PRODUTO"
                               }
+                              supportsCapacidadeExposicao={currentModule === "PRODUTO"}
                               disabled={!isPeriodEditable}
                             />
                           </div>

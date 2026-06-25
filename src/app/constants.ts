@@ -6,6 +6,7 @@ import {
   Receipt,
   Truck,
   UserCircle,
+  LayoutGrid,
 } from 'lucide-react';
 
 // Definição do ícone StoreIcon (importado no App.tsx original)
@@ -38,10 +39,40 @@ export const LOCATION_ATTRIBUTES = [
   { id: 'regional', label: 'REGIONAL', icon: StoreIcon, options: [], tooltip: '' },
   { id: 'cidade', label: 'CIDADE', icon: MapPin, options: [], tooltip: '' },
   { id: 'loja', label: 'LOJA', icon: StoreIcon, options: [], tooltip: '' },
+  { id: 'expositores', label: 'EXPOSITORES', icon: LayoutGrid, options: [], tooltip: '' },
   { id: 'localizacao', label: 'LOCALIZAÇÃO', icon: Building, options: [], tooltip: 'CD ou status físico do estoque' },
   { id: 'vendedor', label: 'VENDEDOR', icon: UserCircle, options: [], tooltip: '' },
   { id: 'origem', label: 'ORIGEM', icon: Building2, options: [], tooltip: '' },
 ];
+
+/** Ids de LOCATION_ATTRIBUTES ocultos na análise PRODUTO + "Capacidade de Exposição". */
+const PRODUTO_CAPACIDADE_HIDDEN_LOCATION_IDS = new Set([
+  'tipo',
+  'localizacao',
+  'vendedor',
+  'origem',
+]);
+
+/**
+ * Retorna a lista de LOCATION_ATTRIBUTES visível considerando o módulo e o
+ * modo de análise.
+ *
+ * - PRODUTO + "Capacidade de Exposição": esconde TIPO/LOCALIZAÇÃO/VENDEDOR/ORIGEM
+ *   e exibe EXPOSITORES (logo após LOJA).
+ * - Demais combinações: EXPOSITORES fica oculto.
+ */
+export function getVisibleLocationAttributes(
+  currentModule: Module,
+  analysisMode?: string,
+): typeof LOCATION_ATTRIBUTES {
+  const isProdutoCapacidade =
+    currentModule === 'PRODUTO' && analysisMode === 'capacidade_exposicao';
+  return LOCATION_ATTRIBUTES.filter((a) => {
+    if (a.id === 'expositores') return isProdutoCapacidade;
+    if (isProdutoCapacidade) return !PRODUTO_CAPACIDADE_HIDDEN_LOCATION_IDS.has(a.id);
+    return true;
+  });
+}
 
 // Period options
 export const PERIOD_OPTIONS = ['Diário', 'Mensal', 'Anual'] as const;

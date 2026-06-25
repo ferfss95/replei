@@ -15,23 +15,27 @@ interface AnalysisSelectorProps {
   value: AnalysisMode;
   onChange: (mode: AnalysisMode) => void;
   supportsHoraAHora: boolean;
+  supportsCapacidadeExposicao?: boolean;
   disabled?: boolean;
 }
 
 const ALL_ANALYSIS_OPTIONS: AnalysisOption[] = [
   { id: 'padrao', label: 'Geral', Icon: BarChart3, desc: 'acompanhamento de métricas' },
+  { id: 'capacidade_exposicao', label: 'Capacidade de Exposição', Icon: BarChart3, desc: 'acompanhamento de métricas' },
   { id: 'evolucao', label: 'Evolutiva', Icon: TrendingUp, desc: 'quebrar colunas por período' },
   { id: 'comparativo', label: 'Comparativa', Icon: ArrowLeftRight, desc: 'analisar 2 grupos de período' },
   { id: 'horaahora', label: 'Intraday', Icon: Clock, desc: 'quebrar colunas por horas' },
 ];
 
-export function AnalysisSelector({ value, onChange, supportsHoraAHora, disabled = false }: AnalysisSelectorProps) {
+export function AnalysisSelector({ value, onChange, supportsHoraAHora, supportsCapacidadeExposicao = false, disabled = false }: AnalysisSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Filter options based on module support
-  const availableOptions = ALL_ANALYSIS_OPTIONS.filter(opt => 
-    opt.id !== 'horaahora' || supportsHoraAHora
-  );
+  const availableOptions = ALL_ANALYSIS_OPTIONS.filter(opt => {
+    if (opt.id === 'horaahora' && !supportsHoraAHora) return false;
+    if (opt.id === 'capacidade_exposicao' && !supportsCapacidadeExposicao) return false;
+    return true;
+  });
 
   const selectedOption = availableOptions.find(opt => opt.id === value) || availableOptions[0];
 
