@@ -96,9 +96,13 @@ export const METRIC_NAMING: Record<string, MetricNamingEntry> = {
   ind_vlr_personalizacoes: { sidebar: 'Vlr Personalizações', table: 'Vlr Pers.' },
 
   // ── EXTRAVIOS (prefixo ext_) ──────────────────────────────────
-  // Teste para validação
-  ext_teste_qtd_itens:     { sidebar: 'Qtd de itens',            table: 'Qtd de itens' },
-  ext_teste_valor:         { sidebar: 'Valor',                   table: 'Valor' },
+  ext_teste_qtd_itens:       { sidebar: 'Qtd de Perdas',           table: 'Qtd de Perdas' },
+  ext_vlr_custo:             { sidebar: 'Valor Custo',             table: 'Vlr Custo' },
+  ext_vlr_venda:             { sidebar: 'Valor Venda',             table: 'Vlr Venda' },
+  ext_vlr_custo_contabil:    { sidebar: 'Valor Custo Contábil',    table: 'Vlr Custo Contábil' },
+  ext_vlr_venda_liquida:     { sidebar: 'Valor Venda Líquida',     table: 'Vlr Venda Líq.' },
+  ext_pct_perdas_custo_est:  { sidebar: 'Perdas/Custo de Estoque', table: 'Perdas/Custo Est.' },
+  ext_pct_perdas_vendas:     { sidebar: 'Perdas/Vendas (P/V)',     table: 'Perdas/Vendas' },
   // Inventário
   ext_qtd_faltas:          { sidebar: 'Qtd Faltas Inv.',         table: 'Qtd Faltas Inv.' },
   ext_qtd_sobras:          { sidebar: 'Qtd Sobras Inv.',         table: 'Qtd Sobras Inv.' },

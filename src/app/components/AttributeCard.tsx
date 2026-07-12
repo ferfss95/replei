@@ -89,6 +89,9 @@ export function AttributeCard({
     attribute.id === "origem" &&
     attribute.options.some((o) => o === "Jarinu" || o === "Lapa");
 
+  /** EXTRAVIOS: atributo "CD" — apenas grupos CD (Jarinu/Extrema) e CDS (Lapa). */
+  const isCdCdsExtravios = attribute.id === "cd";
+
   /** Grupos visuais (LOCALIZAÇÃO: STATUS/CD/CDS; MARCA: próprias / demais) — filtrados por busca */
   const clusterGroupsFiltered = useMemo(() => {
     const groups =
@@ -287,6 +290,33 @@ export function AttributeCard({
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  /** Modal CD — variante EXTRAVIOS: apenas grupos CD (Jarinu/Extrema) e CDS (Lapa). */
+  const renderCdCdsPanel = () => {
+    const q = searchTerm.trim().toLowerCase();
+    const filterByQ = (arr: readonly string[]) =>
+      q ? arr.filter((m) => m.toLowerCase().includes(q)) : [...arr];
+
+    const cdVisible = filterByQ(ORIGEM_EXTRAVIOS_GROUP_CD_IDS);
+    const cdsVisible = filterByQ(ORIGEM_EXTRAVIOS_GROUP_CDS_IDS);
+
+    const cdGroup = renderExtGroup("CD", ORIGEM_EXTRAVIOS_GROUP_CD_IDS, cdVisible);
+    const cdsGroup = renderExtGroup("CDS", ORIGEM_EXTRAVIOS_GROUP_CDS_IDS, cdsVisible);
+
+    if (!cdGroup && !cdsGroup) {
+      return (
+        <div className="py-8 text-center text-slate-400">
+          <p className="text-xs">Nenhum resultado encontrado</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-2 px-0.5 py-1">
+        {cdGroup}
+        {cdsGroup}
       </div>
     );
   };
@@ -535,7 +565,7 @@ export function AttributeCard({
       <Popover.Content
         className={cn(
           "z-50 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl duration-200 animate-in zoom-in-95",
-          attribute.id === "canal" || isOrigemExtravios ? "w-[308px]" : "w-[280px]",
+          attribute.id === "canal" || isOrigemExtravios || isCdCdsExtravios ? "w-[308px]" : "w-[280px]",
         )}
         sideOffset={8}
         side="top"
@@ -627,6 +657,8 @@ export function AttributeCard({
             renderCanalGroupedPanel()
           ) : isOrigemExtravios ? (
             renderOrigemExtraviosPanel()
+          ) : isCdCdsExtravios ? (
+            renderCdCdsPanel()
           ) : filteredOptions.length > 0 ? (
             <div className="space-y-0.5">
               {filteredOptions.map((opt) => (

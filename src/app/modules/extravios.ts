@@ -16,11 +16,13 @@ import {
   Network,
   AlertOctagon,
   Warehouse,
+  Percent,
 } from 'lucide-react';
 import {
   REDE_OPTIONS,
   CANAL_OPTIONS,
-  ORIGEM_EXTRAVIOS_OPTIONS,
+  ORIGEM_EXTRAVIOS_GROUP_CD_IDS,
+  ORIGEM_EXTRAVIOS_GROUP_CDS_IDS,
   ESTADOS_LIST,
   REGIONAL_OPTIONS,
   LOJAS_LIST,
@@ -62,11 +64,11 @@ export const extraviosModule: ModuleConfig = {
   domainAttributes: [
     { id: 'rede',     label: 'REDE',     icon: Building2,  options: [] },
     { id: 'canal',    label: 'CANAL',    icon: Network,    options: [] },
-    { id: 'origem',   label: 'ORIGEM DIVERGÊNCIA', icon: Warehouse, options: [] },
     { id: 'divergencia', label: 'TIPO DIVERGÊNCIA', icon: AlertOctagon, options: [] },
     { id: 'estado',   label: 'ESTADO',   icon: MapPin,     options: [] },
     { id: 'regional', label: 'REGIONAL', icon: Building2,  options: [] },
     { id: 'cidade',   label: 'CIDADE',   icon: MapPin,     options: [] },
+    { id: 'cd',       label: 'CD',       icon: Warehouse,  options: [] },
     { id: 'loja',     label: 'LOJA',     icon: Building2,  options: [] },
     { id: 'setor',    label: 'SETOR',    icon: Briefcase,  options: [] },
   ],
@@ -83,7 +85,7 @@ export const extraviosModule: ModuleConfig = {
     switch (attrId) {
       case 'rede':     return REDE_OPTIONS;
       case 'canal':     return [...CANAL_OPTIONS];
-      case 'origem':    return [...ORIGEM_EXTRAVIOS_OPTIONS];
+      case 'cd':        return [...ORIGEM_EXTRAVIOS_GROUP_CD_IDS, ...ORIGEM_EXTRAVIOS_GROUP_CDS_IDS];
       case 'divergencia': return DIVERGENCIA_OPTIONS_EXT;
       case 'estado':
         return filterStatesByKnownLinks(ESTADOS_LIST, selections);
@@ -163,13 +165,23 @@ export const extraviosModule: ModuleConfig = {
   // Prefixo ext_ para isolamento total. Exibidas direto na sidebar (flat),
   // sem accordion (mesma renderização de LOJA/INDICADORES).
   metrics: [
-    { id: 'ext_teste_qtd_itens',     label: 'Qtd de itens',            icon: Boxes           },
-    { id: 'ext_teste_valor',         label: 'Valor',                   icon: CircleDollarSign },
+    { id: 'ext_teste_qtd_itens',       label: 'Qtd de Perdas',           icon: Boxes            },
+    { id: 'ext_vlr_custo',             label: 'Valor Custo',             icon: CircleDollarSign },
+    { id: 'ext_vlr_venda',             label: 'Valor Venda',             icon: CircleDollarSign },
+    { id: 'ext_vlr_custo_contabil',    label: 'Valor Custo Contábil',    icon: CircleDollarSign },
+    { id: 'ext_vlr_venda_liquida',     label: 'Valor Venda Líquida',     icon: CircleDollarSign },
+    { id: 'ext_pct_perdas_custo_est',  label: 'Perdas/Custo de Estoque', icon: Percent          },
+    { id: 'ext_pct_perdas_vendas',     label: 'Perdas/Vendas (P/V)',     icon: Percent          },
   ],
 
   metricDisplayOrder: [
     'ext_teste_qtd_itens',
-    'ext_teste_valor',
+    'ext_vlr_custo',
+    'ext_vlr_venda',
+    'ext_vlr_custo_contabil',
+    'ext_vlr_venda_liquida',
+    'ext_pct_perdas_custo_est',
+    'ext_pct_perdas_vendas',
   ],
 
   // ── Títulos por modo de análise ───────────────────────────

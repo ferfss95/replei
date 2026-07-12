@@ -2874,12 +2874,52 @@ export const MOCK_EXT_TESTE_QTD_ITENS = [
   82, 261, 154, 196, 119, 234, 128,
 ];
 
-// Valor — currency | range: R$ 5.000 – R$ 32.000
-export const MOCK_EXT_TESTE_VALOR = [
-  11820, 6240, 21450, 27680, 4380, 15820, 9540, 24230, 17680, 5840,
-  13970, 19840, 7220, 25740, 11420, 17240, 22580, 5280, 14860, 8920,
-  23950, 6480, 19120, 12780, 30240, 4150, 11960, 22140, 8350, 16240,
-  5680, 28480, 13720, 18620, 9450, 23280, 11140,
+// Valor Custo — currency | custo dos itens extraviados | range: R$ 4.100 – R$ 22.200
+export const MOCK_EXT_VLR_CUSTO = [
+  10860, 6480, 16820, 20940, 4720, 13560, 8940, 19420, 15230, 5610,
+  12180, 16340, 7020, 20080, 9910, 14680, 18240, 5140, 12760, 8410,
+  18930, 6420, 15630, 11280, 22150, 4180, 10520, 17690, 7690, 13480,
+  5940, 21230, 11730, 15170, 8850, 18620, 9720,
+];
+
+// Valor Venda — currency | preço de venda dos extraviados (~1,9x custo) | range: R$ 8.300 – R$ 44.200
+export const MOCK_EXT_VLR_VENDA = [
+  21520, 12680, 33940, 41870, 9350, 27140, 17820, 38820, 30580, 11250,
+  24360, 32780, 14040, 40120, 19860, 29320, 36480, 10230, 25470, 16720,
+  37870, 12840, 31260, 22580, 44230, 8340, 21080, 35380, 15380, 26940,
+  11890, 42430, 23440, 30320, 17670, 37220, 19440,
+];
+
+// Valor Custo Contábil — currency | custo escriturado (~1,04x custo) | range: R$ 4.380 – R$ 23.250
+export const MOCK_EXT_VLR_CUSTO_CONTABIL = [
+  11380, 6790, 17650, 21930, 4970, 14210, 9380, 20340, 15990, 5920,
+  12780, 17130, 7370, 21070, 10400, 15380, 19140, 5390, 13380, 8830,
+  19870, 6740, 16410, 11830, 23250, 4380, 11030, 18580, 8080, 14150,
+  6240, 22280, 12320, 15920, 9290, 19560, 10210,
+];
+
+// Valor Venda Líquida — currency | venda descontando impostos/devoluções (~0,83x venda) | range: R$ 6.900 – R$ 36.700
+export const MOCK_EXT_VLR_VENDA_LIQUIDA = [
+  17820, 10520, 28180, 34730, 7750, 22520, 14780, 32220, 25380, 9340,
+  20220, 27210, 11650, 33300, 16480, 24340, 30280, 8490, 21140, 13870,
+  31430, 10660, 25940, 18740, 36720, 6920, 17500, 29360, 12770, 22360,
+  9870, 35220, 19450, 25170, 14670, 30890, 16140,
+];
+
+// % Perdas / Custo de Estoque — percent1 | benchmark varejo: 0,5–3,1%
+export const MOCK_EXT_PCT_PERDAS_CUSTO_EST = [
+  0.014, 0.008, 0.022, 0.028, 0.006, 0.018, 0.012, 0.025, 0.020, 0.007,
+  0.016, 0.021, 0.010, 0.027, 0.013, 0.019, 0.024, 0.007, 0.017, 0.011,
+  0.025, 0.009, 0.020, 0.015, 0.031, 0.005, 0.014, 0.023, 0.011, 0.017,
+  0.008, 0.029, 0.015, 0.020, 0.012, 0.024, 0.013,
+];
+
+// % Perdas / Vendas (P/V) — percent1 | shrinkage rate típico: 0,3–2,2%
+export const MOCK_EXT_PCT_PERDAS_VENDAS = [
+  0.009, 0.005, 0.015, 0.019, 0.004, 0.012, 0.008, 0.017, 0.013, 0.005,
+  0.011, 0.014, 0.007, 0.018, 0.009, 0.013, 0.016, 0.005, 0.011, 0.008,
+  0.017, 0.006, 0.014, 0.010, 0.022, 0.003, 0.010, 0.016, 0.007, 0.011,
+  0.005, 0.020, 0.011, 0.013, 0.008, 0.017, 0.009,
 ];
 
 // ── Capacidade de Exposição (PRODUTO) ──────────────────────────
@@ -3104,8 +3144,13 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   // Colunas calculadas pelo sistema — armazenadas como mocks diretos (percent decimal).
   'cap_pct_capacidade_mod_cor':     { data: MOCK_CAP_PCT_CAPACIDADE_MOD_COR,     format: 'percent_capacity' },
   'cap_pct_capacidade_mod_cor_tam': { data: MOCK_CAP_PCT_CAPACIDADE_MOD_COR_TAM, format: 'percent_capacity' },
-  'ext_teste_qtd_itens':     { data: MOCK_EXT_TESTE_QTD_ITENS,     format: 'integer'  },
-  'ext_teste_valor':         { data: MOCK_EXT_TESTE_VALOR,         format: 'currency' },
+  'ext_teste_qtd_itens':       { data: MOCK_EXT_TESTE_QTD_ITENS,       format: 'integer'  },
+  'ext_vlr_custo':             { data: MOCK_EXT_VLR_CUSTO,             format: 'currency' },
+  'ext_vlr_venda':             { data: MOCK_EXT_VLR_VENDA,             format: 'currency' },
+  'ext_vlr_custo_contabil':    { data: MOCK_EXT_VLR_CUSTO_CONTABIL,    format: 'currency' },
+  'ext_vlr_venda_liquida':     { data: MOCK_EXT_VLR_VENDA_LIQUIDA,     format: 'currency' },
+  'ext_pct_perdas_custo_est':  { data: MOCK_EXT_PCT_PERDAS_CUSTO_EST,  format: 'percent1' },
+  'ext_pct_perdas_vendas':     { data: MOCK_EXT_PCT_PERDAS_VENDAS,     format: 'percent1' },
   'ext_qtd_faltas':          { data: MOCK_EXT_QTD_FALTAS,          format: 'integer'  },
   'ext_qtd_sobras':          { data: MOCK_EXT_QTD_SOBRAS,          format: 'integer'  },
   'ext_qtd_total_inv':       { data: MOCK_EXT_QTD_TOTAL_INV,       format: 'integer'  },
@@ -3170,6 +3215,7 @@ export function isPercentRatioAggregatedAverage(
   return (
     format === 'percent' ||
     format === 'percent0' ||
+    format === 'percent1' ||
     format === 'percent_capacity'
   );
 }
