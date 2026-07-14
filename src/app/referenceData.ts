@@ -26,8 +26,17 @@ export const CANAL_GROUP_NIKE_IDS: readonly string[] = ["NVS", "NDIS", "Digital 
  * ORIGEM — variante do módulo EXTRAVIOS.
  * Ordem: Loja (standalone) · Transportadora (standalone) · CD (Jarinu/Extrema) · CDS (Lapa).
  */
-export const ORIGEM_EXTRAVIOS_GROUP_CD_IDS: readonly string[] = ["Jarinu", "Extrema"];
-export const ORIGEM_EXTRAVIOS_GROUP_CDS_IDS: readonly string[] = ["Lapa"];
+export const ORIGEM_EXTRAVIOS_GROUP_CD_IDS: readonly string[] = [
+  "Centauro - Jarinu",
+  "Centauro - Extrema",
+  "Fisia - Extrema",
+];
+export const ORIGEM_EXTRAVIOS_GROUP_CDS_IDS: readonly string[] = [
+  "Lapa - SP",
+  "João Pessoa - PB",
+  "Rio - RJ",
+  "Itajaí - SC",
+];
 export const ORIGEM_EXTRAVIOS_STANDALONE_IDS: readonly string[] = ["Loja", "Transportadora"];
 
 export const ORIGEM_EXTRAVIOS_OPTIONS: readonly string[] = [
@@ -2890,22 +2899,6 @@ export const MOCK_EXT_VLR_VENDA = [
   11890, 42430, 23440, 30320, 17670, 37220, 19440,
 ];
 
-// Valor Custo Contábil — currency | custo escriturado (~1,04x custo) | range: R$ 4.380 – R$ 23.250
-export const MOCK_EXT_VLR_CUSTO_CONTABIL = [
-  11380, 6790, 17650, 21930, 4970, 14210, 9380, 20340, 15990, 5920,
-  12780, 17130, 7370, 21070, 10400, 15380, 19140, 5390, 13380, 8830,
-  19870, 6740, 16410, 11830, 23250, 4380, 11030, 18580, 8080, 14150,
-  6240, 22280, 12320, 15920, 9290, 19560, 10210,
-];
-
-// Valor Venda Líquida — currency | venda descontando impostos/devoluções (~0,83x venda) | range: R$ 6.900 – R$ 36.700
-export const MOCK_EXT_VLR_VENDA_LIQUIDA = [
-  17820, 10520, 28180, 34730, 7750, 22520, 14780, 32220, 25380, 9340,
-  20220, 27210, 11650, 33300, 16480, 24340, 30280, 8490, 21140, 13870,
-  31430, 10660, 25940, 18740, 36720, 6920, 17500, 29360, 12770, 22360,
-  9870, 35220, 19450, 25170, 14670, 30890, 16140,
-];
-
 // % Perdas / Custo de Estoque — percent1 | benchmark varejo: 0,5–3,1%
 export const MOCK_EXT_PCT_PERDAS_CUSTO_EST = [
   0.014, 0.008, 0.022, 0.028, 0.006, 0.018, 0.012, 0.025, 0.020, 0.007,
@@ -3147,8 +3140,6 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'ext_teste_qtd_itens':       { data: MOCK_EXT_TESTE_QTD_ITENS,       format: 'integer'  },
   'ext_vlr_custo':             { data: MOCK_EXT_VLR_CUSTO,             format: 'currency' },
   'ext_vlr_venda':             { data: MOCK_EXT_VLR_VENDA,             format: 'currency' },
-  'ext_vlr_custo_contabil':    { data: MOCK_EXT_VLR_CUSTO_CONTABIL,    format: 'currency' },
-  'ext_vlr_venda_liquida':     { data: MOCK_EXT_VLR_VENDA_LIQUIDA,     format: 'currency' },
   'ext_pct_perdas_custo_est':  { data: MOCK_EXT_PCT_PERDAS_CUSTO_EST,  format: 'percent1' },
   'ext_pct_perdas_vendas':     { data: MOCK_EXT_PCT_PERDAS_VENDAS,     format: 'percent1' },
   'ext_qtd_faltas':          { data: MOCK_EXT_QTD_FALTAS,          format: 'integer'  },

@@ -166,20 +166,16 @@ export const extraviosModule: ModuleConfig = {
   // sem accordion (mesma renderização de LOJA/INDICADORES).
   metrics: [
     { id: 'ext_teste_qtd_itens',       label: 'Qtd de Perdas',           icon: Boxes            },
-    { id: 'ext_vlr_custo',             label: 'Valor Custo',             icon: CircleDollarSign },
-    { id: 'ext_vlr_venda',             label: 'Valor Venda',             icon: CircleDollarSign },
-    { id: 'ext_vlr_custo_contabil',    label: 'Valor Custo Contábil',    icon: CircleDollarSign },
-    { id: 'ext_vlr_venda_liquida',     label: 'Valor Venda Líquida',     icon: CircleDollarSign },
-    { id: 'ext_pct_perdas_custo_est',  label: 'Perdas/Custo de Estoque', icon: Percent          },
-    { id: 'ext_pct_perdas_vendas',     label: 'Perdas/Vendas (P/V)',     icon: Percent          },
+    { id: 'ext_vlr_custo',             label: 'Valor Perda',             icon: CircleDollarSign },
+    { id: 'ext_vlr_venda',             label: 'Valor Venda (ROB)',       icon: CircleDollarSign },
+    { id: 'ext_pct_perdas_custo_est',  label: 'Valor Perda/Custo de Estoque', icon: Percent     },
+    { id: 'ext_pct_perdas_vendas',     label: 'Valor Perda/Venda (P/V)',      icon: Percent     },
   ],
 
   metricDisplayOrder: [
     'ext_teste_qtd_itens',
     'ext_vlr_custo',
     'ext_vlr_venda',
-    'ext_vlr_custo_contabil',
-    'ext_vlr_venda_liquida',
     'ext_pct_perdas_custo_est',
     'ext_pct_perdas_vendas',
   ],
