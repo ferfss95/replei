@@ -97,10 +97,10 @@ export const METRIC_NAMING: Record<string, MetricNamingEntry> = {
 
   // ── EXTRAVIOS (prefixo ext_) ──────────────────────────────────
   ext_teste_qtd_itens:       { sidebar: 'Qtd de Perdas',           table: 'Qtd de Perdas' },
-  ext_vlr_custo:             { sidebar: 'Valor Perda',             table: 'Vlr Perda' },
-  ext_vlr_venda:             { sidebar: 'Valor Venda (ROB)',       table: 'Vlr Venda (ROB)' },
-  ext_pct_perdas_custo_est:  { sidebar: 'Valor Perda/Custo de Estoque', table: 'Vlr Perda/Custo Est.' },
-  ext_pct_perdas_vendas:     { sidebar: 'Valor Perda/Venda (P/V)',      table: 'Vlr Perda/Venda' },
+  ext_vlr_custo:             { sidebar: 'Vlr Perda a Custo',       table: 'Vlr Perda a Custo' },
+  ext_vlr_venda:             { sidebar: 'Vlr Perda a Venda',       table: 'Vlr Perda a Venda' },
+  ext_pct_perdas_custo_est:  { sidebar: 'Vlr Perda/Custo (P/C)',   table: 'Vlr Perda/Custo (P/C)' },
+  ext_pct_perdas_vendas:     { sidebar: 'Vlr Perda/Venda (P/V)',   table: 'Vlr Perda/Venda (P/V)' },
   // Inventário
   ext_qtd_faltas:          { sidebar: 'Qtd Faltas Inv.',         table: 'Qtd Faltas Inv.' },
   ext_qtd_sobras:          { sidebar: 'Qtd Sobras Inv.',         table: 'Qtd Sobras Inv.' },

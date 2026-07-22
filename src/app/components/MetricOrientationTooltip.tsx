@@ -132,19 +132,38 @@ export function MetricColumnHeaderTooltip({
   className,
   style,
   colSpan,
+  onSort,
+  sortIndicator,
 }: MetricOrientationTriggerProps & {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
   colSpan?: number;
+  /** Handler acionado ao clicar no header — quando presente, o cursor vira pointer e o header participa da ordenação. */
+  onSort?: () => void;
+  /** Indicador de ordenação renderizado ao lado do rótulo (visível no hover ou quando ordenado). */
+  sortIndicator?: React.ReactNode;
 }) {
   const { title, description } = getMetricOrientation(metricId, metric);
+  const isSortable = typeof onSort === 'function';
 
   return (
     <RadixTooltip.Root delayDuration={delayDuration}>
       <RadixTooltip.Trigger asChild>
-        <th colSpan={colSpan} className={cn('cursor-help', className)} style={style}>
-          {children}
+        <th
+          colSpan={colSpan}
+          className={cn(isSortable ? 'group cursor-pointer' : 'cursor-help', className)}
+          style={style}
+          onClick={isSortable ? onSort : undefined}
+        >
+          {sortIndicator ? (
+            <div className="flex items-center justify-center gap-1.5">
+              {children}
+              <span className="shrink-0">{sortIndicator}</span>
+            </div>
+          ) : (
+            children
+          )}
         </th>
       </RadixTooltip.Trigger>
       <MetricOrientationTooltipPortal title={title} description={description} side={side} />

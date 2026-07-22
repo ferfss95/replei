@@ -6155,13 +6155,24 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               const isLastMetric =
                                 mIdx ===
                                 orderedMetrics.length - 1;
+                              // Chave de ordenação por métrica no cabeçalho agrupador:
+                              // - Evolutiva / Intraday: total da métrica
+                              // - Comparativa com variação: Var %; sem variação: primeiro período
+                              const metricGroupSortKey =
+                                analysisMode === "comparativo"
+                                  ? hasVariation
+                                    ? `__growth__${mId}`
+                                    : `${periods[0]}__${mId}`
+                                  : `__total__${mId}`;
                               return (
                                 <MetricColumnHeaderTooltip
                                   key={`metric_group__${mId}`}
                                   metricId={mId}
                                   metric={metric}
                                   colSpan={getSubColsForMetric(mId)}
-                                      className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide select-none"
+                                  onSort={() => handleSort(metricGroupSortKey)}
+                                  sortIndicator={renderSortIndicator(metricGroupSortKey)}
+                                      className="px-3 py-2.5 text-center text-[13px] font-bold uppercase tracking-wide select-none hover:brightness-95 transition-colors"
                                       style={{
                                         backgroundColor:
                                           TABLE_HEADER_BG,
@@ -8707,7 +8718,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             }),
                                       }}
                                       className={cn(
-                                        "relative cursor-pointer px-3 py-3 text-left text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-90",
+                                        "group relative cursor-pointer px-3 py-3 text-left text-xs font-bold uppercase tracking-wider transition-opacity hover:opacity-90",
                                         isCapacityCalcCol && "bg-[#1743A6] text-white",
                                       )}
                                       onClick={() =>
