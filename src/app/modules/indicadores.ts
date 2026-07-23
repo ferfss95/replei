@@ -40,20 +40,24 @@ import {
   Zap,
   ClipboardList,
   CircleDollarSign,
+  Flag,
 } from 'lucide-react';
 import {
   REDE_OPTIONS,
   TIPO_OPTIONS_INDICADORES,
   ESTADOS_LIST,
   REGIONAL_OPTIONS,
+  NACIONAL_OPTIONS,
   LOJAS_LIST,
   CIDADES_BY_ESTADO,
   LOJAS_BY_CIDADE,
   orderStoresByNetwork,
   filterCitiesByKnownLinks,
   filterRegionalsByKnownLinks,
+  filterNacionaisByKnownLinks,
   filterStatesByKnownLinks,
   filterStoresByKnownLinks,
+  filterRedeByKnownLinks,
 } from '../referenceData';
 import type { ModuleConfig } from './types';
 import {
@@ -105,6 +109,7 @@ export const indicadoresModule: ModuleConfig = {
     { id: 'rede',     label: 'REDE',     icon: Building2,  options: [] },
     { id: 'tipo',     label: 'TIPO',     icon: Truck,      options: [] },
     { id: 'estado',   label: 'ESTADO',   icon: MapPin,     options: [] },
+    { id: 'nacional', label: 'NACIONAL', icon: Flag,       options: [] },
     { id: 'regional', label: 'REGIONAL', icon: Building2,  options: [] },
     { id: 'cidade',   label: 'CIDADE',   icon: MapPin,     options: [] },
     { id: 'loja',     label: 'LOJA',     icon: Building2,  options: [] },
@@ -122,10 +127,12 @@ export const indicadoresModule: ModuleConfig = {
   // ── Opções dinâmicas por atributo ────────────────────────
   getDomainAttributeOptions(attrId, selections) {
     switch (attrId) {
-      case 'rede':     return REDE_OPTIONS;
+      case 'rede':     return filterRedeByKnownLinks([...REDE_OPTIONS], selections);
       case 'tipo':     return TIPO_OPTIONS_INDICADORES;
       case 'estado':
         return filterStatesByKnownLinks(ESTADOS_LIST, selections);
+      case 'nacional':
+        return filterNacionaisByKnownLinks([...NACIONAL_OPTIONS], selections);
       case 'regional':
         return filterRegionalsByKnownLinks(REGIONAL_OPTIONS, selections);
       case 'cidade': {

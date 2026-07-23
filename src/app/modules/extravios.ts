@@ -18,6 +18,7 @@ import {
   Warehouse,
   Percent,
   Package,
+  Flag,
 } from 'lucide-react';
 import {
   REDE_OPTIONS,
@@ -26,14 +27,18 @@ import {
   ORIGEM_EXTRAVIOS_GROUP_CDS_IDS,
   ESTADOS_LIST,
   REGIONAL_OPTIONS,
+  NACIONAL_OPTIONS,
   LOJAS_LIST,
   CIDADES_BY_ESTADO,
   LOJAS_BY_CIDADE,
   orderStoresByNetwork,
   filterCitiesByKnownLinks,
   filterRegionalsByKnownLinks,
+  filterNacionaisByKnownLinks,
   filterStatesByKnownLinks,
   filterStoresByKnownLinks,
+  filterRedeByKnownLinks,
+  filterCanalByKnownLinks,
 } from '../referenceData';
 import type { ModuleConfig } from './types';
 import {
@@ -67,6 +72,7 @@ export const extraviosModule: ModuleConfig = {
     { id: 'canal',    label: 'CANAL',    icon: Network,    options: [] },
     { id: 'divergencia', label: 'TIPO DIVERGÊNCIA', icon: AlertOctagon, options: [] },
     { id: 'estado',   label: 'ESTADO',   icon: MapPin,     options: [] },
+    { id: 'nacional', label: 'NACIONAL', icon: Flag,       options: [] },
     { id: 'regional', label: 'REGIONAL', icon: Building2,  options: [] },
     { id: 'cidade',   label: 'CIDADE',   icon: MapPin,     options: [] },
     { id: 'cd',       label: 'CD',       icon: Warehouse,  options: [] },
@@ -84,12 +90,14 @@ export const extraviosModule: ModuleConfig = {
   // ── Opções dinâmicas por atributo ────────────────────────
   getDomainAttributeOptions(attrId, selections) {
     switch (attrId) {
-      case 'rede':     return REDE_OPTIONS;
-      case 'canal':     return [...CANAL_OPTIONS];
+      case 'rede':     return filterRedeByKnownLinks([...REDE_OPTIONS], selections);
+      case 'canal':     return filterCanalByKnownLinks([...CANAL_OPTIONS], selections);
       case 'cd':        return [...ORIGEM_EXTRAVIOS_GROUP_CD_IDS, ...ORIGEM_EXTRAVIOS_GROUP_CDS_IDS];
       case 'divergencia': return DIVERGENCIA_OPTIONS_EXT;
       case 'estado':
         return filterStatesByKnownLinks(ESTADOS_LIST, selections);
+      case 'nacional':
+        return filterNacionaisByKnownLinks([...NACIONAL_OPTIONS], selections);
       case 'regional':
         return filterRegionalsByKnownLinks(REGIONAL_OPTIONS, selections);
       case 'cidade': {

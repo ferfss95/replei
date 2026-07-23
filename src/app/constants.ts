@@ -7,6 +7,7 @@ import {
   Truck,
   UserCircle,
   LayoutGrid,
+  Flag,
 } from 'lucide-react';
 
 // Definição do ícone StoreIcon (importado no App.tsx original)
@@ -36,6 +37,7 @@ export const LOCATION_ATTRIBUTES = [
   { id: 'canal', label: 'CANAL', icon: Receipt, options: [], tooltip: 'Canal de venda' },
   { id: 'tipo', label: 'TIPO', icon: Truck, options: [], tooltip: 'Como o pedido é processado e entregue' },
   { id: 'estado', label: 'ESTADO', icon: MapPin, options: [], tooltip: '' },
+  { id: 'nacional', label: 'NACIONAL', icon: Flag, options: [], tooltip: '' },
   { id: 'regional', label: 'REGIONAL', icon: StoreIcon, options: [], tooltip: '' },
   { id: 'cidade', label: 'CIDADE', icon: MapPin, options: [], tooltip: '' },
   { id: 'loja', label: 'LOJA', icon: StoreIcon, options: [], tooltip: '' },

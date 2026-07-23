@@ -23,7 +23,10 @@ import {
   isPercentRatioAggregatedAverage,
   applyParentContextToOptions,
   filterRegionalsByKnownLinks,
+  filterNacionaisByKnownLinks,
   filterStatesByKnownLinks,
+  filterRedeByKnownLinks,
+  filterCanalByKnownLinks,
 } from '../../referenceData';
 import { Tag } from 'lucide-react';
 import {
@@ -230,9 +233,22 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
         options = filterRegionalsByKnownLinks(options, selections);
       }
 
+      // 4.1.1 Cross-attribute filtering: estado/cidade/loja/regional/rede/canal → nacional
+      if (attrId === 'nacional') {
+        options = filterNacionaisByKnownLinks(options, selections);
+      }
+
       // 4.2 Cross-attribute filtering: rede/canal/cidade/loja -> estado
       if (attrId === 'estado') {
         options = filterStatesByKnownLinks(options, selections);
+      }
+
+      // 4.3 Cross-attribute filtering: demais atributos -> rede / canal
+      if (attrId === 'rede') {
+        options = filterRedeByKnownLinks(options, selections);
+      }
+      if (attrId === 'canal') {
+        options = filterCanalByKnownLinks(options, selections);
       }
 
       // 5. Module-specific cross-attribute filtering

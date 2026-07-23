@@ -28,6 +28,7 @@ import {
   CANAL_OPTIONS,
   TIPO_OPTIONS,
   REGIONAL_OPTIONS,
+  NACIONAL_OPTIONS,
   LOCALIZACAO_OPTIONS,
   VENDEDOR_OPTIONS,
   ORIGEM_OPTIONS,
@@ -38,8 +39,11 @@ import {
   ESTADOS_LIST,
   filterCitiesByKnownLinks,
   filterRegionalsByKnownLinks,
+  filterNacionaisByKnownLinks,
   filterStatesByKnownLinks,
   filterStoresByKnownLinks,
+  filterRedeByKnownLinks,
+  filterCanalByKnownLinks,
 } from '../referenceData';
 
 // ══════════════════════════════════════════════════════════════════
@@ -89,17 +93,21 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
       // Otherwise handle location attributes (for PRODUTO module)
       switch (attrId) {
         case 'rede':
-          return REDE_OPTIONS;
-        case 'canal':
-          return isProdutoCapacidadeExposicao
+          return filterRedeByKnownLinks(REDE_OPTIONS, selections);
+        case 'canal': {
+          const baseCanal = isProdutoCapacidadeExposicao
             ? CANAL_OPTIONS.filter(
                 (c) => c !== 'Digital Centauro' && c !== 'Digital Nike',
               )
             : CANAL_OPTIONS;
+          return filterCanalByKnownLinks(baseCanal, selections);
+        }
         case 'tipo':
           return TIPO_OPTIONS;
         case 'regional':
           return filterRegionalsByKnownLinks(REGIONAL_OPTIONS, selections);
+        case 'nacional':
+          return filterNacionaisByKnownLinks([...NACIONAL_OPTIONS], selections);
         case 'localizacao':
           return LOCALIZACAO_OPTIONS;
         case 'vendedor':

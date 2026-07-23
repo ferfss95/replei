@@ -1378,6 +1378,11 @@ export const filterStoresByKnownLinks = (
     allowed = intersectSets(allowed, getStoresFromRegionals(selectedRegionals));
   }
 
+  const selectedNacionais = selections["nacional"] || [];
+  if (selectedNacionais.length > 0) {
+    allowed = intersectSets(allowed, getStoresFromNacionais(selectedNacionais));
+  }
+
   const selectedNetworks = selections["rede"] || [];
   if (selectedNetworks.length > 0) {
     allowed = intersectSets(allowed, getStoresFromNetworks(selectedNetworks));
@@ -1424,6 +1429,14 @@ export const filterCitiesByKnownLinks = (
       ).filter(Boolean),
     );
     allowedCities = intersectSets(allowedCities, regionalCities);
+  }
+
+  const selectedNacionais = selections["nacional"] || [];
+  if (selectedNacionais.length > 0) {
+    const nacionalCities = new Set(
+      selectedNacionais.flatMap((nac) => CIDADES_BY_NACIONAL[nac] || []),
+    );
+    allowedCities = intersectSets(allowedCities, nacionalCities);
   }
 
   const selectedNetworks = selections["rede"] || [];
@@ -1491,6 +1504,14 @@ export const filterRegionalsByKnownLinks = (
       selectedStores.map((store) => LOJA_TO_REGIONAL[store]).filter(Boolean),
     );
     allowedRegionals = intersectSets(allowedRegionals, regionalsByStore);
+  }
+
+  const selectedNacionais = selections["nacional"] || [];
+  if (selectedNacionais.length > 0) {
+    const regionalsByNacional = new Set(
+      selectedNacionais.flatMap((nac) => REGIONAIS_BY_NACIONAL[nac] || []),
+    );
+    allowedRegionals = intersectSets(allowedRegionals, regionalsByNacional);
   }
 
   const selectedNetworks = selections["rede"] || [];
@@ -1563,6 +1584,14 @@ export const filterStatesByKnownLinks = (
     allowedStates = intersectSets(allowedStates, statesByRegional);
   }
 
+  const selectedNacionais = selections["nacional"] || [];
+  if (selectedNacionais.length > 0) {
+    const statesByNacional = getStatesFromStores(
+      getStoresFromNacionais(selectedNacionais),
+    );
+    allowedStates = intersectSets(allowedStates, statesByNacional);
+  }
+
   const selectedNetworks = selections["rede"] || [];
   if (selectedNetworks.length > 0) {
     const statesByNetwork = new Set(
@@ -1622,6 +1651,249 @@ const CIDADES_BY_REGIONAL: Record<string, string[]> = REGIONAL_OPTIONS.reduce(
   {} as Record<string, string[]>,
 );
 
+// ── NACIONAL (coluna "Nacional" da base de lojas) ─────────────────────────────
+// Nível hierárquico ACIMA de REGIONAL (times), posicionado logo após ESTADO.
+// Itens: NAC 1 / NAC 2 / NAC 3 (Centauro) + FISIA (rede Fisia).
+//
+// Herança 100% dos dados já existentes no protótipo: cada regional (time) foi
+// atribuído a um NAC por voto de maioria dos códigos de loja na base anexada
+// (FISIA = times D1–D4). NENHUMA lista existente (loja/cidade/estado/regional)
+// é alterada; os mapas abaixo são apenas derivados.
+export const NACIONAL_OPTIONS = ["NAC 1", "NAC 2", "NAC 3", "FISIA"];
+
+/** NAC → regionais (times) que o compõem. */
+export const REGIONAIS_BY_NACIONAL: Record<string, string[]> = {
+  "NAC 1": [
+    "Águias de Elite",
+    "Águias do Cerrado",
+    "Esquadrão 40 graus",
+    "Flechas do Norte",
+    "Lobos SP",
+    "SULcesso",
+    "Titãs SP-MG",
+  ],
+  "NAC 2": [
+    "Esquadrão Valente",
+    "Furacão Sul I",
+    "Fúria do Interior",
+    "Gigante Paulista",
+    "Guadiões da Fronteira",
+    "Guerreiros do Cangaço",
+    "Legião Mineira",
+  ],
+  "NAC 3": ["Ultra High"],
+  FISIA: ["D1", "D2", "D3", "D4"],
+};
+
+/** NAC → lojas (derivado de REGIONAIS_BY_NACIONAL + LOJAS_BY_REGIONAL). */
+export const LOJAS_BY_NACIONAL: Record<string, string[]> = NACIONAL_OPTIONS.reduce(
+  (acc, nac) => {
+    const stores = new Set<string>();
+    (REGIONAIS_BY_NACIONAL[nac] || []).forEach((regional) => {
+      (LOJAS_BY_REGIONAL[regional] || []).forEach((store) => stores.add(store));
+    });
+    acc[nac] = orderStoresByNetwork(Array.from(stores));
+    return acc;
+  },
+  {} as Record<string, string[]>,
+);
+
+/** loja → NAC (inverso de LOJAS_BY_NACIONAL). */
+const LOJA_TO_NACIONAL: Record<string, string> = NACIONAL_OPTIONS.reduce(
+  (acc, nac) => {
+    (LOJAS_BY_NACIONAL[nac] || []).forEach((store) => {
+      acc[store] = nac;
+    });
+    return acc;
+  },
+  {} as Record<string, string>,
+);
+
+/** regional (time) → NAC. */
+const NACIONAL_OF_REGIONAL: Record<string, string> = Object.entries(
+  REGIONAIS_BY_NACIONAL,
+).reduce((acc, [nac, regionals]) => {
+  regionals.forEach((regional) => {
+    acc[regional] = nac;
+  });
+  return acc;
+}, {} as Record<string, string>);
+
+/** NAC → cidades (derivado de LOJAS_BY_NACIONAL + LOJA_TO_CIDADE). */
+const CIDADES_BY_NACIONAL: Record<string, string[]> = NACIONAL_OPTIONS.reduce(
+  (acc, nac) => {
+    const cities = new Set<string>();
+    (LOJAS_BY_NACIONAL[nac] || []).forEach((store) => {
+      const city = LOJA_TO_CIDADE[store];
+      if (city) cities.add(city);
+    });
+    acc[nac] = Array.from(cities).sort();
+    return acc;
+  },
+  {} as Record<string, string[]>,
+);
+
+const getStoresFromNacionais = (nacionais: string[]) => {
+  const stores = nacionais.flatMap((nac) => LOJAS_BY_NACIONAL[nac] || []);
+  return new Set(stores);
+};
+
+/** Estados (nomes) de um conjunto de lojas — usado nos filtros de NAC. */
+const getStatesFromStores = (stores: Iterable<string>): Set<string> =>
+  new Set(
+    Array.from(stores)
+      .map((store) => LOJA_TO_CIDADE[store])
+      .filter(Boolean)
+      .map(
+        (city) =>
+          Object.entries(CIDADES_BY_ESTADO).find(([, cities]) =>
+            cities.includes(city),
+          )?.[0],
+      )
+      .filter((state): state is string => Boolean(state)),
+  );
+
+/**
+ * Filtra as opções de NACIONAL conforme seleções em atributos irmãos
+ * (estado, cidade, loja, regional, rede, canal). Espelha o padrão de
+ * `filterRegionalsByKnownLinks`.
+ */
+export const filterNacionaisByKnownLinks = (
+  nacionalOptions: string[],
+  selections: Record<string, string[]>,
+): string[] => {
+  let allowed: Set<string> | null = null;
+
+  const addNacsFromStores = (stores: Set<string>) => {
+    const nacs = new Set<string>();
+    stores.forEach((store) => {
+      const nac = LOJA_TO_NACIONAL[store];
+      if (nac) nacs.add(nac);
+    });
+    allowed = intersectSets(allowed, nacs);
+  };
+
+  const selectedStates = selections["estado"] || [];
+  if (selectedStates.length > 0) addNacsFromStores(getStoresFromStates(selectedStates));
+
+  const selectedCities = selections["cidade"] || [];
+  if (selectedCities.length > 0) addNacsFromStores(getStoresFromCities(selectedCities));
+
+  const selectedStores = selections["loja"] || [];
+  if (selectedStores.length > 0) addNacsFromStores(new Set(selectedStores));
+
+  const selectedRegionals = selections["regional"] || [];
+  if (selectedRegionals.length > 0) {
+    const nacs = new Set(
+      selectedRegionals.map((regional) => NACIONAL_OF_REGIONAL[regional]).filter(Boolean),
+    );
+    allowed = intersectSets(allowed, nacs);
+  }
+
+  const selectedNetworks = selections["rede"] || [];
+  if (selectedNetworks.length > 0) addNacsFromStores(getStoresFromNetworks(selectedNetworks));
+
+  const selectedChannels = selections["canal"] || [];
+  if (selectedChannels.length > 0) addNacsFromStores(getStoresFromChannels(selectedChannels));
+
+  if (allowed === null) return nacionalOptions;
+  return nacionalOptions.filter((nac) => allowed!.has(nac));
+};
+
+// ── REDE ↔ demais atributos ───────────────────────────────────────────────────
+// A rede (Centauro / Fisia) de uma loja é definida por `isCentauroStore` (prefixo CE).
+// Cada regional/nacional pertence a uma única rede (times CE* = Centauro; D1–D4 e
+// nacional FISIA = Fisia). Canais também: grupo Centauro vs grupo Nike (= Fisia).
+
+/** Rede a que uma loja pertence, no vocabulário de REDE_OPTIONS. */
+const redeOfStore = (store: string): string =>
+  isCentauroStore(store) ? "Centauro" : "Fisia";
+
+/**
+ * Redes possíveis a partir das seleções em atributos baseados em loja
+ * (estado, cidade, regional, nacional, loja). Retorna null quando não há
+ * restrição por esses atributos.
+ */
+const deriveAllowedRedesFromStoreAttrs = (
+  selections: Record<string, string[]>,
+): Set<string> | null => {
+  let allowed: Set<string> | null = null;
+
+  const addFromStores = (stores: Set<string>) => {
+    const redes = new Set<string>();
+    stores.forEach((store) => redes.add(redeOfStore(store)));
+    allowed = intersectSets(allowed, redes);
+  };
+
+  const selectedStates = selections["estado"] || [];
+  if (selectedStates.length > 0) addFromStores(getStoresFromStates(selectedStates));
+
+  const selectedCities = selections["cidade"] || [];
+  if (selectedCities.length > 0) addFromStores(getStoresFromCities(selectedCities));
+
+  const selectedRegionals = selections["regional"] || [];
+  if (selectedRegionals.length > 0) addFromStores(getStoresFromRegionals(selectedRegionals));
+
+  const selectedNacionais = selections["nacional"] || [];
+  if (selectedNacionais.length > 0) addFromStores(getStoresFromNacionais(selectedNacionais));
+
+  const selectedStores = selections["loja"] || [];
+  if (selectedStores.length > 0) addFromStores(new Set(selectedStores));
+
+  return allowed;
+};
+
+/**
+ * Filtra REDE conforme seleções nos atributos irmãos. Ex.: selecionar uma
+ * regional/nacional/loja/cidade/estado da Centauro deixa apenas "Centauro";
+ * selecionar um canal Nike deixa apenas "Fisia".
+ */
+export const filterRedeByKnownLinks = (
+  redeOptions: string[],
+  selections: Record<string, string[]>,
+): string[] => {
+  let allowed = deriveAllowedRedesFromStoreAttrs(selections);
+
+  const selectedChannels = selections["canal"] || [];
+  if (selectedChannels.length > 0) {
+    const redes = new Set<string>();
+    selectedChannels.forEach((canal) => {
+      if (CANAL_GROUP_CENTAURO_IDS.includes(canal)) redes.add("Centauro");
+      if (CANAL_GROUP_NIKE_IDS.includes(canal)) redes.add("Fisia");
+    });
+    allowed = intersectSets(allowed, redes);
+  }
+
+  if (allowed === null) return redeOptions;
+  return redeOptions.filter((rede) => allowed!.has(rede));
+};
+
+/**
+ * Filtra CANAL conforme a rede implícita nas seleções. Ex.: rede=Centauro (ou
+ * uma regional/nacional/loja Centauro) deixa apenas os canais do grupo Centauro;
+ * rede=Fisia deixa apenas os canais do grupo Nike.
+ */
+export const filterCanalByKnownLinks = (
+  canalOptions: string[],
+  selections: Record<string, string[]>,
+): string[] => {
+  let allowedRedes = deriveAllowedRedesFromStoreAttrs(selections);
+
+  const selectedNetworks = selections["rede"] || [];
+  if (selectedNetworks.length > 0) {
+    allowedRedes = intersectSets(allowedRedes, new Set(selectedNetworks));
+  }
+
+  if (allowedRedes === null) return canalOptions;
+
+  const allowedChannels = new Set<string>();
+  allowedRedes.forEach((rede) => {
+    if (rede === "Centauro") CANAL_GROUP_CENTAURO_IDS.forEach((c) => allowedChannels.add(c));
+    if (rede === "Fisia") CANAL_GROUP_NIKE_IDS.forEach((c) => allowedChannels.add(c));
+  });
+  return canalOptions.filter((canal) => allowedChannels.has(canal));
+};
+
 /**
  * Aplica restrições de contexto do nível pai na lista de opções do nível filho.
  *
@@ -1631,11 +1903,12 @@ const CIDADES_BY_REGIONAL: Record<string, string[]> = REGIONAL_OPTIONS.reduce(
  * Regras suportadas (conforme planilha de cadastro):
  *  regional → loja   (LOJAS_BY_REGIONAL)
  *  regional → cidade (CIDADES_BY_REGIONAL)
+ *  nacional → loja, cidade, regional, estado (LOJAS/CIDADES/REGIONAIS_BY_NACIONAL)
  *  cidade   → loja   (LOJAS_BY_CIDADE)
  *  estado   → cidade (CIDADES_BY_ESTADO)
  *  estado   → loja   (via estado → cidade → loja)
  *  rede     → loja   (prefixo CE* = Centauro, demais = Fisia)
- *  loja     → regional, cidade, estado (inversos)
+ *  loja     → regional, cidade, estado, nacional (inversos)
  *
  * Para pares sem relação mapeada, retorna as opções sem alteração (fallback seguro).
  */
@@ -1657,6 +1930,8 @@ export const applyParentContextToOptions = (
     if (childAttrId === "loja") {
       if (parentAttrId === "regional") {
         allowed = new Set(LOJAS_BY_REGIONAL[parentValue] || []);
+      } else if (parentAttrId === "nacional") {
+        allowed = new Set(LOJAS_BY_NACIONAL[parentValue] || []);
       } else if (parentAttrId === "cidade") {
         allowed = new Set(LOJAS_BY_CIDADE[extractCityName(parentValue)] || []);
       } else if (parentAttrId === "estado") {
@@ -1679,6 +1954,8 @@ export const applyParentContextToOptions = (
     else if (childAttrId === "cidade") {
       if (parentAttrId === "regional") {
         allowed = new Set(CIDADES_BY_REGIONAL[parentValue] || []);
+      } else if (parentAttrId === "nacional") {
+        allowed = new Set(CIDADES_BY_NACIONAL[parentValue] || []);
       } else if (parentAttrId === "estado") {
         allowed = new Set(CIDADES_BY_ESTADO[normalizeStateOption(parentValue)] || []);
       } else if (parentAttrId === "rede") {
@@ -1698,7 +1975,9 @@ export const applyParentContextToOptions = (
 
     // ── regional como filho ──────────────────────────────────────────
     else if (childAttrId === "regional") {
-      if (parentAttrId === "estado") {
+      if (parentAttrId === "nacional") {
+        allowed = new Set(REGIONAIS_BY_NACIONAL[parentValue] || []);
+      } else if (parentAttrId === "estado") {
         const cities = CIDADES_BY_ESTADO[normalizeStateOption(parentValue)] || [];
         const regionals = new Set<string>();
         cities.forEach((city) => {
@@ -1748,7 +2027,9 @@ export const applyParentContextToOptions = (
         allowed = new Set(SUBGRUPOS_BY_GRUPO[parentValue] || []);
       }
     } else if (childAttrId === "estado") {
-      if (parentAttrId === "rede") {
+      if (parentAttrId === "nacional") {
+        allowed = getStatesFromStores(LOJAS_BY_NACIONAL[parentValue] || []);
+      } else if (parentAttrId === "rede") {
         allowed = new Set(
           Array.from(getStoresFromNetworks([parentValue]))
             .map((store) => LOJA_TO_CIDADE[store])
@@ -1774,6 +2055,94 @@ export const applyParentContextToOptions = (
             )
             .filter(Boolean),
         );
+      }
+    }
+
+    // ── nacional como filho (inversos: pai estado/cidade/loja/regional/rede/canal) ──
+    else if (childAttrId === "nacional") {
+      if (parentAttrId === "regional") {
+        const nac = NACIONAL_OF_REGIONAL[parentValue];
+        allowed = nac ? new Set([nac]) : new Set();
+      } else if (parentAttrId === "loja") {
+        const nac = LOJA_TO_NACIONAL[parentValue];
+        allowed = nac ? new Set([nac]) : new Set();
+      } else if (parentAttrId === "estado") {
+        const cities = CIDADES_BY_ESTADO[normalizeStateOption(parentValue)] || [];
+        const nacs = new Set<string>();
+        cities.forEach((city) => {
+          (LOJAS_BY_CIDADE[city] || []).forEach((store) => {
+            const nac = LOJA_TO_NACIONAL[store];
+            if (nac) nacs.add(nac);
+          });
+        });
+        allowed = nacs;
+      } else if (parentAttrId === "cidade") {
+        const nacs = new Set<string>();
+        (LOJAS_BY_CIDADE[extractCityName(parentValue)] || []).forEach((store) => {
+          const nac = LOJA_TO_NACIONAL[store];
+          if (nac) nacs.add(nac);
+        });
+        allowed = nacs;
+      } else if (parentAttrId === "rede") {
+        allowed = new Set(
+          Array.from(getStoresFromNetworks([parentValue]))
+            .map((store) => LOJA_TO_NACIONAL[store])
+            .filter(Boolean),
+        );
+      } else if (parentAttrId === "canal") {
+        allowed = new Set(
+          Array.from(getStoresFromChannels([parentValue]))
+            .map((store) => LOJA_TO_NACIONAL[store])
+            .filter(Boolean),
+        );
+      }
+    }
+
+    // ── rede como filho (inversos: pai regional/nacional/loja/cidade/estado/canal) ──
+    else if (childAttrId === "rede") {
+      const redesFromStores = (stores: string[]) =>
+        new Set(stores.map((store) => redeOfStore(store)));
+      if (parentAttrId === "regional") {
+        allowed = redesFromStores(LOJAS_BY_REGIONAL[parentValue] || []);
+      } else if (parentAttrId === "nacional") {
+        allowed = redesFromStores(LOJAS_BY_NACIONAL[parentValue] || []);
+      } else if (parentAttrId === "loja") {
+        allowed = new Set([redeOfStore(parentValue)]);
+      } else if (parentAttrId === "cidade") {
+        allowed = redesFromStores(LOJAS_BY_CIDADE[extractCityName(parentValue)] || []);
+      } else if (parentAttrId === "estado") {
+        const cities = CIDADES_BY_ESTADO[normalizeStateOption(parentValue)] || [];
+        allowed = redesFromStores(cities.flatMap((city) => LOJAS_BY_CIDADE[city] || []));
+      } else if (parentAttrId === "canal") {
+        const redes = new Set<string>();
+        if (CANAL_GROUP_CENTAURO_IDS.includes(parentValue)) redes.add("Centauro");
+        if (CANAL_GROUP_NIKE_IDS.includes(parentValue)) redes.add("Fisia");
+        allowed = redes;
+      }
+    }
+
+    // ── canal como filho (inversos: pai rede/regional/nacional/loja) ──
+    else if (childAttrId === "canal") {
+      const channelsForRede = (rede: string | null) => {
+        if (rede === "Centauro") return new Set(CANAL_GROUP_CENTAURO_IDS);
+        if (rede === "Fisia") return new Set(CANAL_GROUP_NIKE_IDS);
+        return null;
+      };
+      const uniformRede = (stores: string[]): string | null => {
+        const redes = new Set(stores.map((store) => redeOfStore(store)));
+        return redes.size === 1 ? Array.from(redes)[0] : null;
+      };
+      if (parentAttrId === "rede") {
+        const norm = parentValue.trim().toLowerCase();
+        allowed = channelsForRede(
+          norm === "centauro" ? "Centauro" : norm === "fisia" ? "Fisia" : null,
+        );
+      } else if (parentAttrId === "regional") {
+        allowed = channelsForRede(uniformRede(LOJAS_BY_REGIONAL[parentValue] || []));
+      } else if (parentAttrId === "nacional") {
+        allowed = channelsForRede(parentValue === "FISIA" ? "Fisia" : "Centauro");
+      } else if (parentAttrId === "loja") {
+        allowed = channelsForRede(redeOfStore(parentValue));
       }
     }
 
