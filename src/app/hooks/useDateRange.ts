@@ -135,6 +135,10 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
 
   // Auto-scroll ref for P2 months
   const monthsP2ScrollRef = useRef<HTMLDivElement>(null);
+  // Só faz auto-scroll no P2 quando o preenchimento é automático (MDSAA/LY ao
+  // mudar o P1). Em seleção manual do usuário, permanece false → sem scroll
+  // involuntário. Evita que a caixa "pule" para o topo ao marcar um mês.
+  const p2AutoScrollPendingRef = useRef(false);
 
   // ─── Apply defaults when periodType changes ───
   useEffect(() => {
@@ -245,6 +249,7 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
           setCompSpecificDays2(getLYSpecificDays(compSpecificDays1));
         }
       } else if (periodType === "Mensal") {
+        p2AutoScrollPendingRef.current = true;
         setCompMonths2(getLYMonths(compMonths1));
       } else if (periodType === "Anual") {
         setCompYears2(getLYYears(compYears1));
@@ -264,6 +269,7 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
       }
     } else if (periodType === "Mensal") {
       const mdsaaMonths = getMDSAAMonths(compMonths1);
+      p2AutoScrollPendingRef.current = true;
       setCompMonths2(mdsaaMonths);
     } else if (periodType === "Anual") {
       const mdsaaYears = getMDSAAYears(compYears1);
@@ -282,7 +288,12 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
   ]);
 
   // ─── Auto-scroll to selected month in P2 ───
+  // Dispara SOMENTE quando o P2 foi preenchido automaticamente (MDSAA/LY).
+  // Em seleção manual do usuário a flag está false → não mexe no scroll.
   useEffect(() => {
+    if (!p2AutoScrollPendingRef.current) return;
+    p2AutoScrollPendingRef.current = false;
+
     if (
       analysisMode !== "comparativo" ||
       periodType !== "Mensal" ||
@@ -332,6 +343,8 @@ export const useDateRange = ({ analysisMode }: UseDateRangeProps) => {
   const handleManualP2MonthsChange = useCallback((months: string[]) => {
     setMdsaaActiveInternal(false);
     setLyActiveInternal(false);
+    // Mudança manual nunca deve reposicionar o scroll da caixa do P2.
+    p2AutoScrollPendingRef.current = false;
     setCompMonths2(months);
   }, []);
 
