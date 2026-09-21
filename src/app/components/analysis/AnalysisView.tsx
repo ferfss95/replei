@@ -31,6 +31,7 @@ import {
   Ban,
   Clock,
   PieChart as PieChartIcon,
+  EyeOff,
 } from "lucide-react";
 import {
   BarChart,
@@ -100,7 +101,7 @@ import {
   type ModuleConfig,
 } from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
-import type { AnalysisMode, AveragePeriodType } from "../../types/wizard";
+import type { AnalysisMode, AveragePeriodType, SharePctMode } from "../../types/wizard";
 import {
   ANALYSIS_TABLE_CLASS,
   ANALYSIS_TABLE_STYLE,
@@ -159,8 +160,8 @@ interface AnalysisViewProps {
   setAveragePeriodType: (type: AveragePeriodType) => void;
   averageDropdownOpen: boolean;
   setAverageDropdownOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  showSharePct: boolean;
-  setShowSharePct: React.Dispatch<React.SetStateAction<boolean>>;
+  sharePctMode: SharePctMode;
+  setSharePctMode: React.Dispatch<React.SetStateAction<SharePctMode>>;
 }
 
 export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView({
@@ -196,8 +197,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   setAveragePeriodType,
   averageDropdownOpen,
   setAverageDropdownOpen,
-  showSharePct,
-  setShowSharePct,
+  sharePctMode,
+  setSharePctMode,
 }: AnalysisViewProps) {
   // ── Module-level aliases ─────────────────���────────────────
   // These shadow the removed module-level constants so all internal
@@ -252,6 +253,25 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
   // Helper to check if average is active
   const showAverage = averagePeriodType !== null;
+
+  // Add % — mantém todo o layout de colunas existente (showSharePct) intocado;
+  // sharePctMode só decide QUAL total é usado como base do cálculo.
+  const showSharePct = sharePctMode !== "off";
+  const [pctDropdownOpen, setPctDropdownOpen] = useState(false);
+
+  // Colunas de % ocultadas individualmente pelo "olhinho" no cabeçalho
+  // (independente do metricId — cada métrica lembra se sua coluna de % foi escondida).
+  const [hiddenPctMetrics, setHiddenPctMetrics] = useState<Set<string>>(
+    new Set(),
+  );
+  const toggleHiddenPctMetric = (metricId: string) => {
+    setHiddenPctMetrics((prev) => {
+      const next = new Set(prev);
+      if (next.has(metricId)) next.delete(metricId);
+      else next.add(metricId);
+      return next;
+    });
+  };
 
   // Colunas da tabela = ordem em que o usuário clicou nas métricas (selectedMetrics).
   // PRODUTO + Capacidade de Exposição: as 2 colunas calculadas (% Cap. Mod/Cor e
@@ -875,6 +895,44 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         }).format(pct) + "%";
     return pctStr;
   };
+
+  // Base do % conforme o modo selecionado no dropdown "Add %":
+  // - 'total': participação sobre o total geral da análise (comportamento clássico).
+  // - 'agrupamento': participação sobre o total do nó pai (agrupamento imediatamente
+  //   superior); linhas de nível raiz caem no total geral, pois não têm pai.
+  // `key` é a mesma chave usada para ler o valor da métrica na linha (mId em modo
+  // padrão, `${period}__${mId}` ou `__total__${mId}` em modo pivot).
+  const getShareTotal = (
+    row: any,
+    key: string,
+    grandTotal: number | null | undefined,
+  ): number | null | undefined => {
+    if (sharePctMode === "agrupamento") {
+      return row?.__parentAgg ? row.__parentAgg[key] : grandTotal;
+    }
+    return grandTotal;
+  };
+
+  // Cabeçalho da coluna "%": ao passar o mouse em qualquer ponto do cabeçalho
+  // (classe `group` no <th>), aparece um "olhinho" ao LADO do "%" — sem
+  // substituí-lo — para ocultar essa coluna de % (por métrica, em todas as
+  // colunas/períodos dela).
+  const renderPctHeaderLabel = (metricId: string): React.ReactNode => (
+    <span className="inline-flex items-center justify-center gap-1">
+      <span>%</span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleHiddenPctMetric(metricId);
+        }}
+        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+        title="Ocultar coluna de %"
+      >
+        <EyeOff size={12} />
+      </button>
+    </span>
+  );
 
   // Função legada mantida para compatibilidade com tabelas pivot
   const renderCellWithPct = (
@@ -2141,19 +2199,24 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
   // Flatten tree for rendering — aplica sort em cada `children` no momento
   // em que o nó é expandido (lazy, sem clone profundo).
+  // Cada linha recebe uma referência ao nó pai (`__parentAgg`) já com os
+  // valores agregados de métrica: é a base usada pelo "% por Agrupamento"
+  // (raiz = null → cai para o total geral na hora de renderizar o %).
   const flattenTree = (
     rows: any[],
     expandedSet: Set<string>,
     comparator: ((a: any, b: any) => number) | null,
+    parent: any = null,
   ): any[] => {
     const result: any[] = [];
     for (const row of rows) {
+      row.__parentAgg = parent;
       result.push(row);
       if (row.children?.length > 0 && expandedSet.has(row.id)) {
         const children = comparator
           ? [...row.children].sort(comparator)
           : row.children;
-        result.push(...flattenTree(children, expandedSet, comparator));
+        result.push(...flattenTree(children, expandedSet, comparator, row));
       }
     }
     return result;
@@ -2788,7 +2851,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   const getSubColsForMetricLeaf = (mId: string): number => {
     let c = 1;
     if (showAverage) c += 1;
-    if (showSharePct && !PCT_EXCLUDED_METRICS.has(mId)) c += 1;
+    if (showSharePct && !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId))) c += 1;
     return c;
   };
 
@@ -2801,7 +2864,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // Helper function: calcula quantas sub-colunas uma métrica específica terá
   const getSubColsForMetric = (metricId: string): number => {
     const canShowPct =
-      showSharePct && !PCT_EXCLUDED_METRICS.has(metricId);
+      showSharePct && !(PCT_EXCLUDED_METRICS.has(metricId) || hiddenPctMetrics.has(metricId));
 
     if (analysisMode === "comparativo") {
       // Comparativo: P1, [x̄ P1], [%], P2, [x̄ P2], [%], [Var Vlr, Var %]
@@ -2867,7 +2930,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
           const key = `${period}__${mId}`;
           const colTotal = pivotTotals ? pivotTotals[key] : null;
           const canShowPct =
-            showSharePct && !PCT_EXCLUDED_METRICS.has(mId);
+            showSharePct && !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
           const isLastInPeriod = mIdx === orderedMetrics.length - 1;
           const isLastPeriod = pIdx === periods.length - 1;
           const out: React.ReactNode[] = [];
@@ -3038,7 +3101,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     : {}),
                 }}
               >
-                {renderPctValue(row[key] || 0, colTotal)}
+                {renderPctValue(row[key] || 0, getShareTotal(row, key, colTotal))}
               </td>,
             );
           }
@@ -3050,7 +3113,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         const config = METRIC_CONFIG[mId];
         const grandTotal = pivotTotals ? pivotTotals[totalKey] : null;
         const canShowPct =
-          showSharePct && !PCT_EXCLUDED_METRICS.has(mId);
+          showSharePct && !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
         const isLastMetric = mIdx === orderedMetrics.length - 1;
         const out: React.ReactNode[] = [];
         out.push(
@@ -3188,7 +3251,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     }),
               }}
             >
-              {renderPctValue(row[totalKey] || 0, grandTotal)}
+              {renderPctValue(row[totalKey] || 0, getShareTotal(row, totalKey, grandTotal))}
             </td>,
           );
         }
@@ -3631,23 +3694,112 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         {(() => {
           const actionsJSX = (
             <div className="flex items-center gap-2 shrink-0">
-            {/* Add % share button */}
-            <button
-              onClick={() => setShowSharePct((prev) => !prev)}
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-2 text-[12px] transition-colors cursor-pointer rounded-lg border shadow-sm",
-                showSharePct
-                  ? "bg-[#314158] text-white border-[#314158]"
-                  : "bg-white text-[#62748e] hover:text-slate-800 hover:bg-slate-100 border-slate-200",
+            {/* Add % (Percentual) dropdown: escolhe a base do cálculo de participação */}
+            <div className="relative">
+              <button
+                onClick={() => setPctDropdownOpen((prev) => !prev)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-2 text-[12px] transition-colors cursor-pointer rounded-lg border shadow-sm",
+                  showSharePct
+                    ? "bg-[#314158] text-white border-[#314158]"
+                    : "bg-white text-[#62748e] hover:text-slate-800 hover:bg-slate-100 border-slate-200",
+                )}
+                title="Escolher tipo de percentual"
+              >
+                <Percent size={12} />
+                <span className="font-medium">Percentual</span>
+                <ChevronDown
+                  size={12}
+                  className={cn(
+                    "transition-transform",
+                    pctDropdownOpen && "rotate-180",
+                  )}
+                />
+              </button>
+
+              {pctDropdownOpen && (
+                <>
+                  {/* Backdrop para fechar ao clicar fora */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setPctDropdownOpen(false)}
+                  />
+
+                  {/* Dropdown content */}
+                  <div className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-xl border border-slate-200 py-3 z-50 min-w-[300px]">
+                    <p className="px-4 pb-2 text-[13px] text-slate-600 leading-snug">
+                      Selecione o tipo de percentual para aplicar à
+                      análise:
+                    </p>
+
+                    <div className="py-1">
+                      {(
+                        [
+                          {
+                            id: "total" as const,
+                            label: "% Total",
+                            description:
+                              "Participação de cada linha sobre o resultado total da análise.",
+                          },
+                          {
+                            id: "agrupamento" as const,
+                            label: "% por Agrupamento",
+                            description:
+                              "Participação de cada linha sobre o total do agrupamento superior.",
+                          },
+                        ]
+                      ).map(({ id, label, description }) => {
+                        const isSelected = sharePctMode === id;
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => {
+                              setSharePctMode(isSelected ? "off" : id);
+                              setPctDropdownOpen(false);
+                            }}
+                            className={cn(
+                              "w-full px-4 py-2.5 transition-all text-left flex items-start gap-3",
+                              isSelected
+                                ? "bg-slate-50"
+                                : "bg-white hover:bg-slate-50 cursor-pointer",
+                            )}
+                          >
+                            {/* Radio indicator */}
+                            <div
+                              className={cn(
+                                "w-4 h-4 mt-0.5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors",
+                                isSelected
+                                  ? "border-[#314158]"
+                                  : "border-slate-300",
+                              )}
+                            >
+                              {isSelected && (
+                                <div className="w-2 h-2 rounded-full bg-[#314158]" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={cn(
+                                  "text-[13px] font-semibold",
+                                  isSelected
+                                    ? "text-[#314158]"
+                                    : "text-slate-800",
+                                )}
+                              >
+                                {label}
+                              </p>
+                              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                                {description}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
               )}
-              title={
-                showSharePct
-                  ? "Remover % do share"
-                  : "Exibir % do share por coluna"
-              }
-            >
-              <span className="font-medium">Add %</span>
-            </button>
+            </div>
 
             {/* Add x̄ (Average) button with dropdown */}
             <div className="relative">
@@ -5898,7 +6050,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                             const cols: React.ReactNode[] = [];
                             const canShowPct =
                               showSharePct &&
-                              !PCT_EXCLUDED_METRICS.has(mId);
+                              !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
 
                             periods.forEach((p, pIdx) => {
                               cols.push(
@@ -5959,7 +6111,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 orderedMetrics.flatMap((mId) => {
                                   const canShowPctE =
                                     showSharePct &&
-                                    !PCT_EXCLUDED_METRICS.has(mId);
+                                    !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                                   const out: React.ReactNode[] = [];
                                   out.push(
                                     <col
@@ -5996,7 +6148,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               ...orderedMetrics.flatMap((mId) => {
                                 const canShowPctE =
                                   showSharePct &&
-                                  !PCT_EXCLUDED_METRICS.has(mId);
+                                  !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                                 const out: React.ReactNode[] = [];
                                 out.push(
                                   <col
@@ -6029,7 +6181,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               const cols: React.ReactNode[] = [];
                               const canShowPct =
                                 showSharePct &&
-                                !PCT_EXCLUDED_METRICS.has(mId);
+                                !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
 
                               periods.forEach((p) => {
                                 cols.push(
@@ -6284,7 +6436,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               // Comparative: Period 1, Period 2, Var Vlr, Var %
                               const canShowPct =
                                 showSharePct &&
-                                !PCT_EXCLUDED_METRICS.has(mId);
+                                !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                               periods.forEach(
                                 (period, pIdx) => {
                                   const isLastPeriod =
@@ -6430,7 +6582,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     subHeaders.push(
                                       <th
                                         key={`${mId}__p${pIdx}__pct`}
-                                        className="px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
+                                        className="group px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
                                         style={{
                                           backgroundColor:
                                             PIVOT_DERIVED_HEADER_BG,
@@ -6468,7 +6620,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             : {}),
                                         }}
                                       >
-                                        %
+                                        {renderPctHeaderLabel(mId)}
                                       </th>,
                                     );
                                   }
@@ -6557,7 +6709,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               // Evolutionary & Intraday: each period + Total
                               const canShowPct =
                                 showSharePct &&
-                                !PCT_EXCLUDED_METRICS.has(mId);
+                                !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
 
                               periods.forEach(
                                 (period, pIdx) => {
@@ -6647,7 +6799,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     subHeaders.push(
                                       <th
                                         key={`${mId}__${period}__pct`}
-                                        className="px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
+                                        className="group px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
                                         style={{
                                           backgroundColor:
                                             PIVOT_DERIVED_HEADER_BG,
@@ -6671,7 +6823,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             : {}),
                                         }}
                                       >
-                                        %
+                                        {renderPctHeaderLabel(mId)}
                                       </th>,
                                     );
                                   }
@@ -6751,7 +6903,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 subHeaders.push(
                                   <th
                                     key={`${mId}__total__pct`}
-                                    className="px-2 py-2 text-center font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
+                                    className="group px-2 py-2 text-center font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
                                     style={{
                                       backgroundColor:
                                         totalColumnBg,
@@ -6772,7 +6924,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                         : {}),
                                     }}
                                   >
-                                    %
+                                    {renderPctHeaderLabel(mId)}
                                   </th>,
                                 );
                               }
@@ -6799,9 +6951,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   const periodSortKey = `${period}__${mId}`;
                                   const canShowPct =
                                     showSharePct &&
-                                    !PCT_EXCLUDED_METRICS.has(
-                                      mId,
-                                    );
+                                    !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                                   const periodGroupEnd =
                                     isLastInPeriod && !isLastPeriod
                                       ? {
@@ -6897,7 +7047,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     out.push(
                                       <th
                                         key={`pf2p_${period}_${mId}`}
-                                        className="px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
+                                        className="group px-2 py-2 text-center font-bold uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
                                         style={{
                                           backgroundColor:
                                             PIVOT_DERIVED_HEADER_BG,
@@ -6910,7 +7060,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                           ...periodGroupEnd,
                                         }}
                                       >
-                                        %
+                                        {renderPctHeaderLabel(mId)}
                                       </th>,
                                     );
                                   }
@@ -6925,7 +7075,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   orderedMetrics.length - 1;
                                 const canShowPct =
                                   showSharePct &&
-                                  !PCT_EXCLUDED_METRICS.has(mId);
+                                  !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                                 const metric = METRICS_LIST.find(
                                   (m) => m.id === mId,
                                 );
@@ -6999,7 +7149,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   out.push(
                                     <th
                                       key={`pf2tp_${mId}`}
-                                      className="px-2 py-2 text-center font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
+                                      className="group px-2 py-2 text-center font-bold text-slate-700 uppercase tracking-wider select-none whitespace-nowrap text-[12px]"
                                       style={{
                                         backgroundColor: totalColumnBg,
                                         width: PCT_COL_WIDTH,
@@ -7015,7 +7165,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                           : {}),
                                       }}
                                     >
-                                      %
+                                      {renderPctHeaderLabel(mId)}
                                     </th>,
                                   );
                                 }
@@ -7066,7 +7216,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 analysisMode === "comparativo";
                               const canShowPct =
                                 showSharePct &&
-                                !PCT_EXCLUDED_METRICS.has(mId);
+                                !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                               const cells: React.ReactNode[] =
                                 [];
 
@@ -7365,9 +7515,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                 const totalKey = `__total__${mId}`;
                                 const canShowPct =
                                   showSharePct &&
-                                  !PCT_EXCLUDED_METRICS.has(
-                                    mId,
-                                  );
+                                  !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
 
                                 // Coluna do valor Total
                                 cells.push(
@@ -7549,7 +7697,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     const key = `${period}__${mId}`;
                                     const canShowPct =
                                       showSharePct &&
-                                      !PCT_EXCLUDED_METRICS.has(mId);
+                                      !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                                     const isLastInPeriod =
                                       mIdx ===
                                       orderedMetrics.length - 1;
@@ -7760,7 +7908,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     orderedMetrics.length - 1;
                                   const canShowPct =
                                     showSharePct &&
-                                    !PCT_EXCLUDED_METRICS.has(mId);
+                                    !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                                   const out: React.ReactNode[] = [];
                                   out.push(
                                     <td
@@ -8008,9 +8156,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                   "comparativo";
                                 const canShowPct =
                                   showSharePct &&
-                                  !PCT_EXCLUDED_METRICS.has(
-                                    mId,
-                                  );
+                                  !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
                                 const cells: React.ReactNode[] =
                                   [];
                                 const planningBg =
@@ -8227,7 +8373,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                         >
                                           {renderPctValue(
                                             row[key] || 0,
-                                            colTotal,
+                                            getShareTotal(row, key, colTotal),
                                           )}
                                         </td>,
                                       );
@@ -8362,9 +8508,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                     : null;
                                   const canShowPct =
                                     showSharePct &&
-                                    !PCT_EXCLUDED_METRICS.has(
-                                      mId,
-                                    );
+                                    !(PCT_EXCLUDED_METRICS.has(mId) || hiddenPctMetrics.has(mId));
 
                                   // Coluna do valor Total
                                   cells.push(
@@ -8567,7 +8711,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       >
                                         {renderPctValue(
                                           row[totalKey] || 0,
-                                          grandTotal,
+                                          getShareTotal(row, totalKey, grandTotal),
                                         )}
                                       </td>,
                                     );
@@ -8660,9 +8804,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               getMetricTableLabel(metricId, metric.label);
                             const canShowPct =
                               showSharePct &&
-                              !PCT_EXCLUDED_METRICS.has(
-                                metricId,
-                              );
+                              !(PCT_EXCLUDED_METRICS.has(metricId) || hiddenPctMetrics.has(metricId));
                             const isLastMetric =
                               metricId ===
                               orderedMetrics[
@@ -8828,10 +8970,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       borderRightColor:
                                         "#e2e8f0",
                                     }}
-                                    className="px-2 py-3 text-xs font-bold uppercase tracking-wider"
+                                    className="group px-2 py-3 text-xs font-bold uppercase tracking-wider"
                                   >
                                     <div className="text-center text-[11px]">
-                                      %
+                                      {renderPctHeaderLabel(metricId)}
                                     </div>
                                   </th>
                                 )}
@@ -8874,9 +9016,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               const canShowPct =
                                 showSharePct &&
                                 hasMultipleRows &&
-                                !PCT_EXCLUDED_METRICS.has(
-                                  metricId,
-                                );
+                                !(PCT_EXCLUDED_METRICS.has(metricId) || hiddenPctMetrics.has(metricId));
                               const isLastMetric =
                                 metricId ===
                                 orderedMetrics[
@@ -9074,9 +9214,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                               (metricId: string) => {
                                 const canShowPct =
                                   showSharePct &&
-                                  !PCT_EXCLUDED_METRICS.has(
-                                    metricId,
-                                  );
+                                  !(PCT_EXCLUDED_METRICS.has(metricId) || hiddenPctMetrics.has(metricId));
                                 const isLastMetric =
                                   metricId ===
                                   orderedMetrics[
@@ -9173,7 +9311,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       >
                                         {renderPctValue(
                                           row[metricId] ?? 0,
-                                          totals?.[metricId],
+                                          getShareTotal(row, metricId, totals?.[metricId]),
                                         )}
                                       </td>
                                     )}

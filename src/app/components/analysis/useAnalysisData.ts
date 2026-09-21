@@ -496,20 +496,25 @@ export const useAnalysisData = (props: UseAnalysisDataProps) => {
   );
 
   // ── Flatten tree — ordena cada `children` lazily ao expandir ────
+  // Cada linha recebe uma referência ao nó pai (`__parentAgg`) já com os
+  // valores agregados de métrica: é a base usada pelo "% por Agrupamento"
+  // (raiz = null → cai para o total geral na hora de renderizar o %).
   const flattenTree = useCallback(
     (
       rows: any[],
       expandedSet: Set<string>,
       comparator: ((a: any, b: any) => number) | null,
+      parent: any = null,
     ): any[] => {
       const result: any[] = [];
       for (const row of rows) {
+        row.__parentAgg = parent;
         result.push(row);
         if (row.children?.length > 0 && expandedSet.has(row.id)) {
           const children = comparator
             ? [...row.children].sort(comparator)
             : row.children;
-          result.push(...flattenTree(children, expandedSet, comparator));
+          result.push(...flattenTree(children, expandedSet, comparator, row));
         }
       }
       return result;

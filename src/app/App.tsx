@@ -33,7 +33,7 @@ import {
   useModuleNavigator,
 } from "./hooks/useModuleNavigator";
 import { useAttributeFilters } from "./hooks/useAttributeFilters";
-import type { AnalysisMode, AveragePeriodType } from "./types/wizard";
+import type { AnalysisMode, AveragePeriodType, SharePctMode } from "./types/wizard";
 
 /** Defaults do accordion de métricas (alinhado a MetricsSidebar). Em PRODUTO só "Venda e Estoque" vem aberto. */
 function getMetricsSidebarDefaultsForModule(module: Module): Record<string, boolean> {
@@ -61,7 +61,7 @@ export default function App() {
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("padrao");
   const [averagePeriodType, setAveragePeriodType] = useState<AveragePeriodType>(null);
   const [averageDropdownOpen, setAverageDropdownOpen] = useState(false);
-  const [showSharePct, setShowSharePct] = useState(false);
+  const [sharePctMode, setSharePctMode] = useState<SharePctMode>("off");
   const [isGenerating, setIsGenerating] = useState(false);
   /** Métricas ativadas nas etapas 1–3; na etapa 4 a sidebar só lista este universo. */
   const [resultMetricCatalog, setResultMetricCatalog] = useState<string[]>([]);
@@ -277,7 +277,7 @@ export default function App() {
         setIsGenerating(false);
         setCurrentStep("analysis");
         setMetricsCollapsed(true);
-        setShowSharePct(false);
+        setSharePctMode("off");
         setAveragePeriodType(null);
       }, 3000);
       return;
@@ -301,7 +301,7 @@ export default function App() {
       setMetricsGroupExpanded(getMetricsSidebarDefaultsForModule(currentModule));
       setAveragePeriodType(null);
       setAverageDropdownOpen(false);
-      setShowSharePct(false);
+      setSharePctMode("off");
 
       const resetDefaults = getDefaultsForPeriodType("Diário");
       const fallbackRange = {
@@ -515,8 +515,8 @@ export default function App() {
                     setAveragePeriodType={setAveragePeriodType}
                     averageDropdownOpen={averageDropdownOpen}
                     setAverageDropdownOpen={setAverageDropdownOpen}
-                    showSharePct={showSharePct}
-                    setShowSharePct={setShowSharePct}
+                    sharePctMode={sharePctMode}
+                    setSharePctMode={setSharePctMode}
                   />
                   </div>
                 )}
