@@ -896,21 +896,51 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     return pctStr;
   };
 
-  // Base do % conforme o modo selecionado no dropdown "Add %":
-  // - 'total': participação sobre o total geral da análise (comportamento clássico).
-  // - 'agrupamento': participação sobre o total do nó pai (agrupamento imediatamente
-  //   superior); linhas de nível raiz caem no total geral, pois não têm pai.
-  // `key` é a mesma chave usada para ler o valor da métrica na linha (mId em modo
-  // padrão, `${period}__${mId}` ou `__total__${mId}` em modo pivot).
-  const getShareTotal = (
+  // "% por Agrupamento" (modo foco): a cada abertura de drill-down, só a
+  // abertura mais profunda de cada ramo mostra 100% — tudo que não faz parte
+  // dela (linha TOTAL, ramos irmãos não abertos, níveis "ultrapassados" por
+  // uma abertura mais profunda) fica em branco. `key` é a mesma chave usada
+  // para ler o valor da métrica na linha (mId em modo padrão, `${period}__${mId}`
+  // ou `__total__${mId}` em modo pivot).
+
+  // Nó "frontier": está expandido, mas nenhum filho seu também está — é ele
+  // quem vira a referência de 100% daquele ramo.
+  const isRowPctFrontier = (row: any): boolean => {
+    if (!row || !row.hasChildren || !expandedRows.includes(row.id)) {
+      return false;
+    }
+    const children = row.children || [];
+    return !children.some(
+      (c: any) => c?.hasChildren && expandedRows.includes(c.id),
+    );
+  };
+  // O total geral só funciona como referência de 100% enquanto nada, em
+  // nenhum ramo, estiver expandido.
+  const isGrandTotalPctFrontier = (): boolean => expandedRows.length === 0;
+
+  // % da linha TOTAL: sempre 100% no modo "% Total"; no modo "% por
+  // Agrupamento", só enquanto nada estiver expandido em nenhum ramo.
+  const totalRowPctLabel =
+    sharePctMode === "agrupamento" && !isGrandTotalPctFrontier()
+      ? ""
+      : "100%";
+
+  const renderSharePct = (
     row: any,
     key: string,
+    value: number,
     grandTotal: number | null | undefined,
-  ): number | null | undefined => {
-    if (sharePctMode === "agrupamento") {
-      return row?.__parentAgg ? row.__parentAgg[key] : grandTotal;
+  ): React.ReactNode => {
+    if (sharePctMode !== "agrupamento") {
+      return renderPctValue(value, grandTotal);
     }
-    return grandTotal;
+    if (isRowPctFrontier(row)) return "100%";
+    const parent = row?.__parentAgg;
+    const parentIsFrontier = parent
+      ? isRowPctFrontier(parent)
+      : isGrandTotalPctFrontier();
+    if (!parentIsFrontier) return "";
+    return renderPctValue(value, parent ? parent[key] : grandTotal);
   };
 
   // Cabeçalho da coluna "%": ao passar o mouse em qualquer ponto do cabeçalho
@@ -3101,7 +3131,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     : {}),
                 }}
               >
-                {renderPctValue(row[key] || 0, getShareTotal(row, key, colTotal))}
+                {renderSharePct(row, key, row[key] || 0, colTotal)}
               </td>,
             );
           }
@@ -3251,7 +3281,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                     }),
               }}
             >
-              {renderPctValue(row[totalKey] || 0, getShareTotal(row, totalKey, grandTotal))}
+              {renderSharePct(row, totalKey, row[totalKey] || 0, grandTotal)}
             </td>,
           );
         }
@@ -7395,7 +7425,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                           // NUNCA borda forte aqui - a borda forte vai no Total
                                         }}
                                       >
-                                        100%
+                                        {totalRowPctLabel}
                                       </td>,
                                     );
                                   }
@@ -7681,7 +7711,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                           : {}),
                                       }}
                                     >
-                                      100%
+                                      {totalRowPctLabel}
                                     </td>,
                                   );
                                 }
@@ -7891,7 +7921,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                               : {}),
                                           }}
                                         >
-                                          100%
+                                          {totalRowPctLabel}
                                         </td>,
                                       );
                                     }
@@ -8050,7 +8080,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             : {}),
                                         }}
                                       >
-                                        100%
+                                        {totalRowPctLabel}
                                       </td>,
                                     );
                                   }
@@ -8371,9 +8401,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                             // NUNCA borda forte aqui - a borda forte vai no Total
                                           }}
                                         >
-                                          {renderPctValue(
+                                          {renderSharePct(
+                                            row,
+                                            key,
                                             row[key] || 0,
-                                            getShareTotal(row, key, colTotal),
+                                            colTotal,
                                           )}
                                         </td>,
                                       );
@@ -8709,9 +8741,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                               }),
                                         }}
                                       >
-                                        {renderPctValue(
+                                        {renderSharePct(
+                                          row,
+                                          totalKey,
                                           row[totalKey] || 0,
-                                          getShareTotal(row, totalKey, grandTotal),
+                                          grandTotal,
                                         )}
                                       </td>,
                                     );
@@ -9120,7 +9154,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                       }}
                                       className="h-[46px] px-2 py-2.5 text-center text-[12px] text-slate-500"
                                     >
-                                      100%
+                                      {totalRowPctLabel}
                                     </td>
                                   )}
                                 </React.Fragment>
@@ -9309,9 +9343,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                                         }}
                                         className="px-2 py-3 text-center text-[12px] text-slate-500 transition-colors"
                                       >
-                                        {renderPctValue(
+                                        {renderSharePct(
+                                          row,
+                                          metricId,
                                           row[metricId] ?? 0,
-                                          getShareTotal(row, metricId, totals?.[metricId]),
+                                          totals?.[metricId],
                                         )}
                                       </td>
                                     )}
