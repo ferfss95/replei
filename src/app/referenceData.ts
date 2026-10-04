@@ -182,21 +182,38 @@ export const EXPOSITORES_OPTIONS = [
 ];
 
 /**
- * Opções do atributo TIPO nos modais — mesma lista para PRODUTO (via `TIPO_OPTIONS`),
- * LOJA (`TIPO_OPTIONS_LOJA`) e INDICADORES (`TIPO_OPTIONS_INDICADORES`).
+ * Opções do atributo TIPO nos modais, a partir de uma lista única:
+ * - PRODUTO (`TIPO_OPTIONS`): sem "Encomenda Expressa (3P)".
+ * - LOJA (`TIPO_OPTIONS_LOJA`) e INDICADORES (`TIPO_OPTIONS_INDICADORES`):
+ *   sem "Compra no digital - convencional" e sem "Click & Retire".
  */
+const TIPO_COMPRA_DIGITAL_CONVENCIONAL = "Compra no digital - convencional";
+const TIPO_CLICK_RETIRE = "Click & Retire";
+const TIPO_ENCOMENDA_EXPRESSA_3P = "Encomenda Expressa (3P)";
+
 const TIPO_OPTIONS_SOURCE: readonly string[] = [
   "Compra em loja",
-  "OMS",
-  "Encomenda Expressa 1P",
-  "Encomenda Expressa 3P",
-  "Click e Retire",
+  TIPO_COMPRA_DIGITAL_CONVENCIONAL,
+  TIPO_CLICK_RETIRE,
   "Pickup",
+  "Ship from Store",
+  "Encomenda Expressa (1P)",
+  TIPO_ENCOMENDA_EXPRESSA_3P,
 ];
 
-export const TIPO_OPTIONS: string[] = [...TIPO_OPTIONS_SOURCE];
-export const TIPO_OPTIONS_LOJA: string[] = [...TIPO_OPTIONS_SOURCE];
-export const TIPO_OPTIONS_INDICADORES: string[] = [...TIPO_OPTIONS_SOURCE];
+const TIPO_HIDDEN_PRODUTO = new Set([TIPO_ENCOMENDA_EXPRESSA_3P]);
+const TIPO_HIDDEN_LOJA_INDICADORES = new Set([
+  TIPO_COMPRA_DIGITAL_CONVENCIONAL,
+  TIPO_CLICK_RETIRE,
+]);
+
+export const TIPO_OPTIONS: string[] = TIPO_OPTIONS_SOURCE.filter(
+  (o) => !TIPO_HIDDEN_PRODUTO.has(o),
+);
+export const TIPO_OPTIONS_LOJA: string[] = TIPO_OPTIONS_SOURCE.filter(
+  (o) => !TIPO_HIDDEN_LOJA_INDICADORES.has(o),
+);
+export const TIPO_OPTIONS_INDICADORES: string[] = [...TIPO_OPTIONS_LOJA];
 
 export const LOJAS_LIST = [
   "2029 - Shopping Vit\u00f3ria",
