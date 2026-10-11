@@ -23,7 +23,9 @@ import { SelectionView } from "./components/steps/SelectionView";
 import { AttributeGrid } from "./components/steps/AttributeGrid";
 import { MetricsSidebar } from "./components/MetricsSidebar";
 import { AppHeader } from "./components/AppHeader";
-import { SecondaryHeader } from "./components/SecondaryHeader";
+import { SecondaryHeader, ANALYSIS_TITLES } from "./components/SecondaryHeader";
+import { AnalysisSelector } from "./components/AnalysisSelector";
+import { UI } from "./constants/uiTheme";
 import { AnalysisSummarySection } from "./components/AnalysisSummarySection";
 import { IntradaySyncMetadata } from "./components/IntradaySyncMetadata";
 import { getModuleColors } from "./constants/moduleColors";
@@ -34,6 +36,20 @@ import {
 } from "./hooks/useModuleNavigator";
 import { useAttributeFilters } from "./hooks/useAttributeFilters";
 import type { AnalysisMode, AveragePeriodType, SharePctMode } from "./types/wizard";
+import { CanalVisaoProvider, type CanalVisaoContextValue } from "./context/CanalVisaoContext";
+import {
+  CANAL_VISAO_DEFAULT,
+  isCanalOmniModule,
+  pruneOmniForVisao,
+  type CanalVisao,
+} from "./data/canalOmni";
+import {
+  ATRIBUTOS_BLOQUEADOS_DESTINO,
+  getDigitalModoPadrao,
+  isDigitalSelecionado,
+  limparSelecoesDigital,
+  type DigitalModo,
+} from "./data/digitalOrigemDestino";
 
 /** Defaults do accordion de métricas (alinhado a MetricsSidebar). Em PRODUTO só "Venda e Estoque" vem aberto. */
 function getMetricsSidebarDefaultsForModule(module: Module): Record<string, boolean> {
@@ -65,6 +81,15 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   /** Métricas ativadas nas etapas 1–3; na etapa 4 a sidebar só lista este universo. */
   const [resultMetricCatalog, setResultMetricCatalog] = useState<string[]>([]);
+  /** Etapa Calcular: seleção de métricas ainda não aplicada à tabela (null = sem alterações). */
+  const [metricsDraft, setMetricsDraft] = useState<string[] | null>(null);
+  /** Flag do CANAL (Operacional / Corporativo) — PRODUTO, LOJA e INDICADORES. */
+  const [canalVisao, setCanalVisaoState] = useState<CanalVisao>(CANAL_VISAO_DEFAULT);
+  /**
+   * Origem do faturamento × Destino do pedido escolhido manualmente pelo usuário.
+   * `null` = padrão pelo canal marcado (Digital → Destino; só Encomenda Expressa → Origem).
+   */
+  const [digitalModoEscolhido, setDigitalModoEscolhido] = useState<DigitalModo | null>(null);
 
   // ─── Module Navigation ─────────────────────────────────────────
   const {
@@ -124,7 +149,60 @@ export default function App() {
     exclusions, setExclusions,
     getAttributeOptions,
     handleAttributeClick,
-  } = useAttributeFilters({ currentModuleConfig, currentStep, currentModule, analysisMode });
+  } = useAttributeFilters({
+    currentModuleConfig,
+    currentStep,
+    currentModule,
+    analysisMode,
+    canalVisao,
+    digitalModoEscolhido,
+  });
+
+  // Digital Origem/Destino: ao mudar o modo (ou marcar/desmarcar o digital), descarta
+  // o que deixou de valer — no Destino, LOJA/REGIONAL/NACIONAL ficam bloqueados.
+  const digitalAtivo = isDigitalSelecionado(selections);
+  const digitalModo: DigitalModo = digitalModoEscolhido ?? getDigitalModoPadrao(selections);
+  const setDigitalModo = React.useCallback((modo: DigitalModo) => {
+    setDigitalModoEscolhido(modo);
+  }, []);
+  // Desmarcou todos os canais digitais/EE: a próxima escolha volta ao padrão do canal.
+  React.useEffect(() => {
+    if (!digitalAtivo) setDigitalModoEscolhido(null);
+  }, [digitalAtivo]);
+  React.useEffect(() => {
+    setSelections((prev) => limparSelecoesDigital(prev, digitalAtivo, digitalModo));
+    setExclusions((prev) => limparSelecoesDigital(prev, digitalAtivo, digitalModo));
+    if (digitalAtivo && digitalModo === "destino") {
+      setGrouping((prev) =>
+        prev.some((id) => ATRIBUTOS_BLOQUEADOS_DESTINO.has(id))
+          ? prev.filter((id) => !ATRIBUTOS_BLOQUEADOS_DESTINO.has(id))
+          : prev,
+      );
+    }
+  }, [digitalAtivo, digitalModo, setSelections, setExclusions, setGrouping]);
+
+  // Troca de visão: descarta OMNI que não existe mais para os canais escolhidos.
+  const setCanalVisao = React.useCallback(
+    (next: CanalVisao) => {
+      setCanalVisaoState(next);
+      setSelections((prev) => pruneOmniForVisao(prev, next, currentModule));
+      setExclusions((prev) => pruneOmniForVisao(prev, next, currentModule));
+    },
+    [currentModule, setSelections, setExclusions],
+  );
+
+  const canalVisaoContext = React.useMemo<CanalVisaoContextValue>(
+    () => ({
+      enabled: isCanalOmniModule(currentModule),
+      moduleId: currentModule,
+      visao: canalVisao,
+      setVisao: setCanalVisao,
+      digitalAtivo,
+      digitalModo,
+      setDigitalModo,
+    }),
+    [currentModule, canalVisao, setCanalVisao, digitalAtivo, digitalModo, setDigitalModo],
+  );
 
   // Regra de isolamento entre módulos:
   // ao trocar módulo, zera filtros/agrupamentos para evitar "vazamento" de contexto
@@ -214,11 +292,14 @@ export default function App() {
     const metricExistsInModule = currentModuleConfig.metrics.some((metric) => metric.id === metricId);
     if (!metricExistsInModule) return;
 
+    // Etapa Calcular: marca/desmarca num rascunho; a tabela só muda em "Aplicar alterações".
     if (currentStep === "analysis") {
-      if (!resultMetricCatalog.includes(metricId)) return;
-      setSelectedMetrics((prev) =>
-        prev.includes(metricId) ? prev.filter((m) => m !== metricId) : [...prev, metricId],
-      );
+      setMetricsDraft((prev) => {
+        const base = prev ?? selectedMetrics;
+        return base.includes(metricId)
+          ? base.filter((m) => m !== metricId)
+          : [...base, metricId];
+      });
       return;
     }
 
@@ -232,6 +313,31 @@ export default function App() {
       );
       return [...prev, metricId];
     });
+  };
+
+  // Rascunho de métricas vale só enquanto o usuário está no Calcular do mesmo módulo.
+  React.useEffect(() => {
+    setMetricsDraft(null);
+  }, [currentStep, currentModule]);
+
+  /** Há diferença entre o rascunho e as métricas da tabela? */
+  const hasPendingMetricChanges =
+    metricsDraft !== null &&
+    (metricsDraft.length !== selectedMetrics.length ||
+      metricsDraft.some((id) => !selectedMetrics.includes(id)));
+
+  /** Aplica o rascunho: inclui/remove as colunas de métricas da tabela. */
+  const applyMetricsDraft = () => {
+    if (!metricsDraft || metricsDraft.length === 0) return;
+    const draft = metricsDraft;
+    // Mantém a ordem das colunas existentes e acrescenta as novas ao final.
+    const next = [
+      ...selectedMetrics.filter((id) => draft.includes(id)),
+      ...draft.filter((id) => !selectedMetrics.includes(id)),
+    ];
+    setSelectedMetrics(next);
+    setResultMetricCatalog((catalog) => [...new Set([...catalog, ...next])]);
+    setMetricsDraft(null);
   };
 
   const handleAnalysisModeChange = (mode: AnalysisMode) => {
@@ -276,7 +382,8 @@ export default function App() {
       setTimeout(() => {
         setIsGenerating(false);
         setCurrentStep("analysis");
-        setMetricsCollapsed(true);
+        // Menu de Métricas fica aberto no Calcular para incluir/remover colunas.
+        setMetricsCollapsed(false);
         setSharePctMode("off");
         setAveragePeriodType(null);
       }, 3000);
@@ -302,6 +409,8 @@ export default function App() {
       setAveragePeriodType(null);
       setAverageDropdownOpen(false);
       setSharePctMode("off");
+      setCanalVisaoState(CANAL_VISAO_DEFAULT);
+      setDigitalModoEscolhido(null);
 
       const resetDefaults = getDefaultsForPeriodType("Diário");
       const fallbackRange = {
@@ -328,11 +437,12 @@ export default function App() {
   };
 
   return (
+    <CanalVisaoProvider value={canalVisaoContext}>
     <RadixTooltip.Provider>
       {isTransitioning && <ModuleTransition />}
       <div
         className="h-screen overflow-hidden text-slate-900 font-sans flex flex-col"
-        style={{ backgroundColor: "#F1F1F1" }}
+        style={{ backgroundColor: UI.pageBg }}
       >
         <AppHeader
           currentModule={currentModule}
@@ -346,31 +456,45 @@ export default function App() {
           isComparativoPeriodDefined={isComparativoPeriodDefined}
           handleStepChange={handleStepChange}
           onClear={handleClear}
+          onModuleChange={handleModuleChange}
+          canChangeModule={currentStep === "selection"}
         />
 
         <motion.div
-          className="flex-1 flex overflow-hidden relative"
+          className="flex-1 flex flex-col overflow-hidden relative"
           key={moduleTransitionKey}
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
-          <main
-            className={cn(
-              "flex-1 flex flex-col overflow-hidden",
-              metricsCollapsed ? "mr-12" : "mr-72",
-            )}
-          >
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {/* ── Secondary Header: padding 24px, fora da área de scroll ── */}
+              {/* ── Secondary Header: largura total, fora da área de scroll ── */}
               <SecondaryHeader
                 currentStep={currentStep}
                 analysisMode={analysisMode}
                 title={currentAnalysisDisplayName}
+                titleSlot={
+                  currentStep === "selection" ? (
+                    <AnalysisSelector
+                      variant="title"
+                      titleLabel={ANALYSIS_TITLES[analysisMode]}
+                      value={analysisMode}
+                      onChange={(mode) => isPeriodEditable && handleAnalysisModeChange(mode)}
+                      supportsHoraAHora={
+                        currentModule === "LOJA" ||
+                        currentModule === "INDICADORES" ||
+                        currentModule === "PRODUTO"
+                      }
+                      supportsCapacidadeExposicao={false}
+                      disabled={!isPeriodEditable}
+                      accentColor={moduleColors.primaryColor}
+                      accentTextColor={moduleColors.iconColor}
+                    />
+                  ) : undefined
+                }
                 onActionsMount={handleActionsMount}
               />
 
-              <div className="flex-none px-6 pb-3">
+              <div className="flex-none px-6 pb-4">
                 <AnalysisSummarySection
                   moduleConfig={currentModuleConfig}
                   selections={selections}
@@ -402,12 +526,20 @@ export default function App() {
                 />
               </div>
 
+          {/* ── Conteúdo (cards) + menu de Métricas lado a lado ── */}
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 gap-4 px-6",
+              currentStep === "analysis" ? "pb-2" : "pb-4",
+            )}
+          >
+          <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <div
                 className={cn(
-                  "w-full flex-1 flex flex-col gap-4 px-6",
+                  "w-full flex-1 flex flex-col gap-4",
                   currentStep === "analysis"
                     ? "min-h-0 overflow-hidden pb-0"
-                    : "overflow-y-auto pb-6",
+                    : "overflow-y-auto pb-1",
                 )}
               >
                 {/* Config Panel - Modo de Análise + Período */}
@@ -521,12 +653,14 @@ export default function App() {
                   </div>
                 )}
               </div>
-            </div>
           </main>
 
           <MetricsSidebar
             currentStep={currentStep}
             resultMetricCatalog={resultMetricCatalog}
+            pendingSelectedMetrics={currentStep === "analysis" ? metricsDraft : null}
+            hasPendingMetricChanges={currentStep === "analysis" && hasPendingMetricChanges}
+            onApplyMetricChanges={applyMetricsDraft}
             metricsCollapsed={metricsCollapsed}
             setMetricsCollapsed={setMetricsCollapsed}
             metricsGroupExpanded={metricsGroupExpanded}
@@ -538,6 +672,7 @@ export default function App() {
             moduleColors={moduleColors}
             analysisMode={analysisMode}
           />
+          </div>
         </motion.div>
 
         {/* Loading Overlay */}
@@ -572,5 +707,6 @@ export default function App() {
         )}
       </div>
     </RadixTooltip.Provider>
+    </CanalVisaoProvider>
   );
 }

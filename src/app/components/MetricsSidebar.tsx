@@ -1,7 +1,8 @@
 import React from "react";
 import {
-  TrendingUp,
-  ChevronRight,
+  Activity,
+  Check,
+  ChevronDown,
   PanelRightOpen,
   PanelRightClose,
   Search,
@@ -11,7 +12,8 @@ import { cn } from "../utils";
 import type { Module, Step } from "../constants";
 import type { MetricDef, ModuleConfig } from "../modules/types";
 import type { AnalysisMode } from "../types/wizard";
-import { NEUTRAL_PALETTE, type ModuleColors } from "../constants/moduleColors";
+import { type ModuleColors } from "../constants/moduleColors";
+import { UI, tint } from "../constants/uiTheme";
 import { Input } from "./ui/input";
 import { stripAccents } from "../utils/searchNormalize";
 import { getMetricSidebarLabel } from "../data/metricNaming";
@@ -41,8 +43,14 @@ type MetricSearchCluster = {
 
 interface MetricsSidebarProps {
   currentStep: Step;
-  /** Ids ativados na preparação; na etapa Resultado a sidebar lista somente este universo. */
+  /** Ids ativados na preparação (histórico); no Calcular a sidebar lista todas as métricas do módulo. */
   resultMetricCatalog: string[];
+  /** Calcular: seleção ainda não aplicada à tabela (null = igual à tabela). */
+  pendingSelectedMetrics?: string[] | null;
+  /** Calcular: há alterações a aplicar (exibe "Aplicar alterações"). */
+  hasPendingMetricChanges?: boolean;
+  /** Calcular: aplica o rascunho, incluindo/removendo colunas da tabela. */
+  onApplyMetricChanges?: () => void;
   metricsCollapsed: boolean;
   setMetricsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   metricsGroupExpanded: Record<string, boolean>;
@@ -58,6 +66,9 @@ interface MetricsSidebarProps {
 export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSidebar({
   currentStep,
   resultMetricCatalog,
+  pendingSelectedMetrics = null,
+  hasPendingMetricChanges = false,
+  onApplyMetricChanges,
   metricsCollapsed,
   setMetricsCollapsed,
   metricsGroupExpanded,
@@ -93,16 +104,11 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   const [hoveredMetricId, setHoveredMetricId] = React.useState<string | null>(null);
   const [metricsSearchQuery, setMetricsSearchQuery] = React.useState("");
   const isResultStep = currentStep === "analysis";
-  const resultCatalogSet = React.useMemo(
-    () => (isResultStep ? new Set(resultMetricCatalog) : null),
-    [isResultStep, resultMetricCatalog],
-  );
-
-  const filterByResultCatalog = React.useCallback(
-    (metrics: MetricDef[]) =>
-      resultCatalogSet ? metrics.filter((m) => resultCatalogSet.has(m.id)) : metrics,
-    [resultCatalogSet],
-  );
+  // No Calcular todas as métricas do módulo ficam disponíveis: a inclusão/remoção
+  // de colunas passa pelo "Aplicar alterações" (resultMetricCatalog é só histórico).
+  void resultMetricCatalog;
+  /** Seleção exibida: rascunho do Calcular (se houver) ou as métricas da tabela. */
+  const displayedSelectedMetrics = pendingSelectedMetrics ?? selectedMetrics;
 
   // Lista plana das métricas de "Capacidade de Exposição" (PRODUTO), exibidas
   // sem accordion no topo da sidebar quando a análise correspondente está ativa.
@@ -110,33 +116,27 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
     if (!showCapacidadeExposicaoFlat) return [];
     const section = (currentModuleConfig.metricSidebarExtraSections || []).find(
       (s) => s.sidebarGroupId === "capacidade_exposicao_metrics",
-    );
+  );
     if (!section) return [];
     const ids = section.groups.flatMap((g) => g.metricIds);
     const defs = ids
       .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
       .filter((m): m is MetricDef => Boolean(m));
-    return filterByResultCatalog(defs);
-  }, [showCapacidadeExposicaoFlat, currentModuleConfig, filterByResultCatalog]);
+    return defs;
+  }, [showCapacidadeExposicaoFlat, currentModuleConfig]);
 
   const planningMetrics = currentModuleConfig.planningMetrics || [];
   const excludedFromVendaEstoque = new Set(
     currentModuleConfig.metricsSidebarExcludeFromVendaEstoque || [],
   );
-  const vendaEstoqueMetrics = filterByResultCatalog(
-    currentModuleConfig.metrics.filter(
-      (m) => !planningMetrics.includes(m.id) && !excludedFromVendaEstoque.has(m.id),
-    ),
+  const vendaEstoqueMetrics = currentModuleConfig.metrics.filter(
+    (m) => !planningMetrics.includes(m.id) && !excludedFromVendaEstoque.has(m.id),
   );
-  const planejamentoMetrics = filterByResultCatalog(
-    currentModuleConfig.metrics.filter((m) => planningMetrics.includes(m.id)),
-  );
+  const planejamentoMetrics = currentModuleConfig.metrics.filter((m) => planningMetrics.includes(m.id));
   const outrasAfterPlanningIds = currentModuleConfig.metricsSidebarOutrasAfterPlanning || [];
-  const outrasAfterPlanningMetrics = filterByResultCatalog(
-    outrasAfterPlanningIds
+  const outrasAfterPlanningMetrics = outrasAfterPlanningIds
       .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
-      .filter((m): m is MetricDef => Boolean(m)),
-  );
+      .filter((m): m is MetricDef => Boolean(m));
   const hasOutrasAccordion =
     planejamentoMetrics.length > 0 || outrasAfterPlanningMetrics.length > 0;
   // Módulos que exibem métricas diretamente, sem accordion "Venda e Estoque"
@@ -153,25 +153,15 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
     },
   );
 
-  /** Na etapa Resultado, oculta seções/grupos sem métricas no catálogo de preparação. */
-  const visibleExtraSidebarSections = React.useMemo(() => {
-    return extraSidebarSections
-      .map((section, sectionIdx) => {
-        const groupId = section.sidebarGroupId ?? `metric_extra_${sectionIdx}`;
-        const groups =
-          isResultStep && resultCatalogSet
-            ? section.groups
-                .map((group) => ({
-                  ...group,
-                  metricIds: group.metricIds.filter((id) => resultCatalogSet.has(id)),
-                }))
-                .filter((group) => group.metricIds.length > 0)
-            : section.groups;
-        if (isResultStep && resultCatalogSet && groups.length === 0) return null;
-        return { section, groupId, groups };
-      })
-      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
-  }, [extraSidebarSections, isResultStep, resultCatalogSet]);
+  const visibleExtraSidebarSections = React.useMemo(
+    () =>
+      extraSidebarSections.map((section, sectionIdx) => ({
+        section,
+        groupId: section.sidebarGroupId ?? `metric_extra_${sectionIdx}`,
+        groups: section.groups,
+      })),
+    [extraSidebarSections],
+  );
 
   const showVendaEstoqueAccordion =
     !hideVendaEstoqueAndPlanning &&
@@ -298,18 +288,9 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   const renderMetricRow = (
     metric: Pick<MetricDef, "id" | "label" | "tooltip" | "orientation" | "formula">,
   ) => {
-    const isSelected = selectedMetrics.includes(metric.id);
+    const isSelected = displayedSelectedMetrics.includes(metric.id);
     const isHovered = hoveredMetricId === metric.id;
-    const borderColor = isHovered
-      ? NEUTRAL_PALETTE.title
-      : isSelected
-        ? moduleColors.primaryColor
-        : "#ffffff";
-    const boxShadow =
-      isHovered
-        ? "0 0 0 3px rgba(86, 104, 120, 0.3), 0 2px 6px rgba(0, 0, 0, 0.06)"
-        : undefined;
-    const textColor = isSelected ? moduleColors.iconColor : NEUTRAL_PALETTE.muted;
+    const textColor = isSelected ? moduleColors.primaryColor : UI.text;
     return (
       <button
         type="button"
@@ -318,20 +299,18 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
         onMouseEnter={() => setHoveredMetricId(metric.id)}
         onMouseLeave={() => setHoveredMetricId(null)}
         className={cn(
-          "w-full text-left px-3 py-2 text-[13px] rounded-lg transition-all duration-200 flex items-center justify-between gap-2 border border-solid",
+          "w-full text-left pl-4 pr-3 py-[9px] text-[14px] rounded-lg transition-colors duration-150 flex items-center justify-between gap-2",
         )}
         style={{
           backgroundColor: isSelected
-            ? moduleColors.backgroundColor
+            ? tint(moduleColors.primaryColor, isHovered ? 0.16 : 0.1)
             : isHovered
-              ? "#ffffff"
+              ? "#F4F4F5"
               : "transparent",
-          borderColor,
-          boxShadow,
           color: textColor,
         }}
       >
-        <span className={cn("min-w-0 flex-1 font-medium", isSelected && "font-semibold")}>
+        <span className={cn("min-w-0 flex-1 font-normal", isSelected && "font-semibold")}>
           {getMetricSidebarLabel(metric.id, metric.label)}
         </span>
         {isSelected ? (
@@ -344,30 +323,50 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
           <MetricInfoIconTooltip metricId={metric.id} metric={metric} />
         ) : null}
       </button>
-    );
+  );
   };
 
   const vendaEstoqueMetricRows = vendaEstoqueMetrics.map((metric) => renderMetricRow(metric));
 
+  /** Cabeçalho de accordion: rótulo em caixa alta + seta à direita (cima = aberto). */
+  const renderGroupHeader = (groupId: string, label: React.ReactNode) => {
+    const open = !!metricsGroupExpanded[groupId];
+    return (
+      <button
+        type="button"
+        onClick={() => toggleMetricsGroup(groupId)}
+        aria-expanded={open}
+        className="group flex w-full items-center justify-between rounded-md px-0 py-2 text-left text-[14px] font-medium uppercase tracking-[0.2px] transition-colors hover:opacity-80"
+        style={{ color: UI.title }}
+      >
+        <span>{label}</span>
+        <ChevronDown
+          size={18}
+          strokeWidth={2}
+          className={cn("shrink-0 text-[#3F3F46] transition-transform duration-200", open && "rotate-180")}
+        />
+      </button>
+  );
+  };
+
   return (
     <aside
       className={cn(
-        "bg-white border-l border-[#d5dbe3] flex flex-col overflow-hidden transition-all duration-300 fixed right-0 bottom-0",
+        "flex shrink-0 flex-col overflow-hidden rounded-[12px] border border-[#E7E7EA] bg-white transition-all duration-300",
         metricsCollapsed ? "w-12" : "w-72",
       )}
-      style={{ top: 64 }}
     >
       <div
         className={cn(
           "flex-none",
-          metricsCollapsed ? "px-2 pt-4 pb-3" : "px-6 pt-5 pb-4",
+          metricsCollapsed ? "px-2 pt-4 pb-3" : "px-4 pt-5 pb-3",
         )}
       >
         <div className="flex items-center justify-between gap-2">
           {!metricsCollapsed && (
-            <div className="flex min-h-[21px] min-w-0 flex-1 items-center gap-2">
-              <TrendingUp size={14} className="shrink-0 text-[#90A1B9]" />
-              <h3 className="min-w-0 truncate text-[14px] font-bold uppercase leading-[21px] tracking-wider text-[rgb(49,65,88)]">
+            <div className="flex min-h-[24px] min-w-0 flex-1 items-center gap-2.5">
+              <Activity size={18} strokeWidth={2} className="shrink-0" style={{ color: moduleColors.iconColor }} />
+              <h3 className="min-w-0 truncate text-[16px] font-bold leading-6" style={{ color: UI.title }}>
                 Métricas
               </h3>
             </div>
@@ -385,15 +384,10 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
             )}
           </button>
         </div>
-        {!metricsCollapsed && isResultStep ? (
-          <p className="mt-2 text-[12px] leading-[18px] text-[#62748E] pr-8">
-            Para selecionar novas métricas, retorne às etapas anteriores.
-          </p>
-        ) : null}
       </div>
 
       {!metricsCollapsed && (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4">
           {!isResultStep ? (
           <div className="shrink-0 bg-white pb-3 pt-0">
             <div className="relative">
@@ -415,7 +409,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
             </div>
           </div>
           ) : null}
-          <div className="min-h-0 flex-1 overflow-y-auto px-2">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="space-y-4">
               {isSearchMode ? (
                 searchClusters.length === 0 ? (
@@ -456,22 +450,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                 <>
                   {showVendaEstoqueAccordion ? (
                   <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleMetricsGroup("venda_estoque")}
-                      className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <ChevronRight
-                          size={12}
-                          className={cn(
-                            "text-slate-400 transition-transform duration-200",
-                            metricsGroupExpanded["venda_estoque"] && "rotate-90",
-                          )}
-                        />
-                        <span>Venda e Estoque</span>
-                      </div>
-                    </button>
+                    {renderGroupHeader("venda_estoque", "Venda e Estoque")}
                     {metricsGroupExpanded["venda_estoque"] && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
@@ -497,22 +476,7 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                           </div>
                         ) : null}
                         <div className="space-y-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleMetricsGroup(groupId)}
-                            className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
-                          >
-                            <div className="flex items-center gap-2">
-                              <ChevronRight
-                                size={12}
-                                className={cn(
-                                  "text-slate-400 transition-transform duration-200",
-                                  metricsGroupExpanded[groupId] && "rotate-90",
-                                )}
-                              />
-                              <span>{section.title}</span>
-                            </div>
-                          </button>
+                          {renderGroupHeader(groupId, section.title)}
                           {metricsGroupExpanded[groupId] && (
                             <motion.div
                               initial={{ opacity: 0, height: 0 }}
@@ -557,25 +521,10 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
                         </div>
                       ) : null}
                       <div className="space-y-2">
-                        <button
-                          type="button"
-                          onClick={() => toggleMetricsGroup("planejamento")}
-                          className="w-full flex items-center justify-between px-2 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#62748E] hover:text-slate-800 transition-colors group rounded-md hover:bg-slate-50/50"
-                        >
-                          <div className="flex items-center gap-2">
-                            <ChevronRight
-                              size={12}
-                              className={cn(
-                                "text-slate-400 transition-transform duration-200",
-                                metricsGroupExpanded["planejamento"] && "rotate-90",
-                              )}
-                            />
-                            <span>
-                              {currentModuleConfig.metricsSidebarPlanningGroupLabel ??
-                                "Planejamento"}
-                            </span>
-                          </div>
-                        </button>
+                        {renderGroupHeader(
+                          "planejamento",
+                          currentModuleConfig.metricsSidebarPlanningGroupLabel ?? "Planejamento",
+                        )}
                         {metricsGroupExpanded["planejamento"] && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
@@ -619,6 +568,27 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Calcular: inclui/remove colunas da tabela conforme as métricas marcadas. */}
+      {!metricsCollapsed && isResultStep && hasPendingMetricChanges && (
+        <div className="flex-none border-t border-[#EDEDEF] px-4 py-4">
+          <button
+            type="button"
+            onClick={onApplyMetricChanges}
+            disabled={displayedSelectedMetrics.length === 0}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border bg-white text-[14px] font-semibold transition-all duration-150 enabled:hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ borderColor: UI.title, color: UI.title }}
+          >
+            Aplicar alterações
+            <Check size={15} strokeWidth={2.25} />
+          </button>
+          {displayedSelectedMetrics.length === 0 && (
+            <p className="mt-2 text-center text-[11px] leading-4 text-[#71717A]">
+              Selecione ao menos uma métrica para a tabela.
+            </p>
+          )}
         </div>
       )}
     </aside>

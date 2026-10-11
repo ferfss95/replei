@@ -1,22 +1,25 @@
 /**
  * SecondaryHeader
- * Cabeçalho de conteúdo com padding 24px — sempre presente em todas as etapas.
+ * Cabeçalho de conteúdo — sempre presente em todas as etapas.
  *
- * Esquerda : Ícone (24px, #566878) + Título da análise (#314158, bold 18px)
- * Direita  : Bolinha 4×4 + Texto orientador (etapas 1–3) | Slot para action buttons (etapa Resultado)
+ * Esquerda : Ícone + Título da análise (na etapa de seleção o título é o próprio
+ *            seletor de tipo de análise — `titleSlot`)
+ * Direita  : Bolinha + Texto orientador (etapas 1–3) | Slot para action buttons (etapa Resultado)
  */
 
 import React from "react";
-import { BarChart3, TrendingUp, ArrowLeftRight, Clock } from "lucide-react";
+import { BarChart3, ScanSearch, CalendarSync, ArrowLeftRight, Clock } from "lucide-react";
 import type { Step } from "../constants";
 import type { AnalysisMode } from "../types/wizard";
+import { UI } from "../constants/uiTheme";
 
 /** Títulos simplificados por modo de análise — exibidos no secondary header */
-const ANALYSIS_TITLES: Record<AnalysisMode, string> = {
-  padrao: "Análise Geral",
-  evolucao: "Análise Evolutiva",
-  comparativo: "Análise Comparativa",
-  horaahora: "Análise Intraday",
+export const ANALYSIS_TITLES: Record<AnalysisMode, string> = {
+  padrao: "Análise Consolidada",
+  capacidade_exposicao: "Análise de Capacidade de Exposição",
+  evolucao: "Análise de Evolução Temporal",
+  comparativo: "Análise Comparativa de Períodos",
+  horaahora: "Análise por Hora",
 };
 
 interface SecondaryHeaderProps {
@@ -24,6 +27,8 @@ interface SecondaryHeaderProps {
   analysisMode: AnalysisMode;
   /** Recebido mas não usado na exibição — título é derivado de analysisMode */
   title?: string;
+  /** Substitui o título fixo (ex.: seletor de tipo de análise na etapa de seleção). */
+  titleSlot?: React.ReactNode;
   /** Callback que recebe o elemento DOM onde os action buttons do Resultado serão portados */
   onActionsMount: (el: HTMLDivElement | null) => void;
 }
@@ -34,68 +39,60 @@ const STEP_GUIDANCE: Partial<Record<Step, string>> = {
   exclusion: "Quais dados devem ser desconsiderados?",
 };
 
+const ICON_PROPS = {
+  size: 22,
+  strokeWidth: 1.75,
+  style: { color: "#52525B", flexShrink: 0 },
+} as const;
+
 export const SecondaryHeader = React.memo(function SecondaryHeader({
   currentStep,
   analysisMode,
+  titleSlot,
   onActionsMount,
 }: SecondaryHeaderProps) {
   const isAnalysis = currentStep === "analysis";
   const guidanceText = STEP_GUIDANCE[currentStep];
 
   return (
-    <div
-      className="flex-none flex items-center justify-between h-14 px-6"
-    >
+    <div className="flex h-[60px] flex-none items-center justify-between px-6">
       {/* ── Esquerda: Ícone + Título ── */}
-      <div className="flex items-center" style={{ gap: 8 }}>
-        {(analysisMode === "padrao" || analysisMode === "capacidade_exposicao") && (
-          <BarChart3 size={20} strokeWidth={1.75} style={{ color: "#566878", flexShrink: 0 }} />
+      <div className="flex min-w-0 items-center" style={{ gap: 10 }}>
+        {analysisMode === "padrao" && <ScanSearch {...ICON_PROPS} />}
+        {analysisMode === "capacidade_exposicao" && (
+          <BarChart3 {...ICON_PROPS} />
         )}
-        {analysisMode === "evolucao" && (
-          <TrendingUp size={20} strokeWidth={1.75} style={{ color: "#566878", flexShrink: 0 }} />
-        )}
-        {analysisMode === "comparativo" && (
-          <ArrowLeftRight size={20} strokeWidth={1.75} style={{ color: "#566878", flexShrink: 0 }} />
-        )}
-        {analysisMode === "horaahora" && (
-          <Clock size={20} strokeWidth={1.75} style={{ color: "#566878", flexShrink: 0 }} />
-        )}
+        {analysisMode === "evolucao" && <CalendarSync {...ICON_PROPS} />}
+        {analysisMode === "comparativo" && <ArrowLeftRight {...ICON_PROPS} />}
+        {analysisMode === "horaahora" && <Clock {...ICON_PROPS} />}
 
-        <span
-          style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: "#314158",
-            lineHeight: "28px",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {ANALYSIS_TITLES[analysisMode]}
-        </span>
+        {titleSlot ?? (
+          <span
+            className="truncate"
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              color: UI.title,
+              lineHeight: "32px",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {ANALYSIS_TITLES[analysisMode]}
+          </span>
+        )}
       </div>
 
       {/* ── Direita: texto orientador (etapas 1–3) | slot de actions (Resultado) ── */}
       {isAnalysis ? (
-        <div ref={onActionsMount} className="flex items-center gap-2 shrink-0" />
+        <div ref={onActionsMount} className="flex shrink-0 items-center gap-2" />
       ) : (
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           <span
             aria-hidden
             className="rounded-full"
-            style={{
-              width: 4,
-              height: 4,
-              backgroundColor: "#808080",
-            }}
+            style={{ width: 4, height: 4, backgroundColor: UI.muted }}
           />
-          <span
-            style={{
-              fontSize: 12,
-              color: "#808080",
-              lineHeight: "16px",
-              textAlign: "right",
-            }}
-          >
+          <span style={{ fontSize: 15, color: "#52525B", lineHeight: "20px", textAlign: "right" }}>
             {guidanceText}
           </span>
         </div>

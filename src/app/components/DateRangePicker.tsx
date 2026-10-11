@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, CalendarDays } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import { cn } from '../utils';
 import type { AnalysisMode } from '../types/wizard';
@@ -159,59 +159,39 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           type="button"
           disabled={disabled}
           className={cn(
-            'w-full h-[52px] px-0 flex items-center rounded-lg border transition-all',
-            'bg-white text-[13px] font-medium text-[#314158]',
+            'w-full h-[48px] pl-4 pr-2 flex items-center gap-3 rounded-[10px] border transition-all',
+            'bg-white text-[14px] font-normal text-[#3F3F46]',
             disabled
               ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-60'
-              : 'border-[#d5dbe3] hover:border-[#314158] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#314158]/20 focus:border-[#314158]'
+              : 'border-[#E4E4E7] hover:border-[#A1A1AA] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#314158]/15 focus:border-[#A1A1AA]'
           )}
         >
+          <CalendarDays size={16} strokeWidth={1.75} className="shrink-0 text-[#52525B]" aria-hidden />
+
           {/* Início */}
-          <div
+          <span
             className={cn(
-              'flex-1 flex items-center gap-2.5 px-3.5 py-2 rounded-l-lg transition-colors',
-              open && clickPhase === 'start' ? 'bg-[#f1f5f9]' : ''
+              'flex-1 rounded-md px-2 py-1 text-left whitespace-nowrap transition-colors',
+              open && clickPhase === 'start' ? 'bg-[#F4F4F5]' : ''
             )}
           >
-            <div className="flex flex-col items-start flex-1 gap-0.5">
-              <span
-                className={cn(
-                  'text-[10px] font-semibold uppercase tracking-wide',
-                  open && clickPhase === 'start' ? 'text-[#314158]' : 'text-[#90A1B9]'
-                )}
-              >
-                Início
-              </span>
-              <span className="text-[13px] font-medium text-[#314158]">
-                {startDate ? formatDisplayDate(startDate) : '—'}
-              </span>
-            </div>
-          </div>
+            <span className="sr-only">Início: </span>
+            {startDate ? formatDisplayDate(startDate) : '—'}
+          </span>
 
           {/* Divisor */}
-          <div className="w-px h-8 bg-[#d5dbe3]" />
+          <span className="shrink-0 text-[#A1A1AA]" aria-hidden>—</span>
 
           {/* Fim */}
-          <div
+          <span
             className={cn(
-              'flex-1 flex items-center gap-2.5 px-3.5 py-2 rounded-r-lg transition-colors',
-              open && clickPhase === 'end' ? 'bg-[#f1f5f9]' : ''
+              'flex-1 rounded-md px-2 py-1 text-left whitespace-nowrap transition-colors',
+              open && clickPhase === 'end' ? 'bg-[#F4F4F5]' : ''
             )}
           >
-            <div className="flex flex-col items-start flex-1 gap-0.5">
-              <span
-                className={cn(
-                  'text-[10px] font-semibold uppercase tracking-wide',
-                  open && clickPhase === 'end' ? 'text-[#314158]' : 'text-[#90A1B9]'
-                )}
-              >
-                Fim
-              </span>
-              <span className="text-[13px] font-medium text-[#314158]">
-                {endDate ? formatDisplayDate(endDate) : '—'}
-              </span>
-            </div>
-          </div>
+            <span className="sr-only">Fim: </span>
+            {endDate ? formatDisplayDate(endDate) : '—'}
+          </span>
         </button>
       </Popover.Trigger>
 

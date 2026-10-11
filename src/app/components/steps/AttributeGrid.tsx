@@ -1,6 +1,5 @@
 import React from "react";
 import { Filter, Anchor, Ban } from "lucide-react";
-import { cn } from "../../utils";
 import {
   getVisibleLocationAttributes,
   MAX_GROUPING_LEVELS,
@@ -10,8 +9,9 @@ import {
 import type { AnalysisMode } from "../../types/wizard";
 import { ScrollableRow } from "../ScrollableRow";
 import { AttributeCard as SmartAttributeCard } from "../AttributeCard";
-import type { ModuleConfig } from "../../modules/types";
+import type { AttributeDef, ModuleConfig } from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
+import { UI, UI_CARD_CLASS } from "../../constants/uiTheme";
 
 interface AttributeGridProps {
   currentStep: Step;
@@ -70,27 +70,73 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
   const visibleDomainAttributes = filterDomainForAnalysis(
     currentModuleConfig.domainAttributes,
   );
+
+  const renderCard = (attr: AttributeDef, tooltip?: string) => (
+    <SmartAttributeCard
+      key={attr.id}
+      attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
+      step={currentStep}
+      moduleColors={moduleColors}
+      groupingLimitReached={
+        currentStep === "grouping" && grouping.length >= MAX_GROUPING_LEVELS
+      }
+      selectionCount={selections[attr.id]?.length || 0}
+      isGrouped={grouping.includes(attr.id)}
+      groupLevel={grouping.indexOf(attr.id) + 1}
+      exclusionCount={exclusions[attr.id]?.length || 0}
+      onToggleGroup={() => handleAttributeClick(attr.id)}
+      onUpdateSelection={(vals) => setSelections((prev) => ({ ...prev, [attr.id]: vals }))}
+      onUpdateExclusion={(vals) => setExclusions((prev) => ({ ...prev, [attr.id]: vals }))}
+      currentSelection={selections[attr.id] || []}
+      currentExclusion={exclusions[attr.id] || []}
+      tooltip={tooltip}
+    />
+  );
+
+  /** Faixa com o rótulo da seção (PRODUTO / LOCALIZAÇÃO) + linha de pills. */
+  const renderSection = (label: string, cards: React.ReactNode, key: string) => (
+    <div key={key}>
+      {label && (
+      <div
+        className="border-y px-6 py-3"
+        style={{ backgroundColor: UI.sectionBand, borderColor: "#EFEFF1" }}
+      >
+        <span
+          className="text-[13px] font-bold uppercase tracking-[0.4px]"
+          style={{ color: moduleColors.iconColor }}
+        >
+          {label}
+        </span>
+      </div>
+      )}
+      <div className="px-6 py-4">
+        <ScrollableRow wrap>{cards}</ScrollableRow>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="bg-white rounded-xl border border-[#D9D9D9] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden shrink-0">
+    <div className={`${UI_CARD_CLASS} flex shrink-0 flex-col overflow-hidden`}>
       {/* Header */}
-      <div className="bg-white px-6 py-3 flex items-center gap-3 flex-none flex-wrap">
+      <div className="flex flex-none flex-wrap items-center gap-3 bg-white px-6 py-4">
         {currentStep === "selection" && (
-          <Filter size={16} className="text-[#90A1B9]" />
+          <Filter size={18} strokeWidth={2} style={{ color: UI.title }} />
         )}
         {currentStep === "grouping" && (
-          <Anchor size={16} className="text-[#90A1B9]" />
+          <Anchor size={18} strokeWidth={2} style={{ color: UI.title }} />
         )}
         {currentStep === "exclusion" && (
-          <Ban size={16} className="text-[#90A1B9]" />
+          <Ban size={18} strokeWidth={2} style={{ color: UI.title }} />
         )}
-        <span className="text-[14px] font-bold uppercase text-[rgb(49,65,88)] tracking-[1.2px]">
-          {currentStep === "selection" && "Selecionar Atributos"}
-          {currentStep === "grouping" && "Agrupar Atributos"}
-          {currentStep === "exclusion" && "Excluir Atributos"}
+        <span className="text-[16px] font-bold" style={{ color: UI.title }}>
+          {currentStep === "selection" && "Selecionar atributos"}
+          {currentStep === "grouping" && "Agrupar atributos"}
+          {currentStep === "exclusion" && "Excluir atributos"}
         </span>
         {currentStep === "grouping" && (
           <span
-            className="text-[14px] font-semibold tabular-nums text-[#314158] ml-2"
+            className="ml-1 rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums"
+            style={{ color: moduleColors.iconColor, backgroundColor: moduleColors.backgroundColor }}
             aria-live="polite"
           >
             {grouping.length}/{MAX_GROUPING_LEVELS}
@@ -98,129 +144,28 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
         )}
       </div>
 
-      {/* Content with ScrollableRow */}
-      <div className="px-6 py-4">
-        <div className="space-y-6">
-          {/* Domain attributes */}
-          <div>
-            {currentModuleConfig.domainSectionLabel && (
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-[10px] font-medium uppercase tracking-[1.12px] text-slate-400">
-                  {currentModuleConfig.domainSectionLabel}
-                </span>
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
-            )}
-            <ScrollableRow>
-              {visibleDomainAttributes.map((attr) => (
-                <SmartAttributeCard
-                  key={attr.id}
-                  attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
-                  step={currentStep}
-                  moduleColors={moduleColors}
-                  groupingLimitReached={
-                    currentStep === "grouping" &&
-                    grouping.length >= MAX_GROUPING_LEVELS
-                  }
-                  selectionCount={selections[attr.id]?.length || 0}
-                  isGrouped={grouping.includes(attr.id)}
-                  groupLevel={grouping.indexOf(attr.id) + 1}
-                  exclusionCount={exclusions[attr.id]?.length || 0}
-                  onToggleGroup={() => handleAttributeClick(attr.id)}
-                  onUpdateSelection={(vals) =>
-                    setSelections((prev) => ({ ...prev, [attr.id]: vals }))
-                  }
-                  onUpdateExclusion={(vals) =>
-                    setExclusions((prev) => ({ ...prev, [attr.id]: vals }))
-                  }
-                  currentSelection={selections[attr.id] || []}
-                  currentExclusion={exclusions[attr.id] || []}
-                />
-              ))}
-            </ScrollableRow>
-          </div>
+      {/* Domain attributes */}
+      {renderSection(
+        currentModuleConfig.domainSectionLabel,
+        visibleDomainAttributes.map((attr) => renderCard(attr)),
+        "domain",
+      )}
 
-          {(currentModuleConfig.domainAttributeExtraRows ?? []).map(
-            (row, rowIdx) => (
-              <div key={`${row.sectionLabel}-${rowIdx}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-[10px] font-medium uppercase tracking-[1.12px] text-slate-400">
-                    {row.sectionLabel}
-                  </span>
-                  <div className="h-px flex-1 bg-slate-200" />
-                </div>
-                <ScrollableRow>
-                  {row.attributes.map((attr) => (
-                    <SmartAttributeCard
-                      key={attr.id}
-                      attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
-                      step={currentStep}
-                      moduleColors={moduleColors}
-                      groupingLimitReached={
-                        currentStep === "grouping" &&
-                        grouping.length >= MAX_GROUPING_LEVELS
-                      }
-                      selectionCount={selections[attr.id]?.length || 0}
-                      isGrouped={grouping.includes(attr.id)}
-                      groupLevel={grouping.indexOf(attr.id) + 1}
-                      exclusionCount={exclusions[attr.id]?.length || 0}
-                      onToggleGroup={() => handleAttributeClick(attr.id)}
-                      onUpdateSelection={(vals) =>
-                        setSelections((prev) => ({ ...prev, [attr.id]: vals }))
-                      }
-                      onUpdateExclusion={(vals) =>
-                        setExclusions((prev) => ({ ...prev, [attr.id]: vals }))
-                      }
-                      currentSelection={selections[attr.id] || []}
-                      currentExclusion={exclusions[attr.id] || []}
-                    />
-                  ))}
-                </ScrollableRow>
-              </div>
-            ),
-          )}
+      {(currentModuleConfig.domainAttributeExtraRows ?? []).map((row, rowIdx) =>
+        renderSection(
+          row.sectionLabel,
+          row.attributes.map((attr) => renderCard(attr)),
+          `${row.sectionLabel}-${rowIdx}`,
+        ),
+      )}
 
-          {/* Localização (only shown for modules that use separate location section) */}
-          {currentModule === "PRODUTO" && (
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-[10px] font-medium uppercase tracking-[1.12px] text-slate-400">
-                  Localização
-                </span>
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
-              <ScrollableRow>
-                {visibleLocationAttributes.map((attr) => (
-                  <SmartAttributeCard
-                    key={attr.id}
-                    attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
-                    step={currentStep}
-                    moduleColors={moduleColors}
-                    groupingLimitReached={
-                    currentStep === "grouping" &&
-                    grouping.length >= MAX_GROUPING_LEVELS
-                  }
-                    selectionCount={selections[attr.id]?.length || 0}
-                    isGrouped={grouping.includes(attr.id)}
-                    groupLevel={grouping.indexOf(attr.id) + 1}
-                    exclusionCount={exclusions[attr.id]?.length || 0}
-                    onToggleGroup={() => handleAttributeClick(attr.id)}
-                    onUpdateSelection={(vals) =>
-                      setSelections((prev) => ({ ...prev, [attr.id]: vals }))
-                    }
-                    onUpdateExclusion={(vals) =>
-                      setExclusions((prev) => ({ ...prev, [attr.id]: vals }))
-                    }
-                    currentSelection={selections[attr.id] || []}
-                    currentExclusion={exclusions[attr.id] || []}
-                    tooltip={attr.tooltip || ""}
-                  />
-                ))}
-              </ScrollableRow>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Localização (only shown for modules that use separate location section) */}
+      {currentModule === "PRODUTO" &&
+        renderSection(
+          "Localização",
+          visibleLocationAttributes.map((attr) => renderCard(attr, attr.tooltip || "")),
+          "localizacao",
+        )}
     </div>
   );
 });

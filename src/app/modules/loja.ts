@@ -34,6 +34,7 @@ import {
   filterStoresByKnownLinks,
   filterRedeByKnownLinks,
 } from '../referenceData';
+import { CANAL_OPTIONS_LOJA } from '../data/canalOmni';
 import type { ModuleConfig } from './types';
 import {
   PRODUTO_DOMAIN_ATTRIBUTE_DEFS,
@@ -79,7 +80,8 @@ export const lojaModule: ModuleConfig = {
   // ── Domain attributes (todos em uma única linha) ──────────
   domainAttributes: [
     { id: 'rede',      label: 'REDE',      icon: Building2,  options: [] },
-    { id: 'tipo',      label: 'TIPO',      icon: Truck,      options: [] },
+    { id: 'canal',     label: 'CANAL',     icon: Receipt,    options: [] },
+    { id: 'tipo',      label: 'OMNI',      icon: Truck,      options: [] },
     { id: 'estado',    label: 'ESTADO',    icon: MapPin,     options: [] },
     { id: 'nacional',  label: 'NACIONAL',  icon: Flag,       options: [] },
     { id: 'regional',  label: 'REGIONAL',  icon: Building2,  options: [] },
@@ -100,6 +102,7 @@ export const lojaModule: ModuleConfig = {
   getDomainAttributeOptions(attrId, selections) {
     switch (attrId) {
       case 'rede':      return filterRedeByKnownLinks([...REDE_OPTIONS], selections);
+      case 'canal':     return [...CANAL_OPTIONS_LOJA];
       case 'tipo':      return TIPO_OPTIONS_LOJA;
       case 'estado':
         return filterStatesByKnownLinks(ESTADOS_LIST, selections);

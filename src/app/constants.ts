@@ -1,7 +1,6 @@
 import {
   Building2,
   MapPin,
-  Building,
   Users,
   Receipt,
   Truck,
@@ -22,7 +21,7 @@ export const STEPS: { id: Step; label: string; number: number }[] = [
   { id: 'selection', label: 'Seleção', number: 1 },
   { id: 'grouping', label: 'Agrupamento', number: 2 },
   { id: 'exclusion', label: 'Exclusão', number: 3 },
-  { id: 'analysis', label: 'Resultado', number: 4 },
+  { id: 'analysis', label: 'Calcular', number: 4 },
 ];
 
 /** Quantidade máxima de níveis no agrupamento (passo «Agrupar atributos»). */
@@ -34,32 +33,29 @@ export const MODULES: Module[] = ['PRODUTO', 'LOJA', 'EXTRAVIOS', 'INDICADORES']
 // Location attributes
 export const LOCATION_ATTRIBUTES = [
   { id: 'rede', label: 'REDE', icon: Building2, options: [], tooltip: '' },
-  { id: 'canal', label: 'CANAL', icon: Receipt, options: [], tooltip: 'Canal de venda' },
-  { id: 'tipo', label: 'TIPO', icon: Truck, options: [], tooltip: 'Como o pedido é processado e entregue' },
+  { id: 'canal', label: 'CANAL', icon: Receipt, options: [], tooltip: 'Canal de venda (visão Operacional ou Corporativa)' },
+  // OMNI (antigo TIPO): id `tipo` mantido por compatibilidade.
+  { id: 'tipo', label: 'OMNI', icon: Truck, options: [], tooltip: 'Modalidade omnichannel da venda' },
   { id: 'estado', label: 'ESTADO', icon: MapPin, options: [], tooltip: '' },
   { id: 'nacional', label: 'NACIONAL', icon: Flag, options: [], tooltip: '' },
   { id: 'regional', label: 'REGIONAL', icon: StoreIcon, options: [], tooltip: '' },
   { id: 'cidade', label: 'CIDADE', icon: MapPin, options: [], tooltip: '' },
   { id: 'loja', label: 'LOJA', icon: StoreIcon, options: [], tooltip: '' },
   { id: 'expositores', label: 'EXPOSITORES', icon: LayoutGrid, options: [], tooltip: '' },
-  { id: 'localizacao', label: 'LOCALIZAÇÃO', icon: Building, options: [], tooltip: 'CD ou status físico do estoque' },
   { id: 'vendedor', label: 'VENDEDOR', icon: UserCircle, options: [], tooltip: '' },
-  { id: 'origem', label: 'ORIGEM', icon: Building2, options: [], tooltip: '' },
 ];
 
 /** Ids de LOCATION_ATTRIBUTES ocultos na análise PRODUTO + "Capacidade de Exposição". */
 const PRODUTO_CAPACIDADE_HIDDEN_LOCATION_IDS = new Set([
   'tipo',
-  'localizacao',
   'vendedor',
-  'origem',
 ]);
 
 /**
  * Retorna a lista de LOCATION_ATTRIBUTES visível considerando o módulo e o
  * modo de análise.
  *
- * - PRODUTO + "Capacidade de Exposição": esconde TIPO/LOCALIZAÇÃO/VENDEDOR/ORIGEM
+ * - PRODUTO + "Capacidade de Exposição": esconde OMNI/VENDEDOR
  *   e exibe EXPOSITORES (logo após LOJA).
  * - Demais combinações: EXPOSITORES fica oculto.
  */

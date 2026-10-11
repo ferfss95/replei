@@ -1,26 +1,28 @@
 import React, { useState, useMemo } from "react";
-import { Check, Search, Filter, Trash2, Anchor, Tag, Minus } from "lucide-react";
+import { Check, Search, Filter, Trash2, Anchor, Tag, Minus, Ban } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { cn } from "../utils";
 import type { ModuleColors } from "../constants/moduleColors";
 import {
-  LOCALIZACAO_OPTION_GROUPS,
   MARCA_OPTION_GROUPS,
   modeloListDisplayLabel,
   CANAL_GROUP_CENTAURO_IDS,
   CANAL_GROUP_NIKE_IDS,
   ORIGEM_EXTRAVIOS_GROUP_CD_IDS,
   ORIGEM_EXTRAVIOS_GROUP_CDS_IDS,
-  ORIGEM_EXTRAVIOS_STANDALONE_IDS,
 } from "../referenceData";
+import { useCanalVisao } from "../context/CanalVisaoContext";
+import { CanalVisaoToggle, DigitalModoInline } from "./CanalVisaoToggle";
+import {
+  isAtributoBloqueadoDigital,
+  isCanalComOrigemDestino,
+} from "../data/digitalOrigemDestino";
+import { CANAL_VISAO_DESCRITIVO } from "../data/canalOmni";
+import { UI, tint } from "../constants/uiTheme";
 
-/** Paleta neutra — default / hover / desativado agrupamento */
-const NEUTRAL_TEXT = "#808080";
-const NEUTRAL_BORDER = "#D9D9D9";
-const HOVER_BORDER = "#314158";
-const HOVER_SHADOW =
-  "0 0 0 3px rgba(86, 104, 120, 0.3), 0 1px 3px rgba(0, 0, 0, 0.08)";
+/** Texto neutro das pills (estado padrão). */
+const NEUTRAL_TEXT = UI.text;
 
 interface Attribute {
   id: string;
@@ -49,7 +51,10 @@ interface AttributeCardProps {
   tooltip?: string;
 }
 
-const BTN_DIM = "w-[140px] h-[50px] shrink-0 rounded-xl border transition-all duration-200 outline-none";
+const BTN_DIM = "w-[147px] h-[40px] shrink-0 rounded-full border transition-all duration-200 outline-none";
+
+/** Rótulo das pills de atributo (caixa alta, peso normal; negrito quando marcado). */
+const PILL_LABEL_CLASS = "truncate text-[14px] uppercase tracking-[0.2px]";
 
 export function AttributeCard({
   attribute,
@@ -72,6 +77,15 @@ export function AttributeCard({
   const [isHover, setIsHover] = useState(false);
   /** Modal MODELO: exibir prefixo `12345678-` (comportamento anterior ao toggle). */
   const [showModeloCode, setShowModeloCode] = useState(true);
+  const canalVisaoCtx = useCanalVisao();
+  /** CANAL de PRODUTO/LOJA/INDICADORES: flag Operacional/Corporativo no modal. */
+  const isCanalComVisao = attribute.id === "canal" && canalVisaoCtx.enabled;
+  /** Digital no modo Destino: LOJA/REGIONAL/NACIONAL não se aplicam à entrega. */
+  const bloqueadoPorDestino = isAtributoBloqueadoDigital(
+    attribute.id,
+    canalVisaoCtx.digitalAtivo,
+    canalVisaoCtx.digitalModo,
+  );
 
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return attribute.options;
@@ -80,26 +94,12 @@ export function AttributeCard({
     );
   }, [attribute.options, searchTerm]);
 
-  /**
-   * ORIGEM tem variantes hierárquicas no EXTRAVIOS (Loja/Transportadora/CD/CDS)
-   * e variante plana no PRODUTO (Nacional/Importado). Detecta a variante de
-   * Extravios pela presença de marcadores específicos.
-   */
-  const isOrigemExtravios =
-    attribute.id === "origem" &&
-    attribute.options.some((o) => o === "Jarinu" || o === "Lapa");
-
   /** EXTRAVIOS: atributo "CD" — apenas grupos CD (Jarinu/Extrema) e CDS (Lapa). */
   const isCdCdsExtravios = attribute.id === "cd";
 
-  /** Grupos visuais (LOCALIZAÇÃO: STATUS/CD/CDS; MARCA: próprias / demais) — filtrados por busca */
+  /** Grupos visuais (MARCA: próprias / demais) — filtrados por busca */
   const clusterGroupsFiltered = useMemo(() => {
-    const groups =
-      attribute.id === "localizacao"
-        ? LOCALIZACAO_OPTION_GROUPS
-        : attribute.id === "marca"
-          ? MARCA_OPTION_GROUPS
-          : null;
+    const groups = attribute.id === "marca" ? MARCA_OPTION_GROUPS : null;
     if (!groups) return [];
     const q = searchTerm.trim().toLowerCase();
     return groups
@@ -213,7 +213,7 @@ export function AttributeCard({
     );
   };
 
-  /** Modal CANAL: hierarquia Todos Centauro / canais + Todos Nike / canais (com busca nos filhos). */
+  /** Modal CANAL: hierarquia Todos Centauro / canais + Todos NIKE / canais (com busca nos filhos). */
   const renderCanalGroupedPanel = () => {
     const q = searchTerm.trim().toLowerCase();
     const allowed = new Set(attribute.options);
@@ -236,6 +236,16 @@ export function AttributeCard({
                 {visible.map((opt) => (
                   <div key={opt} className="pl-0.5">
                     {renderOptionRow(opt)}
+                    {/* Digital / Encomenda Expressa marcado: escolha Origem × Destino logo abaixo. */}
+                    {isSelectionMode &&
+                      isCanalComOrigemDestino(opt) &&
+                      currentValues.includes(opt) && (
+                        <DigitalModoInline
+                          modo={canalVisaoCtx.digitalModo}
+                          onChange={canalVisaoCtx.setDigitalModo}
+                          moduleColors={moduleColors}
+                        />
+                      )}
                   </div>
                 ))}
               </div>
@@ -245,7 +255,7 @@ export function AttributeCard({
       );
     };
     const centauro = section("Todos Centauro", CANAL_GROUP_CENTAURO_IDS);
-    const nike = section("Todos Nike", CANAL_GROUP_NIKE_IDS);
+    const nike = section("Todos NIKE", CANAL_GROUP_NIKE_IDS);
     if (!centauro && !nike) {
       return (
         <div className="py-8 text-center text-slate-400">
@@ -255,16 +265,6 @@ export function AttributeCard({
     }
     return <div className="space-y-3 px-0.5 py-1">{centauro}{nike}</div>;
   };
-
-  /** Render helper compartilhado: item standalone (sem mestre). */
-  const renderExtStandaloneItem = (opt: string) => (
-    <div
-      key={opt}
-      className="overflow-hidden rounded-lg border border-slate-200/90 bg-white"
-    >
-      {renderOptionRow(opt)}
-    </div>
-  );
 
   /** Render helper compartilhado: grupo com mestre + filhos indentados. */
   const renderExtGroup = (
@@ -321,42 +321,6 @@ export function AttributeCard({
     );
   };
 
-  /** Modal ORIGEM — variante EXTRAVIOS (Loja, Transportadora, CD, CDS). */
-  const renderOrigemExtraviosPanel = () => {
-    const q = searchTerm.trim().toLowerCase();
-    const filterByQ = (arr: readonly string[]) =>
-      q ? arr.filter((m) => m.toLowerCase().includes(q)) : [...arr];
-
-    const cdVisible = filterByQ(ORIGEM_EXTRAVIOS_GROUP_CD_IDS);
-    const cdsVisible = filterByQ(ORIGEM_EXTRAVIOS_GROUP_CDS_IDS);
-    const standaloneVisible = filterByQ(ORIGEM_EXTRAVIOS_STANDALONE_IDS);
-
-    const lojaItem = standaloneVisible.includes("Loja")
-      ? renderExtStandaloneItem("Loja")
-      : null;
-    const transpItem = standaloneVisible.includes("Transportadora")
-      ? renderExtStandaloneItem("Transportadora")
-      : null;
-    const cdGroup = renderExtGroup("CD", ORIGEM_EXTRAVIOS_GROUP_CD_IDS, cdVisible);
-    const cdsGroup = renderExtGroup("CDS", ORIGEM_EXTRAVIOS_GROUP_CDS_IDS, cdsVisible);
-
-    if (!lojaItem && !transpItem && !cdGroup && !cdsGroup) {
-      return (
-        <div className="py-8 text-center text-slate-400">
-          <p className="text-xs">Nenhum resultado encontrado</p>
-        </div>
-      );
-    }
-    return (
-      <div className="space-y-2 px-0.5 py-1">
-        {lojaItem}
-        {transpItem}
-        {cdGroup}
-        {cdsGroup}
-      </div>
-    );
-  };
-
   const isSelected1 =
     (step === "selection" && selectionCount > 0) ||
     (step === "exclusion" && exclusionCount > 0);
@@ -365,6 +329,22 @@ export function AttributeCard({
 
   const showHoverChrome =
     (isHover || isOpen) && !isGroupingDisabled;
+
+  /** Pill marcada: fundo no tom claro da cor do módulo, sem contorno. */
+  const selectedPillStyle = (hover: boolean): React.CSSProperties => ({
+    backgroundColor: tint(moduleColors.primaryColor, hover ? 0.18 : 0.13),
+    borderColor: "transparent",
+    boxShadow: hover
+      ? `0 0 0 3px ${tint(moduleColors.primaryColor, 0.16)}`
+      : "0 1px 2px rgba(16, 24, 40, 0.06)",
+  });
+
+  /** Pill neutra: fundo branco e contorno cinza (realça com a cor do módulo no hover). */
+  const idlePillStyle = (hover: boolean): React.CSSProperties => ({
+    backgroundColor: "#FFFFFF",
+    borderColor: hover ? tint(moduleColors.primaryColor, 0.55) : UI.pillBorder,
+    boxShadow: hover ? `0 0 0 3px ${tint(moduleColors.primaryColor, 0.12)}` : undefined,
+  });
 
   const tooltipContent = tooltip ? (
     <RadixTooltip.Portal>
@@ -377,6 +357,47 @@ export function AttributeCard({
       </RadixTooltip.Content>
     </RadixTooltip.Portal>
   ) : null;
+
+  // ─── 0. Bloqueado pelo Destino do canal digital (todas as etapas) ─────────
+  if (bloqueadoPorDestino) {
+    return (
+      <RadixTooltip.Root delayDuration={200}>
+        <RadixTooltip.Trigger asChild>
+          <span className="inline-flex">
+            <button
+              type="button"
+              disabled
+              aria-disabled
+              className={cn(BTN_DIM, "flex cursor-not-allowed items-center justify-center")}
+              style={{
+                backgroundColor: "#FAFAFA",
+                borderWidth: 1,
+                borderStyle: "dashed",
+                borderColor: "rgba(217, 217, 222, 0.9)",
+              }}
+            >
+              <span
+                className={cn(PILL_LABEL_CLASS, "px-3")}
+                style={{ color: "rgba(113, 113, 122, 0.5)" }}
+              >
+                {attribute.label}
+              </span>
+            </button>
+          </span>
+        </RadixTooltip.Trigger>
+        <RadixTooltip.Portal>
+          <RadixTooltip.Content
+            className="z-[200] max-w-[220px] rounded-lg bg-slate-800 px-3 py-2 text-center text-xs leading-snug text-white shadow-lg"
+            sideOffset={6}
+          >
+            Não se aplica ao Destino do pedido (canal digital). Altere para Origem no
+            atributo CANAL para usar.
+            <RadixTooltip.Arrow className="fill-slate-800" />
+          </RadixTooltip.Content>
+        </RadixTooltip.Portal>
+      </RadixTooltip.Root>
+    );
+  }
 
   // ─── 1. Agrupamento (toggle direto) ───────────────────────────────────────
   if (step === "grouping") {
@@ -394,48 +415,38 @@ export function AttributeCard({
           !isGroupingDisabled && "cursor-pointer",
         )}
         style={{
-          backgroundColor: "transparent",
           borderWidth: 1,
           borderStyle: "solid",
           ...(isGroupingDisabled
             ? {
-                borderColor: "rgba(217, 217, 217, 0.5)",
-                color: "rgba(128, 128, 128, 0.5)",
+                backgroundColor: "#FFFFFF",
+                borderColor: "rgba(217, 217, 222, 0.5)",
+                color: "rgba(113, 113, 122, 0.5)",
               }
             : isSelected2
-              ? {
-                  backgroundColor: moduleColors.backgroundColor,
-                  borderColor: moduleColors.primaryColor,
-                  boxShadow: showHoverChrome ? HOVER_SHADOW : undefined,
-                  ...(showHoverChrome ? { borderColor: HOVER_BORDER } : {}),
-                }
-              : {
-                  borderColor: NEUTRAL_BORDER,
-                  color: NEUTRAL_TEXT,
-                  boxShadow: showHoverChrome ? HOVER_SHADOW : undefined,
-                  ...(showHoverChrome ? { borderColor: HOVER_BORDER } : {}),
-                }),
+              ? selectedPillStyle(showHoverChrome)
+              : idlePillStyle(showHoverChrome)),
         }}
       >
         {isSelected2 ? (
-          <span className="flex items-center justify-center gap-1.5 px-2">
+          <span className="flex items-center justify-center gap-1.5 px-3">
             <Anchor
               size={14}
               className="shrink-0"
-              style={{ color: moduleColors.iconColor }}
+              style={{ color: moduleColors.primaryColor }}
               strokeWidth={2.25}
             />
             <span
-              className="text-[12px] font-bold uppercase tracking-wide truncate"
-              style={{ color: moduleColors.iconColor }}
+              className={cn(PILL_LABEL_CLASS, "font-bold")}
+              style={{ color: moduleColors.primaryColor }}
             >
               {attribute.label}
             </span>
           </span>
         ) : (
           <span
-            className="text-[12px] font-bold uppercase tracking-wide px-2 truncate"
-            style={{ color: isGroupingDisabled ? "rgba(128, 128, 128, 0.5)" : NEUTRAL_TEXT }}
+            className={cn(PILL_LABEL_CLASS, "px-3")}
+            style={{ color: isGroupingDisabled ? "rgba(113, 113, 122, 0.5)" : NEUTRAL_TEXT }}
           >
             {attribute.label}
           </span>
@@ -480,29 +491,23 @@ export function AttributeCard({
       type="button"
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
-      className={cn(BTN_DIM, "flex flex-col items-center justify-center group cursor-pointer")}
+      className={cn(BTN_DIM, "flex items-center justify-center gap-1.5 px-3 group cursor-pointer")}
       style={{
-        backgroundColor: "transparent",
         borderWidth: 1,
         borderStyle: "solid",
-        ...(isSelected1
-          ? {
-              backgroundColor: moduleColors.backgroundColor,
-              borderColor: moduleColors.primaryColor,
-              boxShadow: showHoverChrome ? HOVER_SHADOW : undefined,
-              ...(showHoverChrome ? { borderColor: HOVER_BORDER } : {}),
-            }
-          : {
-              borderColor: NEUTRAL_BORDER,
-              boxShadow: showHoverChrome ? HOVER_SHADOW : undefined,
-              ...(showHoverChrome ? { borderColor: HOVER_BORDER } : {}),
-            }),
+        ...(isSelected1 ? selectedPillStyle(showHoverChrome) : idlePillStyle(showHoverChrome)),
       }}
     >
+      {isSelected1 &&
+        (isSelectionMode ? (
+          <Filter size={14} strokeWidth={2.25} className="shrink-0" style={{ color: moduleColors.primaryColor }} />
+        ) : (
+          <Ban size={14} strokeWidth={2.25} className="shrink-0" style={{ color: moduleColors.primaryColor }} />
+        ))}
       <span
-        className="text-[12px] font-bold uppercase tracking-wide px-2 truncate"
+        className={cn(PILL_LABEL_CLASS, isSelected1 && "font-bold")}
         style={{
-          color: isSelected1 ? moduleColors.iconColor : NEUTRAL_TEXT,
+          color: isSelected1 ? moduleColors.primaryColor : NEUTRAL_TEXT,
         }}
       >
         {attribute.label}
@@ -565,7 +570,7 @@ export function AttributeCard({
       <Popover.Content
         className={cn(
           "z-50 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl duration-200 animate-in zoom-in-95",
-          attribute.id === "canal" || isOrigemExtravios || isCdCdsExtravios ? "w-[308px]" : "w-[280px]",
+          attribute.id === "canal" || isCdCdsExtravios ? "w-[308px]" : "w-[280px]",
         )}
         sideOffset={8}
         side="top"
@@ -597,6 +602,26 @@ export function AttributeCard({
           )}
         </div>
 
+        {isCanalComVisao && (
+          <div className="border-b border-slate-100 px-3 py-2.5">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-[#808080]">
+              Visão do canal
+            </p>
+            <CanalVisaoToggle
+              visao={canalVisaoCtx.visao}
+              onChange={canalVisaoCtx.setVisao}
+              moduleColors={moduleColors}
+            />
+            <ul className="mt-2 list-disc space-y-0.5 pl-4 text-[10px] leading-snug text-slate-500">
+              {CANAL_VISAO_DESCRITIVO[canalVisaoCtx.visao].map((linha) => (
+                <li key={linha}>{linha}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* CANAL tem poucas opções agrupadas: sem campo de busca. */}
+        {attribute.id !== "canal" && (
         <div className="border-b border-slate-100 p-2">
           <div className="relative">
             <Search size={13} className="absolute left-3 top-2.5 text-slate-400" />
@@ -623,9 +648,10 @@ export function AttributeCard({
             </div>
           )}
         </div>
+        )}
 
         <div className="scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent max-h-[280px] overflow-y-auto p-1.5">
-          {attribute.id === "localizacao" || attribute.id === "marca" ? (
+          {attribute.id === "marca" ? (
             clusterGroupsFiltered.length > 0 ? (
               <div>
                 {clusterGroupsFiltered.map((group, idx) => (
@@ -655,8 +681,6 @@ export function AttributeCard({
             )
           ) : attribute.id === "canal" ? (
             renderCanalGroupedPanel()
-          ) : isOrigemExtravios ? (
-            renderOrigemExtraviosPanel()
           ) : isCdCdsExtravios ? (
             renderCdCdsPanel()
           ) : filteredOptions.length > 0 ? (

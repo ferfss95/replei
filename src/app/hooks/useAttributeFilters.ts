@@ -25,13 +25,10 @@ import {
 } from '../modules/types';
 import {
   REDE_OPTIONS,
-  CANAL_OPTIONS,
   TIPO_OPTIONS,
   REGIONAL_OPTIONS,
   NACIONAL_OPTIONS,
-  LOCALIZACAO_OPTIONS,
   VENDEDOR_OPTIONS,
-  ORIGEM_OPTIONS,
   EXPOSITORES_OPTIONS,
   ORDERED_LOJAS_LIST,
   STATE_TO_UF,
@@ -45,6 +42,20 @@ import {
   filterRedeByKnownLinks,
   filterCanalByKnownLinks,
 } from '../referenceData';
+import {
+  CANAIS_DIGITAIS,
+  filterCanalOmniOptionsBySelections,
+  getCanalOptionsForModule,
+  isCanalOmniModule,
+  type CanalVisao,
+} from '../data/canalOmni';
+import {
+  ajustarOpcoesDigital,
+  getDigitalModoPadrao,
+  isDigitalSelecionado,
+  selecoesParaFiltrosDeLoja,
+  type DigitalModo,
+} from '../data/digitalOrigemDestino';
 
 // ══════════════════════════════════════════════════════════════════
 // TYPES
@@ -55,6 +66,10 @@ interface UseAttributeFiltersProps {
   currentStep: Step;
   currentModule?: Module;
   analysisMode?: AnalysisMode;
+  /** Visão do CANAL (Operacional / Corporativo) — define a relação CANAL ↔ OMNI. */
+  canalVisao: CanalVisao;
+  /** Canal digital: localização lida pela Origem do faturamento ou Destino do pedido. */
+  digitalModoEscolhido: DigitalModo | null;
 }
 
 interface ActiveFilter {
@@ -68,7 +83,14 @@ interface ActiveFilter {
 // ══════════════════════════════════════════════════════════════════
 
 export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
-  const { currentModuleConfig, currentStep, currentModule, analysisMode } = props;
+  const {
+    currentModuleConfig,
+    currentStep,
+    currentModule,
+    analysisMode,
+    canalVisao,
+    digitalModoEscolhido,
+  } = props;
   const isProdutoCapacidadeExposicao =
     currentModule === 'PRODUTO' && analysisMode === 'capacidade_exposicao';
 
@@ -77,8 +99,18 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
   const [grouping, setGrouping] = useState<string[]>([]);
   const [exclusions, setExclusions] = useState<Record<string, string[]>>({});
 
+  // Canal digital selecionado: os filtros de loja/rede recebem seleções "neutras"
+  // (Origem: sem CDs; Destino: sem localização) e o resultado é ajustado depois.
+  const digitalAtivo = isDigitalSelecionado(selections);
+  // Escolha manual ou, sem ela, o padrão do canal (Digital → Destino; só EE → Origem).
+  const digitalModo = digitalModoEscolhido ?? getDigitalModoPadrao(selections);
+  const baseSelections = useMemo(
+    () => selecoesParaFiltrosDeLoja(selections, digitalAtivo, digitalModo),
+    [selections, digitalAtivo, digitalModo],
+  );
+
   // ─── GET ATTRIBUTE OPTIONS (Dynamic options based on selections) ───
-  const getAttributeOptions = useCallback(
+  const getBaseAttributeOptions = useCallback(
     (attrId: string) => {
       // First check if this attribute belongs to the current module's domain
       // (for Loja module, rede/tipo/estado/regional/cidade/loja are domain attributes)
@@ -87,45 +119,41 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
           (attr) => attr.id === attrId,
         )
       ) {
-        return currentModuleConfig.getDomainAttributeOptions(attrId, selections);
+        return currentModuleConfig.getDomainAttributeOptions(attrId, baseSelections);
       }
 
       // Otherwise handle location attributes (for PRODUTO module)
       switch (attrId) {
         case 'rede':
-          return filterRedeByKnownLinks(REDE_OPTIONS, selections);
+          return filterRedeByKnownLinks(REDE_OPTIONS, baseSelections);
         case 'canal': {
+          const canalOptions = getCanalOptionsForModule(currentModule);
+          // Capacidade de Exposição avalia o ponto de venda: sem canais digitais.
           const baseCanal = isProdutoCapacidadeExposicao
-            ? CANAL_OPTIONS.filter(
-                (c) => c !== 'Digital Centauro' && c !== 'Digital Nike',
-              )
-            : CANAL_OPTIONS;
-          return filterCanalByKnownLinks(baseCanal, selections);
+            ? canalOptions.filter((c) => !CANAIS_DIGITAIS.includes(c))
+            : canalOptions;
+          return filterCanalByKnownLinks(baseCanal, baseSelections);
         }
         case 'tipo':
           return TIPO_OPTIONS;
         case 'regional':
-          return filterRegionalsByKnownLinks(REGIONAL_OPTIONS, selections);
+          return filterRegionalsByKnownLinks(REGIONAL_OPTIONS, baseSelections);
         case 'nacional':
-          return filterNacionaisByKnownLinks([...NACIONAL_OPTIONS], selections);
-        case 'localizacao':
-          return LOCALIZACAO_OPTIONS;
+          return filterNacionaisByKnownLinks([...NACIONAL_OPTIONS], baseSelections);
         case 'vendedor':
           return VENDEDOR_OPTIONS;
-        case 'origem':
-          return ORIGEM_OPTIONS;
         case 'expositores':
           return EXPOSITORES_OPTIONS;
         case 'loja':
-          return filterStoresByKnownLinks(ORDERED_LOJAS_LIST, selections);
+          return filterStoresByKnownLinks(ORDERED_LOJAS_LIST, baseSelections);
         case 'estado': {
-          const selectedCities = selections['cidade'] || [];
+          const selectedCities = baseSelections['cidade'] || [];
 
           const formatState = (name: string) => `${name} - ${STATE_TO_UF[name] || ''}`;
 
           if (selectedCities.length === 0) {
             const allStates = ESTADOS_LIST.map(formatState).sort();
-            return filterStatesByKnownLinks(allStates, selections);
+            return filterStatesByKnownLinks(allStates, baseSelections);
           }
 
           const states = new Set<string>();
@@ -142,10 +170,10 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
               }
             }
           });
-          return filterStatesByKnownLinks(Array.from(states).sort(), selections);
+          return filterStatesByKnownLinks(Array.from(states).sort(), baseSelections);
         }
         case 'cidade': {
-          const selectedStates = selections['estado'] || [];
+          const selectedStates = baseSelections['estado'] || [];
           let formattedCities: string[] = [];
 
           const getRawState = (opt: string) => opt.split(' - ')[0];
@@ -167,15 +195,48 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
           }
           return filterCitiesByKnownLinks(
             Array.from(new Set(formattedCities)).sort(),
-            selections,
+            baseSelections,
           );
         }
         // Domain-specific attributes — delegated to the active module config
         default:
-          return currentModuleConfig.getDomainAttributeOptions(attrId, selections);
+          return currentModuleConfig.getDomainAttributeOptions(attrId, baseSelections);
       }
     },
-    [selections, currentModuleConfig, isProdutoCapacidadeExposicao],
+    [baseSelections, currentModuleConfig, currentModule, isProdutoCapacidadeExposicao],
+  );
+
+  // CANAL ↔ OMNI dependem da visão (flag Operacional / Corporativo) e a
+  // localização do digital, da leitura Origem / Destino.
+  const getAttributeOptions = useCallback(
+    (attrId: string) => {
+      let options = ajustarOpcoesDigital(
+        attrId,
+        getBaseAttributeOptions(attrId),
+        selections,
+        digitalAtivo,
+        digitalModo,
+        currentModuleConfig.id,
+      );
+      if (isCanalOmniModule(currentModuleConfig.id)) {
+        options = filterCanalOmniOptionsBySelections(
+          attrId,
+          options,
+          selections,
+          canalVisao,
+          currentModuleConfig.id,
+        );
+      }
+      return options;
+    },
+    [
+      getBaseAttributeOptions,
+      currentModuleConfig,
+      selections,
+      canalVisao,
+      digitalAtivo,
+      digitalModo,
+    ],
   );
 
   // ─── HANDLE ATTRIBUTE CLICK (Grouping toggle) ───

@@ -4,7 +4,7 @@
  */
 import React, { useMemo } from "react";
 import * as Popover from "@radix-ui/react-popover";
-import { Calendar as CalendarIcon, Filter, Anchor, Ban } from "lucide-react";
+import { Calendar as CalendarIcon, Filter, Anchor, Ban, Eye, MapPinned } from "lucide-react";
 import { LOCATION_ATTRIBUTES } from "../constants";
 import {
   collectAllDomainAttributes,
@@ -24,6 +24,12 @@ import {
   ANALYSIS_SUMMARY_TAG_BTN_CLASS,
   ANALYSIS_SUMMARY_TAG_STYLE,
 } from "./analysis/analysisSummaryTagStyles";
+import { useCanalVisao } from "../context/CanalVisaoContext";
+import { CANAL_VISAO_LABEL } from "../data/canalOmni";
+import { getModuleColors } from "../constants/moduleColors";
+import { CanalVisaoToggle, DigitalModoToggle } from "./CanalVisaoToggle";
+import { DIGITAL_MODO_DESCRICAO } from "../data/digitalOrigemDestino";
+import type { Module } from "../constants";
 
 export interface AnalysisSummarySectionProps {
   moduleConfig: ModuleConfig;
@@ -84,6 +90,7 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
   compWeeklyComputedDays2,
   metaSlot,
 }: AnalysisSummarySectionProps) {
+  const canalVisaoCtx = useCanalVisao();
   const periodInput: PeriodSummaryInput = useMemo(
     () => ({
       analysisMode,
@@ -288,6 +295,78 @@ export const AnalysisSummarySection = React.memo(function AnalysisSummarySection
                     </div>
                   ))}
                 </div>
+                <Popover.Arrow className="fill-white" />
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        )}
+
+        {canalVisaoCtx.enabled && (
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button
+                type="button"
+                className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                style={ANALYSIS_SUMMARY_TAG_STYLE}
+              >
+                <Eye size={10} className="shrink-0 text-[#2C2C2C]" />
+                <span className="uppercase">Visão Canal:</span>
+                <span className="font-normal ml-0.5">
+                  {CANAL_VISAO_LABEL[canalVisaoCtx.visao]}
+                </span>
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                className="z-[80] bg-white p-3 rounded-lg shadow-xl border border-[#D9D9D9] w-[290px] animate-in zoom-in-95"
+                sideOffset={5}
+                align="start"
+              >
+                <h4 className="text-xs font-bold text-[#314158] mb-2 uppercase tracking-wide border-b border-[#F1F1F1] pb-1 flex items-center gap-2">
+                  <Eye size={12} className="text-[#566878]" />
+                  Visão do canal
+                </h4>
+                <CanalVisaoToggle
+                  visao={canalVisaoCtx.visao}
+                  onChange={canalVisaoCtx.setVisao}
+                  moduleColors={getModuleColors(canalVisaoCtx.moduleId as Module)}
+                />
+                <Popover.Arrow className="fill-white" />
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        )}
+
+        {canalVisaoCtx.digitalAtivo && (
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button
+                type="button"
+                className={ANALYSIS_SUMMARY_TAG_BTN_CLASS}
+                style={ANALYSIS_SUMMARY_TAG_STYLE}
+              >
+                <MapPinned size={10} className="shrink-0 text-[#2C2C2C]" />
+                <span className="uppercase">Canal Digital:</span>
+                <span className="font-normal ml-0.5">
+                  {DIGITAL_MODO_DESCRICAO[canalVisaoCtx.digitalModo]}
+                </span>
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                className="z-[80] bg-white p-3 rounded-lg shadow-xl border border-[#D9D9D9] w-[290px] animate-in zoom-in-95"
+                sideOffset={5}
+                align="start"
+              >
+                <h4 className="text-xs font-bold text-[#314158] mb-2 uppercase tracking-wide border-b border-[#F1F1F1] pb-1 flex items-center gap-2">
+                  <MapPinned size={12} className="text-[#566878]" />
+                  Canal digital
+                </h4>
+                <DigitalModoToggle
+                  modo={canalVisaoCtx.digitalModo}
+                  onChange={canalVisaoCtx.setDigitalModo}
+                  moduleColors={getModuleColors(canalVisaoCtx.moduleId as Module)}
+                />
                 <Popover.Arrow className="fill-white" />
               </Popover.Content>
             </Popover.Portal>

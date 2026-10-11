@@ -10,9 +10,18 @@ function cn(...inputs: ClassValue[]) {
 interface ScrollableRowProps {
   children: React.ReactNode;
   className?: string;
+  /** Quebra os itens em várias linhas (sem rolagem horizontal nem setas). */
+  wrap?: boolean;
 }
 
-export function ScrollableRow({ children, className }: ScrollableRowProps) {
+export function ScrollableRow({ children, className, wrap = false }: ScrollableRowProps) {
+  if (wrap) {
+    return <div className={cn("flex flex-wrap gap-3", className)}>{children}</div>;
+  }
+  return <HorizontalScrollRow className={className}>{children}</HorizontalScrollRow>;
+}
+
+function HorizontalScrollRow({ children, className }: Omit<ScrollableRowProps, "wrap">) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);

@@ -91,6 +91,19 @@ import {
   type StockSaltContext,
 } from "../../utils/stockSnapshot";
 import { computeLojaVendaProjectionMesVigente } from "../../utils/lojaProjection";
+import { useCanalVisao } from "../../context/CanalVisaoContext";
+import {
+  applyCanalOmniParentContext,
+  getCanalOmniAlocacao,
+  getCanalOmniMultiplier,
+  isCanalOmniModule,
+  resolveCanalOmniRestricao,
+  type CanalOmniRestricao,
+} from "../../data/canalOmni";
+import { aplicarContextoPaiDigital } from "../../data/digitalOrigemDestino";
+
+/** Atributos cuja leitura muda com Origem/Destino do canal digital. */
+const DIGITAL_LOCALIZACAO_ATTRS = new Set(["estado", "cidade", "loja", "regional", "nacional"]);
 import {
   sortAnalysisRowTree,
   makeRowComparator,
@@ -164,6 +177,9 @@ interface AnalysisViewProps {
   setSharePctMode: React.Dispatch<React.SetStateAction<SharePctMode>>;
 }
 
+/** Seed-base dos valores quando o agrupamento começa por CANAL/OMNI (linha "total"). */
+const CANAL_OMNI_TOTAL_SEED = hashString("__canal_omni_total__");
+
 export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView({
   actionsContainer,
   moduleConfig,
@@ -204,6 +220,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // These shadow the removed module-level constants so all internal
   // references remain unchanged when new modules are added.
   const METRICS_LIST = moduleConfig.metrics;
+  // Flag do CANAL (Operacional / Corporativo): muda relação CANAL ↔ OMNI e
+  // tipo de data — e, portanto, os valores mock (ver data/canalOmni.ts).
+  const { visao: canalVisao, digitalAtivo, digitalModo } = useCanalVisao();
+  const usaCanalOmni = isCanalOmniModule(moduleConfig.id);
   const MODULE_TITLES = moduleConfig.analysisTitles as Record<
     string,
     string
@@ -1088,6 +1108,13 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         );
       }
 
+      // Canal digital: as opções de localização já vêm ajustadas para Origem
+      // (lojas + CDs) ou Destino (praças de entrega) por getAttributeOptions; os
+      // vínculos de loja abaixo removeriam CDs e cidades sem loja.
+      if (digitalAtivo && DIGITAL_LOCALIZACAO_ATTRS.has(attrId)) {
+        return options;
+      }
+
       // 3. Cross-attribute filtering: aplica vínculos conhecidos para lojas
       if (attrId === "loja") {
         options = filterStoresByKnownLinks(options, selections);
@@ -1120,7 +1147,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
 
       return options;
     },
-    [getAttributeOptions, selections, exclusions, moduleConfig],
+    [getAttributeOptions, selections, exclusions, moduleConfig, digitalAtivo],
   );
 
   const stockSaltContext = React.useMemo(
@@ -1259,6 +1286,27 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
   // Recursive tree builder for multi-level grouping
   // parentContext acumula { attrId: value } de cada nível pai para restringir
   // as opções do filho somente aos itens que pertencem ao pai correto.
+  /**
+   * CANAL/OMNI: aplica ao valor mock o peso dos fluxos de venda da linha na visão
+   * ativa (Operacional/Corporativo). Sem restrição na visão Operacional → fator 1.
+   */
+  const aplicarCanalOmni = (
+    metricId: string,
+    value: any,
+    restricao: CanalOmniRestricao | undefined,
+  ) => {
+    if (!restricao || typeof value !== "number") return value;
+    const mult = getCanalOmniMultiplier(
+      metricId,
+      restricao,
+      canalVisao,
+      moduleConfig.id,
+    );
+    if (mult === 1) return value;
+    const out = value * mult;
+    return METRIC_CONFIG[metricId]?.format === "integer" ? Math.round(out) : out;
+  };
+
   const buildGroupTree = (
     levels: string[],
     levelIndex: number,
@@ -1266,6 +1314,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     parentSeed: number,
     parentContext: Record<string, string> = {},
     lastLojaSeed?: number,
+    /**
+     * Seed/id dos valores mock ignorando níveis CANAL/OMNI: a linha de um canal
+     * parte da mesma base do total e recebe só o peso dos seus fluxos — assim a
+     * soma dos canais bate com o total e a troca de visão desloca valores entre
+     * eles. Sem CANAL/OMNI no agrupamento, coincidem com `seed`/`rowId`.
+     */
+    parentValueSeed?: number,
+    parentValueId: string = "",
   ): any[] => {
     if (levelIndex >= levels.length) return [];
     // Somente sub-níveis (> 0) consomem orçamento; raiz sempre processa.
@@ -1276,9 +1332,26 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     let options = getFilteredGroupOptions(attrId);
     // 2. Restringe pelo contexto dos níveis pai (ex: loja só da regional acima)
     if (Object.keys(parentContext).length > 0) {
-      options = applyParentContextToOptions(attrId, parentContext, options);
+      options = aplicarContextoPaiDigital(
+        attrId,
+        parentContext,
+        options,
+        applyParentContextToOptions(attrId, parentContext, options),
+        digitalAtivo,
+        digitalModo,
+      );
+      if (usaCanalOmni) {
+        options = applyCanalOmniParentContext(
+          attrId,
+          parentContext,
+          options,
+          canalVisao,
+          moduleConfig.id,
+        );
+      }
     }
     const isLeaf = levelIndex === levels.length - 1;
+    const isFluxoAttr = usaCanalOmni && (attrId === "canal" || attrId === "tipo");
 
     const siblingCount = Math.max(1, options.length);
 
@@ -1295,7 +1368,15 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       const seed = hashString(opt, parentSeed + idx * 7);
       // Propaga contexto acumulado + valor deste nível para o próximo
       const childContext = { ...parentContext, [attrId]: opt };
-      const nextLastLojaSeed = attrId === "loja" ? seed : lastLojaSeed;
+      const valueSeed = isFluxoAttr
+        ? (parentValueSeed ?? CANAL_OMNI_TOTAL_SEED)
+        : hashString(opt, (parentValueSeed ?? parentSeed) + idx * 7);
+      const valueId = isFluxoAttr
+        ? parentValueId
+        : parentValueId
+          ? `${parentValueId}|${opt}`
+          : opt;
+      const nextLastLojaSeed = attrId === "loja" ? valueSeed : lastLojaSeed;
 
       const children = isLeaf
         ? []
@@ -1306,6 +1387,8 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             seed,
             childContext,
             nextLastLojaSeed,
+            valueSeed,
+            valueId,
           );
 
       const rowData: any = {
@@ -1370,6 +1453,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         }
       } else {
         // Leaf node: use hash-based mock data
+        const canalOmniRestricao = usaCanalOmni
+          ? resolveCanalOmniRestricao(selections, exclusions, childContext)
+          : undefined;
+        rowData.__valueId = valueId;
+        rowData.__canalOmni = canalOmniRestricao;
         METRICS_LIST.forEach((m) => {
           if (
             moduleConfig.id === "LOJA" &&
@@ -1383,8 +1471,12 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               ? Math.abs(
                   seed + hashString(m.id) + standardStockIndexSalt,
                 ) % config.data.length
-              : seed % config.data.length;
-            rowData[m.id] = config.data[index];
+              : valueSeed % config.data.length;
+            rowData[m.id] = aplicarCanalOmni(
+              m.id,
+              config.data[index],
+              canalOmniRestricao,
+            );
           } else {
             rowData[m.id] = 0;
           }
@@ -1396,13 +1488,18 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             (rowData.attrId === "vendedor" || rowData.attrId === "setor") &&
             lastLojaSeed !== undefined
               ? lastLojaSeed
-              : seed;
+              : valueSeed;
           const idxMeta = idxMetaSource % metaLen;
 
+          // Meta distribuída pela participação de canal/OMNI da linha (sem efeito de data).
+          const canalOmniAlocacao = canalOmniRestricao
+            ? getCanalOmniAlocacao(canalOmniRestricao, canalVisao, moduleConfig.id)
+            : 1;
           const metaScale =
-            rowData.attrId === "vendedor" || rowData.attrId === "setor"
+            (rowData.attrId === "vendedor" || rowData.attrId === "setor"
               ? 1 / siblingCount
-              : (moduleConfig.metaMensalScaleByAttr?.[rowData.attrId] ?? 1);
+              : (moduleConfig.metaMensalScaleByAttr?.[rowData.attrId] ?? 1)) *
+            canalOmniAlocacao;
           // Meta mensal cheia do mês vigente (mock) — fonte fixa, nunca proporcional ao período da UI.
           const metaLojaMesVigenteCheia =
             Number(metaMensalCfg?.data[idxMeta] ?? 0) || 0;
@@ -1427,7 +1524,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
               rowData.attrId === "setor") &&
             lastLojaSeed !== undefined
               ? lastLojaSeed
-              : seed;
+              : valueSeed;
           const variacaoLoja = lojaMockVariacaoFromSeed(seedRobLoja);
           const robLoja = Math.max(
             1,
@@ -1440,7 +1537,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
           if (rowData.attrId === "vendedor") {
             const variacaoVendedor =
               LOJA_MOCK_VARIACAO_MIN +
-              ((hashString(opt, seed) % 100) / 100) * varRange;
+              ((hashString(opt, valueSeed) % 100) / 100) * varRange;
             rowData.rob = Math.max(
               1,
               Math.round(
@@ -1450,7 +1547,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
           } else if (rowData.attrId === "setor") {
             const variacaoSetor =
               LOJA_MOCK_VARIACAO_MIN +
-              ((hashString(opt, seed + 31) % 100) / 100) * varRange;
+              ((hashString(opt, valueSeed + 31) % 100) / 100) * varRange;
             rowData.rob = Math.max(
               1,
               Math.round(
@@ -1459,6 +1556,14 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
             );
           } else {
             rowData.rob = robLoja;
+          }
+          if (canalOmniRestricao) {
+            rowData.rob = Math.max(
+              0,
+              Math.round(
+                aplicarCanalOmni("rob", rowData.rob, canalOmniRestricao),
+              ),
+            );
           }
 
           const needsProj = METRICS_LIST.some(
@@ -2062,6 +2167,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
         pds.forEach((period, pIdx) => {
           const periodSeed = hashString(period, pIdx * 17);
           const combinedSeed = hashString(node.id, periodSeed);
+          // Métricas de fluxo: base sem os níveis CANAL/OMNI + peso da visão (ver buildGroupTree).
+          const flowSeed = hashString(node.__valueId || node.id, periodSeed);
+          const canalOmniRestricao: CanalOmniRestricao | undefined =
+            node.__canalOmni;
           selectedMetrics.forEach((mId: string) => {
             if (
               moduleConfig.id === "LOJA" &&
@@ -2095,25 +2204,34 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
                   newNode[`${period}__${mId}`] =
                     config.data[index];
                 } else {
-                  newNode[`${period}__${mId}`] =
+                  newNode[`${period}__${mId}`] = aplicarCanalOmni(
+                    mId,
                     generateHourlyValue(
                       period,
                       node.label,
                       mId,
-                      combinedSeed,
+                      flowSeed,
                       config,
-                    );
+                    ),
+                    canalOmniRestricao,
+                  );
                 }
-              } else {
-                const saltExtra = isStockRelatedMetric(mId)
-                  ? periodStockSalt
-                  : 0;
+              } else if (isStockRelatedMetric(mId)) {
                 const index =
                   Math.abs(
-                    combinedSeed + hashString(mId) + saltExtra,
+                    combinedSeed + hashString(mId) + periodStockSalt,
                   ) % config.data.length;
                 newNode[`${period}__${mId}`] =
                   config.data[index];
+              } else {
+                const index =
+                  Math.abs(flowSeed + hashString(mId)) %
+                  config.data.length;
+                newNode[`${period}__${mId}`] = aplicarCanalOmni(
+                  mId,
+                  config.data[index],
+                  canalOmniRestricao,
+                );
               }
             }
           });
@@ -2219,6 +2337,11 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     compWeeklyComputedDays2,
     stockSaltContext,
     standardStockIndexSalt,
+    canalVisao,
+    selections,
+    exclusions,
+    digitalAtivo,
+    digitalModo,
   ]);
 
   // Ordenação: mesmo critério em cada nível da árvore de agrupamento (drill)

@@ -23,7 +23,6 @@ import {
 } from "../../utils/dateSelectionRules";
 import { PeriodBlockedOptionTooltip } from "../calendar/PeriodBlockedTooltip";
 import { InteractiveMandala } from "../InteractiveMandala";
-import { AnalysisSelector } from "../AnalysisSelector";
 import { DateRangePicker } from "../DateRangePicker";
 import { Calendar } from "../ui/calendar";
 import { MdsaaToggle } from "../MdsaaToggle";
@@ -31,6 +30,10 @@ import { LyToggle } from "../LyToggle";
 import { LockedTooltip } from "../LockedTooltip";
 import type { AnalysisMode } from "../../types/wizard";
 import { NEUTRAL_PALETTE, type ModuleColors } from "../../constants/moduleColors";
+import { UI, UI_CARD_CLASS, tint } from "../../constants/uiTheme";
+
+/** Largura da coluna "Tipo de Período" (inclui o respiro antes da divisória). */
+const PERIOD_SIDEBAR_WIDTH = 210;
 
 const PERIOD_GRANULARITY_LABELS: Record<
   (typeof PERIOD_OPTIONS)[number],
@@ -160,18 +163,22 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
 
   return (
                       <div className="mb-5 flex gap-5 items-stretch">
-                        {/* ── Módulo + Análise card ── */}
+                        {/* ── Módulo ativo (mandala). O tipo de análise fica no título da página. ── */}
                         <div
                           className={cn(
-                            "bg-white rounded-[14px] border border-[#D9D9D9] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-[21px] flex flex-col shrink-0 gap-[20px] items-center justify-between",
+                            UI_CARD_CLASS,
+                            "px-4 pt-4 pb-5 flex flex-col shrink-0 gap-3",
                             !isPeriodEditable &&
                               "opacity-60 pointer-events-none",
                           )}
-                          style={{ width: 288 }}
+                          style={{ width: 232 }}
                         >
+                          <h3 className="text-[16px] font-bold leading-6" style={{ color: UI.title }}>
+                            Módulo ativo
+                          </h3>
                           {/* Mandala */}
-                          <div className="flex-1 flex items-center justify-center w-full min-h-[220px]">
-                            <div className="w-[220px] h-[220px] shrink-0">
+                          <div className="flex-1 flex items-center justify-center w-full">
+                            <div className="w-[190px] h-[190px] shrink-0">
                               <InteractiveMandala
                                 selectedModule={currentModule}
                                 onModuleSelect={(module) =>
@@ -181,24 +188,6 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                               />
                             </div>
                           </div>
-    
-                          {/* Dropdown de Análise */}
-                          <div className="shrink-0 w-full">
-                            <AnalysisSelector
-                              value={analysisMode}
-                              onChange={(mode) =>
-                                isPeriodEditable &&
-                                setAnalysisMode(mode)
-                              }
-                              supportsHoraAHora={
-                                currentModule === "LOJA" ||
-                                currentModule === "INDICADORES" ||
-                                currentModule === "PRODUTO"
-                              }
-                              supportsCapacidadeExposicao={false}
-                              disabled={!isPeriodEditable}
-                            />
-                          </div>
                         </div>
     
                         {/* Período */}
@@ -207,20 +196,33 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                           content="A ediç��o só é possível no modo de seleção."
                         >
                           <div
-                            className="bg-white rounded-[14px] border border-[#D9D9D9] shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex flex-col flex-1 min-w-0 px-[21px] pt-[16px] pb-[21px]"
+                            className={cn(
+                              UI_CARD_CLASS,
+                              "relative flex flex-col flex-1 min-w-0 px-5 pt-4 pb-5",
+                            )}
                             style={{ height: 334 }}
                           >
+                            {/* Divisória vertical entre "Tipo de Período" e "Selecionar período" */}
+                            <div
+                              aria-hidden
+                              className="pointer-events-none absolute bottom-4 top-4 w-px"
+                              style={{ left: 20 + PERIOD_SIDEBAR_WIDTH, backgroundColor: "#EDEDEF" }}
+                            />
                             <div className="flex items-start mb-3 shrink-0">
-                              {/* Título alinhado com sidebar */}
+                              {/* Título da coluna de tipo de período */}
                               <div
                                 className="shrink-0"
-                                style={{ width: 240 }}
+                                style={{ width: PERIOD_SIDEBAR_WIDTH + 20 }}
                               >
-                                <h3 className="text-[14px] font-bold uppercase tracking-[0.6px] text-[#314158]">
-                                  DEFINIR PERÍODO
+                                <h3 className="text-[16px] font-bold leading-6" style={{ color: UI.title }}>
+                                  Tipo de Período
                                 </h3>
                               </div>
-    
+
+                              <div className="flex min-w-0 flex-col gap-2">
+                              <h3 className="text-[16px] font-bold leading-6" style={{ color: UI.title }}>
+                                Selecionar período
+                              </h3>
                               {/* Tabs container - apenas para Diário */}
                               {periodType === "Diário" && (
                                 <div className="flex items-center gap-6 border-b border-[#e2e8f0] shrink-0">
@@ -295,39 +297,36 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                   </div>
                                 </div>
                               )}
+                              </div>
                             </div>
-    
+
                             <div className="flex gap-5 flex-1 min-h-0">
                               {/* Sidebar Selection */}
                               <div
                                 className="flex flex-col gap-3 pr-5 shrink-0"
-                                style={{ width: 220 }}
+                                style={{ width: PERIOD_SIDEBAR_WIDTH }}
                               >
-                                <p className="text-[11px] text-[#62748e] leading-[16.5px]">
-                                  Selecionar por:
-                                </p>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-2.5">
                                   {PERIOD_OPTIONS.map((opt) => {
                                     const isSelected = periodType === opt;
                                     const isHovered =
                                       isPeriodEditable &&
                                       hoveredPeriodOption === opt;
-                                    const borderColor = !isPeriodEditable
-                                      ? isSelected
-                                        ? moduleColors.primaryColor
-                                        : NEUTRAL_PALETTE.border
+                                    const borderColor = isSelected
+                                      ? moduleColors.primaryColor
                                       : isHovered
-                                        ? NEUTRAL_PALETTE.title
-                                        : isSelected
-                                          ? moduleColors.primaryColor
-                                          : NEUTRAL_PALETTE.border;
+                                        ? tint(moduleColors.primaryColor, 0.5)
+                                        : "#E4E4E7";
                                     const boxShadow =
                                       isPeriodEditable && isHovered
-                                        ? "0 0 0 3px rgba(86, 104, 120, 0.3), 0 2px 6px rgba(0, 0, 0, 0.06)"
+                                        ? `0 0 0 3px ${tint(moduleColors.primaryColor, 0.12)}`
                                         : undefined;
                                     const textColor = isSelected
+                                      ? moduleColors.primaryColor
+                                      : UI.text;
+                                    const descColor = isSelected
                                       ? moduleColors.iconColor
-                                      : NEUTRAL_PALETTE.muted;
+                                      : UI.muted;
                                     return (
                                       <label
                                         key={opt}
@@ -339,14 +338,14 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                           setHoveredPeriodOption(null)
                                         }
                                         className={cn(
-                                          "flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer select-none transition-all duration-200 border border-solid",
+                                          "flex items-center gap-3 px-3 py-[9px] rounded-lg cursor-pointer select-none transition-all duration-200 border border-solid",
                                           !isPeriodEditable &&
                                             "cursor-not-allowed opacity-50",
                                         )}
                                         style={{
                                           backgroundColor: isSelected
-                                            ? moduleColors.backgroundColor
-                                            : "transparent",
+                                            ? tint(moduleColors.primaryColor, 0.08)
+                                            : "#FFFFFF",
                                           borderColor,
                                           boxShadow,
                                         }}
@@ -366,27 +365,9 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                           }
                                           className="sr-only"
                                         />
-                                        <div
-                                          className="w-4 h-4 rounded-full border-2 border-solid flex items-center justify-center transition-all shrink-0 bg-white"
-                                          style={{
-                                            borderColor: isSelected
-                                              ? moduleColors.iconColor
-                                              : "rgba(217, 217, 217, 0.5)",
-                                          }}
-                                        >
-                                          {isSelected && (
-                                            <div
-                                              className="w-2 h-2 rounded-full shrink-0"
-                                              style={{
-                                                backgroundColor:
-                                                  moduleColors.iconColor,
-                                              }}
-                                            />
-                                          )}
-                                        </div>
                                         <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                                           <span
-                                            className="text-[13px] font-bold"
+                                            className={cn("text-[14px]", isSelected ? "font-semibold" : "font-normal")}
                                             style={{ color: textColor }}
                                           >
                                             {
@@ -396,8 +377,8 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                             }
                                           </span>
                                           <span
-                                            className="text-[10px] font-normal leading-tight"
-                                            style={{ color: textColor }}
+                                            className="text-[12px] font-normal leading-tight"
+                                            style={{ color: descColor }}
                                           >
                                             {
                                               PERIOD_GRANULARITY_DESCRIPTIONS[
@@ -405,6 +386,16 @@ export const SelectionView = React.memo<SelectionViewProps>(function SelectionVi
                                               ]
                                             }
                                           </span>
+                                        </div>
+                                        {/* Indicador de seleção (check à direita) */}
+                                        <div
+                                          className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full transition-all"
+                                          style={{
+                                            backgroundColor: isSelected ? moduleColors.primaryColor : "transparent",
+                                          }}
+                                          aria-hidden
+                                        >
+                                          {isSelected && <Check size={11} strokeWidth={3} className="text-white" />}
                                         </div>
                                       </label>
                                     );

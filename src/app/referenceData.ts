@@ -1,10 +1,15 @@
 import { hashString } from "./utils/calculations";
+import { CANAL_EE_1P, CANAL_EE_3P, OMNI_OPTIONS } from "./data/canalOmni";
 
 export const REDE_OPTIONS = [
   "Centauro",
   "Fisia"
 ];
 
+/**
+ * CANAL do EXTRAVIOS (sem Encomenda Expressa). PRODUTO, LOJA e INDICADORES usam
+ * as listas de `data/canalOmni.ts` (mesmos canais + Encomenda Expressa).
+ */
 export const CANAL_OPTIONS = [
   "Loja F\u00edsica Centauro",
   "Digital Centauro",
@@ -13,19 +18,18 @@ export const CANAL_OPTIONS = [
   "Digital Nike"
 ];
 
-/** Modal Canal — seleção rápida “Todos Centauro” (mesmos textos que `CANAL_OPTIONS`). */
+/** Modal Canal — seleção rápida “Todos Centauro” (ordem do modal). Cada módulo só exibe os canais da sua lista (EXTRAVIOS sem Encomenda Expressa; PRODUTO sem a 3P). */
 export const CANAL_GROUP_CENTAURO_IDS: readonly string[] = [
   "Loja F\u00edsica Centauro",
+  CANAL_EE_1P,
+  CANAL_EE_3P,
   "Digital Centauro",
 ];
 
 /** Modal Canal — seleção rápida “Todos Nike”. */
 export const CANAL_GROUP_NIKE_IDS: readonly string[] = ["NVS", "NDIS", "Digital Nike"];
 
-/**
- * ORIGEM — variante do módulo EXTRAVIOS.
- * Ordem: Loja (standalone) · Transportadora (standalone) · CD (Jarinu/Extrema) · CDS (Lapa).
- */
+/** EXTRAVIOS — atributo CD: grupos CD (Jarinu/Extrema) e CDS (Lapa…). */
 export const ORIGEM_EXTRAVIOS_GROUP_CD_IDS: readonly string[] = [
   "Centauro - Jarinu",
   "Centauro - Extrema",
@@ -37,14 +41,6 @@ export const ORIGEM_EXTRAVIOS_GROUP_CDS_IDS: readonly string[] = [
   "Rio - RJ",
   "Itajaí - SC",
 ];
-export const ORIGEM_EXTRAVIOS_STANDALONE_IDS: readonly string[] = ["Loja", "Transportadora"];
-
-export const ORIGEM_EXTRAVIOS_OPTIONS: readonly string[] = [
-  ...ORIGEM_EXTRAVIOS_STANDALONE_IDS,
-  ...ORIGEM_EXTRAVIOS_GROUP_CD_IDS,
-  ...ORIGEM_EXTRAVIOS_GROUP_CDS_IDS,
-];
-
 export const FATURAMENTO_OPTIONS = [
   "Loja Física",
   "Digital"
@@ -100,45 +96,6 @@ export const REGIONAL_OPTIONS = [
   "D4"
 ];
 
-/** Centros CD (apenas CD, sem CDS) — usado no cluster de localização */
-export const LOCALIZACAO_CD_OPTIONS = [
-  "CD Jarinu - SP",
-  "CD Extrema - MG",
-];
-
-/** Centros CDS — usado no cluster de localização */
-export const LOCALIZACAO_CDS_OPTIONS = [
-  "CDS Lapa - SP",
-  "CDS João Pessoa - PB",
-];
-
-export const STATUS_OPTIONS = [
-  "em Loja",
-  "em Trânsito",
-  "Em separação",
-  "Separado",
-];
-
-/** Lista plana (valores persistidos em seleção / exclusão) — sem prefixo "STATUS:" */
-export const LOCALIZACAO_OPTIONS = [
-  ...STATUS_OPTIONS,
-  ...LOCALIZACAO_CD_OPTIONS,
-  ...LOCALIZACAO_CDS_OPTIONS,
-];
-
-/** Grupos apenas visuais no dropdown de LOCALIZAÇÃO (STATUS / CD / CDS) */
-export interface LocalizacaoOptionGroup {
-  id: "status" | "cd" | "cds";
-  label: string;
-  options: readonly string[];
-}
-
-export const LOCALIZACAO_OPTION_GROUPS: LocalizacaoOptionGroup[] = [
-  { id: "status", label: "STATUS", options: STATUS_OPTIONS },
-  { id: "cd", label: "CD", options: LOCALIZACAO_CD_OPTIONS },
-  { id: "cds", label: "CDS", options: LOCALIZACAO_CDS_OPTIONS },
-];
-
 export const VENDEDOR_OPTIONS = [
   'JUSSARA RIBEIRO - 105307',
   'CARLOS MENDES - 102145',
@@ -162,11 +119,6 @@ export const VENDEDOR_OPTIONS = [
   'ANDERSON FREITAS - 102567',
 ];
 
-export const ORIGEM_OPTIONS = [
-  "Nacional",
-  "Importado",
-];
-
 /** EXPOSITORES (PRODUTO + Capacidade de Exposição). */
 export const EXPOSITORES_OPTIONS = [
   "Clicks de Tênis",
@@ -182,38 +134,12 @@ export const EXPOSITORES_OPTIONS = [
 ];
 
 /**
- * Opções do atributo TIPO nos modais, a partir de uma lista única:
- * - PRODUTO (`TIPO_OPTIONS`): sem "Encomenda Expressa (3P)".
- * - LOJA (`TIPO_OPTIONS_LOJA`) e INDICADORES (`TIPO_OPTIONS_INDICADORES`):
- *   sem "Compra no digital - convencional" e sem "Click & Retire".
+ * Opções do atributo OMNI (id `tipo`, antigo TIPO) — mesma lista em PRODUTO,
+ * LOJA e INDICADORES. Regras CANAL × OMNI × visão em `data/canalOmni.ts`.
  */
-const TIPO_COMPRA_DIGITAL_CONVENCIONAL = "Compra no digital - convencional";
-const TIPO_CLICK_RETIRE = "Click & Retire";
-const TIPO_ENCOMENDA_EXPRESSA_3P = "Encomenda Expressa (3P)";
-
-const TIPO_OPTIONS_SOURCE: readonly string[] = [
-  "Compra em loja",
-  TIPO_COMPRA_DIGITAL_CONVENCIONAL,
-  TIPO_CLICK_RETIRE,
-  "Pickup",
-  "Ship from Store",
-  "Encomenda Expressa (1P)",
-  TIPO_ENCOMENDA_EXPRESSA_3P,
-];
-
-const TIPO_HIDDEN_PRODUTO = new Set([TIPO_ENCOMENDA_EXPRESSA_3P]);
-const TIPO_HIDDEN_LOJA_INDICADORES = new Set([
-  TIPO_COMPRA_DIGITAL_CONVENCIONAL,
-  TIPO_CLICK_RETIRE,
-]);
-
-export const TIPO_OPTIONS: string[] = TIPO_OPTIONS_SOURCE.filter(
-  (o) => !TIPO_HIDDEN_PRODUTO.has(o),
-);
-export const TIPO_OPTIONS_LOJA: string[] = TIPO_OPTIONS_SOURCE.filter(
-  (o) => !TIPO_HIDDEN_LOJA_INDICADORES.has(o),
-);
-export const TIPO_OPTIONS_INDICADORES: string[] = [...TIPO_OPTIONS_LOJA];
+export const TIPO_OPTIONS: string[] = [...OMNI_OPTIONS];
+export const TIPO_OPTIONS_LOJA: string[] = [...OMNI_OPTIONS];
+export const TIPO_OPTIONS_INDICADORES: string[] = [...OMNI_OPTIONS];
 
 export const LOJAS_LIST = [
   "2029 - Shopping Vit\u00f3ria",
@@ -563,6 +489,16 @@ const CHANNEL_TO_STORE_CODES: Record<string, string[]> = {
   NVS: ["2084", "2086", "2087", "2088", "2091", "2092", "2095", "2099", "2098", "2097", "2072", "2075", "2077", "2076", "2032", "2033", "2034", "2055", "2090", "2085", "2070", "2036", "2056", "2079", "2054", "2057", "2050", "2089", "2030", "2052", "2100", "2094", "2035", "2102", "2083", "2107", "2105", "2109"],
   NDIS: ["2058", "2071", "2029", "2078", "2093", "2101", "2110", "2104", "2108", "2111", "2106", "2112"],
 };
+// Encomenda Expressa é sempre atrelada a uma loja física Centauro. O Digital de cada
+// rede fatura pelas lojas da rede (Ship from Store / Pickup) além dos CDs — relevante
+// na leitura "Origem" do digital (no "Destino", LOJA fica bloqueada).
+CHANNEL_TO_STORE_CODES[CANAL_EE_1P] = CHANNEL_TO_STORE_CODES["Loja Física Centauro"];
+CHANNEL_TO_STORE_CODES[CANAL_EE_3P] = CHANNEL_TO_STORE_CODES["Loja Física Centauro"];
+CHANNEL_TO_STORE_CODES["Digital Centauro"] = CHANNEL_TO_STORE_CODES["Loja Física Centauro"];
+CHANNEL_TO_STORE_CODES["Digital Nike"] = [
+  ...CHANNEL_TO_STORE_CODES.NVS,
+  ...CHANNEL_TO_STORE_CODES.NDIS,
+];
 
 // Data for Estados/Cidades filtering
 export const ESTADOS_LIST = [

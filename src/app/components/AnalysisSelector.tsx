@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { ChevronDown, BarChart3, TrendingUp, ArrowLeftRight, Clock, Check } from 'lucide-react';
+import { ChevronDown, BarChart3, ScanSearch, CalendarSync, ArrowLeftRight, Clock } from 'lucide-react';
 import * as Popover from '@radix-ui/react-popover';
 import { cn } from '../utils';
 import type { AnalysisMode } from '../types/wizard';
+import {
+  SELECTION_MENU_CONTENT_CLASS,
+  SelectionMenuPanel,
+  SelectionOptionCard,
+} from './SelectionOptionCard';
 
 interface AnalysisOption {
   id: AnalysisMode;
@@ -17,21 +22,43 @@ interface AnalysisSelectorProps {
   supportsHoraAHora: boolean;
   supportsCapacidadeExposicao?: boolean;
   disabled?: boolean;
+  /**
+   * `box` (padrão): campo com rótulo "Tipo de Análise".
+   * `title`: o próprio título da página vira o gatilho (texto grande + seta).
+   */
+  variant?: 'box' | 'title';
+  /** Texto exibido no gatilho da variante `title` (ex.: "Análise Consolidada"). */
+  titleLabel?: string;
+  /** Cor de destaque da opção selecionada (cor do módulo). */
+  accentColor?: string;
+  /** Tom escuro do módulo para o texto da opção selecionada. */
+  accentTextColor?: string;
 }
 
-const ALL_ANALYSIS_OPTIONS: AnalysisOption[] = [
-  { id: 'padrao', label: 'Geral', Icon: BarChart3, desc: 'acompanhamento de métricas' },
-  { id: 'capacidade_exposicao', label: 'Capacidade de Exposição', Icon: BarChart3, desc: 'acompanhamento de métricas' },
-  { id: 'evolucao', label: 'Evolutiva', Icon: TrendingUp, desc: 'quebrar colunas por período' },
-  { id: 'comparativo', label: 'Comparativa', Icon: ArrowLeftRight, desc: 'analisar 2 grupos de período' },
-  { id: 'horaahora', label: 'Intraday', Icon: Clock, desc: 'quebrar colunas por horas' },
+/** Nomes, descrições e ícones dos tipos de análise (menu "Alterar tipo de análise"). */
+export const ANALYSIS_OPTIONS: AnalysisOption[] = [
+  { id: 'padrao', label: 'Análise Consolidada', Icon: ScanSearch, desc: 'Acompanhar o acumulado no período' },
+  { id: 'capacidade_exposicao', label: 'Análise de Capacidade de Exposição', Icon: BarChart3, desc: 'Acompanhar a capacidade de exposição das lojas' },
+  { id: 'evolucao', label: 'Análise de Evolução Temporal', Icon: CalendarSync, desc: 'Visualizar os dados por períodos sequenciais.' },
+  { id: 'comparativo', label: 'Análise Comparativa de Períodos', Icon: ArrowLeftRight, desc: 'Confrontar 2 blocos de tempo diferentes.' },
+  { id: 'horaahora', label: 'Análise por Hora', Icon: Clock, desc: 'Visualizar os dados no hora a hora.' },
 ];
 
-export function AnalysisSelector({ value, onChange, supportsHoraAHora, supportsCapacidadeExposicao = false, disabled = false }: AnalysisSelectorProps) {
+export function AnalysisSelector({
+  value,
+  onChange,
+  supportsHoraAHora,
+  supportsCapacidadeExposicao = false,
+  disabled = false,
+  variant = 'box',
+  titleLabel,
+  accentColor = '#2563EB',
+  accentTextColor,
+}: AnalysisSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Filter options based on module support
-  const availableOptions = ALL_ANALYSIS_OPTIONS.filter(opt => {
+  const availableOptions = ANALYSIS_OPTIONS.filter(opt => {
     if (opt.id === 'horaahora' && !supportsHoraAHora) return false;
     if (opt.id === 'capacidade_exposicao' && !supportsCapacidadeExposicao) return false;
     return true;
@@ -42,6 +69,26 @@ export function AnalysisSelector({ value, onChange, supportsHoraAHora, supportsC
   return (
     <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
       <Popover.Trigger asChild>
+        {variant === 'title' ? (
+          <button
+            type="button"
+            disabled={disabled}
+            title="Alterar tipo de análise"
+            className="group -mx-1.5 flex items-center gap-2 rounded-lg px-1.5 py-0.5 transition-colors enabled:hover:bg-black/[0.04] disabled:cursor-default"
+          >
+            <span className="text-[24px] font-bold leading-8 tracking-[-0.01em] text-[#1F2937]">
+              {titleLabel ?? selectedOption.label}
+            </span>
+            <ChevronDown
+              size={20}
+              strokeWidth={2.25}
+              className={cn(
+                'shrink-0 text-[#52525B] transition-transform duration-200',
+                isOpen && 'rotate-180',
+              )}
+            />
+          </button>
+        ) : (
         <button
           disabled={disabled}
           className={cn(
@@ -69,89 +116,36 @@ export function AnalysisSelector({ value, onChange, supportsHoraAHora, supportsC
               </span>
             </div>
           </div>
-          <ChevronDown 
-            size={16} 
+          <ChevronDown
+            size={16}
             className={cn(
               "text-[#90A1B9] shrink-0 transition-transform duration-200",
               isOpen && "rotate-180"
-            )} 
+            )}
           />
         </button>
+        )}
       </Popover.Trigger>
-      
-      <Popover.Portal>
-        <Popover.Content
-          className="w-[300px] bg-white rounded-[14px] shadow-[0px_1px_3px_0px_rgba(0,0,0,0.1),0px_1px_2px_0px_rgba(0,0,0,0.1)] border border-[#e2e8f0] p-4 z-50 animate-in fade-in zoom-in-95 duration-200"
-          sideOffset={6}
-          align="start"
-        >
-          {/* Título */}
-          <h3 className="text-[12px] font-bold uppercase tracking-[0.6px] text-[#314158] mb-4">
-            Alterar tipo de análise
-          </h3>
 
-          {/* Lista de opções */}
-          <div className="flex flex-col gap-2">
-            {availableOptions.map(({ id, label, Icon, desc }) => {
-              const isSelected = value === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => {
-                    onChange(id);
-                    setIsOpen(false);
-                  }}
-                  className={cn(
-                    "relative rounded-[14px] p-[15px] transition-all duration-150 text-left outline-none group",
-                    isSelected 
-                      ? "bg-[#f4f7fa]" 
-                      : "bg-white hover:bg-slate-50"
-                  )}
-                >
-                  {/* Border overlay */}
-                  <div 
-                    aria-hidden="true" 
-                    className={cn(
-                      "absolute inset-0 pointer-events-none rounded-[14px] border",
-                      isSelected ? "border-[#566878]" : "border-[#e2e8f0]"
-                    )} 
-                  />
-                  
-                  <div className="flex items-center gap-3 relative">
-                    <Icon 
-                      size={15} 
-                      className={cn(
-                        "shrink-0 transition-colors",
-                        isSelected ? "text-[#314158]" : "text-[#90A1B9] opacity-80 group-hover:text-[#62748e]"
-                      )}
-                      strokeWidth={1.25}
-                    />
-                    <div className="flex flex-col gap-[2px] flex-1 min-w-0">
-                      <span 
-                        className={cn(
-                          "text-[12px] font-bold uppercase tracking-[0.3px] leading-[18px] transition-colors",
-                          isSelected ? "text-[#314158]" : "text-[#62748e]"
-                        )}
-                      >
-                        {label}
-                      </span>
-                      <span className={cn(
-                        "text-[10px] leading-[12.5px] font-normal",
-                        isSelected ? "text-[#314158]" : "text-[#90a1b9]"
-                      )}>
-                        {desc}
-                      </span>
-                    </div>
-                    {isSelected && (
-                      <div className="bg-[#314158] rounded-full size-4 flex items-center justify-center shrink-0">
-                        <Check size={9} className="text-white" strokeWidth={3} />
-                      </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+      <Popover.Portal>
+        <Popover.Content className={SELECTION_MENU_CONTENT_CLASS} sideOffset={8} align="start">
+          <SelectionMenuPanel title="Alterar tipo de análise">
+            {availableOptions.map(({ id, label, Icon, desc }) => (
+              <SelectionOptionCard
+                key={id}
+                selected={value === id}
+                onClick={() => {
+                  onChange(id);
+                  setIsOpen(false);
+                }}
+                icon={<Icon size={22} strokeWidth={1.5} />}
+                title={label}
+                description={desc}
+                accentColor={accentColor}
+                accentTextColor={accentTextColor}
+              />
+            ))}
+          </SelectionMenuPanel>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
