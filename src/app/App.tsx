@@ -19,6 +19,15 @@ import {
   getLastMonthString,
 } from "./dateUtils";
 import { AnalysisView } from "./components/analysis/AnalysisView";
+import {
+  AnalysisFeedbackDialog,
+  type PendingAnalysisFeedback,
+} from "./components/analysis/AnalysisFeedback";
+import { FeedbackExportButton } from "./components/analysis/FeedbackExportButton";
+import {
+  FEEDBACK_MIN_VIEW_MS,
+  type AnalysisFeedbackContext,
+} from "./data/feedback";
 import { SelectionView } from "./components/steps/SelectionView";
 import { AttributeGrid } from "./components/steps/AttributeGrid";
 import { MetricsSidebar } from "./components/MetricsSidebar";
@@ -79,6 +88,18 @@ export default function App() {
   const [averageDropdownOpen, setAverageDropdownOpen] = useState(false);
   const [sharePctMode, setSharePctMode] = useState<SharePctMode>("off");
   const [isGenerating, setIsGenerating] = useState(false);
+  /** Pesquisa de feedback aguardando exibição (aberta ao sair da análise). */
+  const [feedbackPending, setFeedbackPending] = useState<PendingAnalysisFeedback | null>(null);
+  /** Incrementado após salvar/pular, para recontar o botão de exportação. */
+  const [feedbackRefresh, setFeedbackRefresh] = useState(0);
+  /** Contador interno de cálculos (identifica cada análise gerada). */
+  const analysisRunCounterRef = React.useRef(0);
+  /** Análise visível, ainda não avaliada: início da visualização e contexto. */
+  const pendingFeedbackRef = React.useRef<{
+    runId: number;
+    context: AnalysisFeedbackContext;
+    startedAt: number;
+  } | null>(null);
   /** Métricas ativadas nas etapas 1–3; na etapa 4 a sidebar só lista este universo. */
   const [resultMetricCatalog, setResultMetricCatalog] = useState<string[]>([]);
   /** Etapa Calcular: seleção de métricas ainda não aplicada à tabela (null = sem alterações). */
@@ -365,6 +386,52 @@ export default function App() {
     }
   };
 
+  // Contexto da análise atual, guardado em ref para ser lido quando o cálculo termina.
+  const feedbackContextRef = React.useRef<AnalysisFeedbackContext | null>(null);
+  feedbackContextRef.current = {
+    module: currentModule,
+    analysisMode,
+    selectedMetrics,
+    grouping,
+    selections,
+    exclusions,
+    periodType,
+    canalVisao,
+    digitalModo: digitalAtivo ? digitalModo : null,
+    periodo: {
+      dateRange,
+      selectedMonths,
+      selectedYears,
+      selectedSpecificDays,
+      weeklyMode,
+      compDateRange1,
+      compDateRange2,
+      compMonths1,
+      compMonths2,
+      compYears1,
+      compYears2,
+      compSpecificDays1,
+      compSpecificDays2,
+      mdsaaActive,
+      lyActive,
+    },
+  };
+
+  /**
+   * Ao sair da análise (trocar de etapa, recalcular ou limpar), abre a pesquisa
+   * se a análise ficou visível por tempo suficiente. Análises vistas por menos
+   * tempo não geram pesquisa.
+   */
+  const flushAnalysisFeedback = () => {
+    const pending = pendingFeedbackRef.current;
+    if (!pending) return;
+    pendingFeedbackRef.current = null;
+    const viewedMs = Date.now() - pending.startedAt;
+    if (viewedMs >= FEEDBACK_MIN_VIEW_MS) {
+      setFeedbackPending({ runId: pending.runId, context: pending.context, viewedMs });
+    }
+  };
+
   const handleStepChange = (targetStep: Step) => {
     if (targetStep === currentStep) return;
     if (targetStep === "analysis") {
@@ -375,12 +442,22 @@ export default function App() {
         isComparativoPeriodDefined;
       if (!canOpenAnalysis) return;
 
+      if (currentStep === "analysis") flushAnalysisFeedback();
       setIsGenerating(true);
       setResultMetricCatalog((catalog) => [
         ...new Set([...catalog, ...selectedMetricsRef.current]),
       ]);
       setTimeout(() => {
         setIsGenerating(false);
+        const runId = analysisRunCounterRef.current + 1;
+        analysisRunCounterRef.current = runId;
+        if (feedbackContextRef.current) {
+          pendingFeedbackRef.current = {
+            runId,
+            context: feedbackContextRef.current,
+            startedAt: Date.now(),
+          };
+        }
         setCurrentStep("analysis");
         // Menu de Métricas fica aberto no Calcular para incluir/remover colunas.
         setMetricsCollapsed(false);
@@ -390,6 +467,7 @@ export default function App() {
       return;
     }
     if (currentStep === "analysis") {
+      flushAnalysisFeedback();
       setMetricsCollapsed(false);
     }
     setCurrentStep(targetStep);
@@ -397,6 +475,7 @@ export default function App() {
 
   const handleClear = () => {
     if (isSelectionConfigured || isGroupingConfigured || isExclusionConfigured) {
+      if (currentStep === "analysis") flushAnalysisFeedback();
       setSelections({});
       setGrouping([]);
       setExclusions({});
@@ -674,6 +753,17 @@ export default function App() {
           />
           </div>
         </motion.div>
+
+        {/* Pesquisa de feedback ao sair da análise (aparece sobre a tela atual) */}
+        <AnalysisFeedbackDialog
+          pending={feedbackPending}
+          accentColor={moduleColors.iconColor}
+          onDone={() => {
+            setFeedbackPending(null);
+            setFeedbackRefresh((n) => n + 1);
+          }}
+        />
+        <FeedbackExportButton refreshKey={feedbackRefresh} />
 
         {/* Loading Overlay */}
         {isGenerating && (
