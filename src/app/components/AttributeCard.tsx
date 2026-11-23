@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Check, Search, Filter, Trash2, Anchor, Tag, Minus, Ban } from "lucide-react";
+import { Check, Search, Filter, Trash2, Anchor, Tag, Minus, Ban, Link2 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { cn } from "../utils";
@@ -51,6 +51,8 @@ interface AttributeCardProps {
   currentSelection: string[];
   currentExclusion: string[];
   tooltip?: string;
+  /** Atributo combinado (ex.: MODELO/COR): ícone de vínculo e contorno na cor do módulo. */
+  combined?: boolean;
 }
 
 const BTN_DIM = "w-[147px] h-[40px] shrink-0 rounded-full border transition-all duration-200 outline-none";
@@ -74,6 +76,7 @@ export function AttributeCard({
   currentSelection,
   currentExclusion,
   tooltip,
+  combined = false,
 }: AttributeCardProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -346,8 +349,13 @@ export function AttributeCard({
 
   /** Pill neutra: fundo branco e contorno cinza (realça com a cor do módulo no hover). */
   const idlePillStyle = (hover: boolean): React.CSSProperties => ({
-    backgroundColor: "#FFFFFF",
-    borderColor: hover ? tint(moduleColors.primaryColor, 0.55) : UI.pillBorder,
+    // Combinado: fundo levemente tingido e contorno na cor do módulo, para diferenciar dos atributos simples.
+    backgroundColor: combined ? tint(moduleColors.primaryColor, 0.05) : "#FFFFFF",
+    borderColor: hover
+      ? tint(moduleColors.primaryColor, 0.55)
+      : combined
+        ? tint(moduleColors.primaryColor, 0.35)
+        : UI.pillBorder,
     boxShadow: hover ? `0 0 0 3px ${tint(moduleColors.primaryColor, 0.12)}` : undefined,
   });
 
@@ -358,7 +366,7 @@ export function AttributeCard({
       <RadixTooltip.Content
         className={cn(
           "z-[200] bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg text-center leading-snug",
-          isGroupingBlocked ? "max-w-[240px]" : "max-w-[200px]",
+          isGroupingBlocked || combined ? "max-w-[240px]" : "max-w-[200px]",
         )}
         sideOffset={6}
       >
@@ -451,6 +459,24 @@ export function AttributeCard({
             <span
               className={cn(PILL_LABEL_CLASS, "font-bold")}
               style={{ color: moduleColors.primaryColor }}
+            >
+              {attribute.label}
+            </span>
+          </span>
+        ) : combined ? (
+          <span className="flex items-center justify-center gap-1.5 px-3">
+            <Link2
+              size={14}
+              className="shrink-0"
+              style={{
+                color: isGroupingDisabled ? "rgba(113, 113, 122, 0.5)" : moduleColors.primaryColor,
+              }}
+              strokeWidth={2.25}
+              aria-hidden
+            />
+            <span
+              className={PILL_LABEL_CLASS}
+              style={{ color: isGroupingDisabled ? "rgba(113, 113, 122, 0.5)" : NEUTRAL_TEXT }}
             >
               {attribute.label}
             </span>

@@ -13,6 +13,7 @@ import {
   collectAllDomainAttributes,
   getCombinedGroupingBlockReason,
   type AttributeDef,
+  type CombinedAttributeDef,
   type ModuleConfig,
 } from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
@@ -85,6 +86,8 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
     currentStep === "grouping" && combinations
       ? filterDomainForAnalysis(combinations.attributes)
       : [];
+  const combinationsInline =
+    (combinations?.placement ?? "inline") === "inline" && visibleCombinedAttributes.length > 0;
 
   /** Rótulo de um atributo (domínio, linhas extras ou localização) — para "MODELO + COR". */
   const labelOf = (id: string) =>
@@ -92,7 +95,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
     visibleLocationAttributes.find((a) => a.id === id)?.label ??
     id.toUpperCase();
 
-  const renderCard = (attr: AttributeDef, tooltip?: string) => {
+  const renderCard = (attr: AttributeDef, tooltip?: string, combined = false) => {
     const blockedReason =
       currentStep === "grouping"
         ? getCombinedGroupingBlockReason(currentModuleConfig, attr.id, grouping)
@@ -117,9 +120,18 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
       currentSelection={selections[attr.id] || []}
       currentExclusion={exclusions[attr.id] || []}
       tooltip={tooltip}
+      combined={combined}
     />
     );
   };
+
+  /** Chip de atributo combinado: tooltip "Combinação de MODELO + COR" e visual próprio. */
+  const renderCombinedCard = (attr: CombinedAttributeDef) =>
+    renderCard(
+      attr,
+      `Combinação de ${attr.sourceAttrIds.map(labelOf).join(" + ")}`,
+      true,
+    );
 
   /** Faixa com o rótulo da seção (PRODUTO / LOCALIZAÇÃO / COMBINAÇÕES) + linha de pills. */
   const renderSection = (
@@ -180,10 +192,25 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
         )}
       </div>
 
-      {/* Domain attributes */}
+      {/* Domain attributes (+ combinações inline, após um divider) */}
       {renderSection(
         currentModuleConfig.domainSectionLabel,
-        visibleDomainAttributes.map((attr) => renderCard(attr)),
+        [
+          ...visibleDomainAttributes.map((attr) => renderCard(attr)),
+          ...(combinationsInline
+            ? [
+                // Divider + chips ficam juntos ao quebrar linha.
+                <span key="combinacoes-inline" className="inline-flex items-center gap-3">
+                  <span
+                    aria-hidden
+                    className="h-7 w-px shrink-0"
+                    style={{ backgroundColor: UI.pillBorder }}
+                  />
+                  {visibleCombinedAttributes.map((attr) => renderCombinedCard(attr))}
+                </span>,
+              ]
+            : []),
+        ],
         "domain",
       )}
 
@@ -197,12 +224,11 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
 
       {/* Combinações (somente Agrupamento): atributos formados pela junção de outros */}
       {combinations &&
+        !combinationsInline &&
         visibleCombinedAttributes.length > 0 &&
         renderSection(
           combinations.sectionLabel,
-          visibleCombinedAttributes.map((attr) =>
-            renderCard(attr, attr.sourceAttrIds.map(labelOf).join(" + ")),
-          ),
+          visibleCombinedAttributes.map((attr) => renderCombinedCard(attr)),
           "combinacoes",
           combinations.description,
         )}

@@ -33,6 +33,11 @@ export interface GroupingCombinationsSection {
   sectionLabel: string;
   /** Texto de apoio exibido ao lado do rótulo da faixa. */
   description: string;
+  /**
+   * `inline` (padrão): chips no fim da faixa do domínio (PRODUTO), após um divider.
+   * `section`: faixa própria entre o domínio e LOCALIZAÇÃO.
+   */
+  placement?: 'inline' | 'section';
   attributes: CombinedAttributeDef[];
 }
 
