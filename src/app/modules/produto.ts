@@ -28,6 +28,7 @@ import {
   Refrigerator,
   BarChart3,
   Award,
+  SwatchBook,
 } from 'lucide-react';
 import {
   CATEGORIAS_LIST,
@@ -42,12 +43,14 @@ import {
   TAMANHO_OPTIONS,
   SABOR_OPTIONS,
   MODELO_OPTIONS,
+  buildModeloCorOptions,
+  splitModeloCor,
   VENDEDOR_OPTIONS,
   SALA_OPTIONS,
   MESA_OPTIONS,
   filterMesasBySalasOptions,
 } from '../referenceData';
-import type { AttributeDef, ModuleConfig } from './types';
+import type { AttributeDef, CombinedAttributeDef, ModuleConfig } from './types';
 
 /** Métricas do bloco "Exposição de produtos" (sidebar + tabela); EXTRAVIOS remove estas da cópia base. */
 export const EXPOSICAO_PRODUTO_METRIC_IDS = [
@@ -129,6 +132,18 @@ export function isProdutoDomainAttrId(attrId: string): boolean {
   return PRODUTO_DOMAIN_ATTR_ID_SET.has(attrId);
 }
 
+/**
+ * MODELO/COR — concatenação de MODELO + COR (granularidade de SKU-cor).
+ * Só no módulo PRODUTO, na faixa «Combinações» da etapa de Agrupamento.
+ */
+export const MODELO_COR_ATTRIBUTE_DEF: CombinedAttributeDef = {
+  id: 'modelo_cor',
+  label: 'MODELO/COR',
+  icon: SwatchBook,
+  options: [],
+  sourceAttrIds: ['modelo', 'cor'],
+};
+
 // ──────────────────────────────────────────────────────────────
 // PRODUTO module configuration
 // ──────────────────────────────────────────────────────────────
@@ -140,6 +155,12 @@ export const produtoModule: ModuleConfig = {
 
   // ── Domain attributes ──────────────────────────────────────
   domainAttributes: PRODUTO_DOMAIN_ATTRIBUTE_DEFS,
+
+  groupingCombinations: {
+    sectionLabel: 'Combinações',
+    description: 'Atributos formados pela junção de outros atributos',
+    attributes: [MODELO_COR_ATTRIBUTE_DEF],
+  },
 
   // ── Dynamic options per domain attribute ──────────────────
   getDomainAttributeOptions(attrId, selections) {
@@ -206,6 +227,11 @@ export const produtoModule: ModuleConfig = {
       case 'genero':       return GENERO_OPTIONS;
       case 'faixa_etaria': return FAIXA_ETARIA_OPTIONS;
       case 'cor':          return COR_OPTIONS;
+      case 'modelo_cor': {
+        const modelos = selections['modelo']?.length ? selections['modelo'] : MODELO_OPTIONS;
+        const cores = selections['cor']?.length ? selections['cor'] : COR_OPTIONS;
+        return buildModeloCorOptions(modelos, cores);
+      }
       case 'tamanho':      return TAMANHO_OPTIONS;
       case 'sabor':        return SABOR_OPTIONS;
       default:             return [];
@@ -213,8 +239,20 @@ export const produtoModule: ModuleConfig = {
   },
 
   // ── Cross-attribute filter for AnalysisView grouping ──────
-  getFilteredGroupOptions(attrId, options, selections, _exclusions) {
+  getFilteredGroupOptions(attrId, options, selections, exclusions) {
     let result = options;
+
+    // modelo/cor ← exclusões de MODELO e COR (seleções já aplicadas nas opções base)
+    if (attrId === 'modelo_cor') {
+      const exModelos = new Set(exclusions['modelo'] || []);
+      const exCores = new Set(exclusions['cor'] || []);
+      if (exModelos.size > 0 || exCores.size > 0) {
+        result = result.filter((opt) => {
+          const parts = splitModeloCor(opt);
+          return !parts || (!exModelos.has(parts.modelo) && !exCores.has(parts.cor));
+        });
+      }
+    }
 
     // categoria ↔ modalidade
     if (attrId === 'modalidade') {
@@ -268,7 +306,6 @@ export const produtoModule: ModuleConfig = {
       tooltip:
         'Quantidade de itens vendidos (mock: entre 10% e 17% acima da Qtd de Vendas por posição).',
     },
-    { id: 'sss', label: '% SSS', icon: Activity },
     { id: 'cmv',             label: 'CMV',                 icon: DollarSign  },
     { id: 'lucro_bruto',     label: 'Lucro Bruto (LB)',    icon: DollarSign  },
     { id: 'margem',          label: '% Margem Bruta (MB)', icon: Percent     },
@@ -373,7 +410,7 @@ export const produtoModule: ModuleConfig = {
   ],
 
   metricDisplayOrder: [
-    'venda', 'qtd_venda', 'qtd_itens', 'sss', 'cmv', 'lucro_bruto', 'margem', 'margem_liquida',
+    'venda', 'qtd_venda', 'qtd_itens', 'cmv', 'lucro_bruto', 'margem', 'margem_liquida',
     'qtd_estoque', 'vlr_estoque', 'dep', 'def',
     'ppa',
     'vlr_plano', 'qtd_plano', 'qtd_desvio_plano', 'vlr_desvio_plano',

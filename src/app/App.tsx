@@ -24,6 +24,7 @@ import {
   type PendingAnalysisFeedback,
 } from "./components/analysis/AnalysisFeedback";
 import { FeedbackExportButton } from "./components/analysis/FeedbackExportButton";
+import { setBaseComparativaAtiva, type BaseComparativa } from "./referenceData";
 import {
   FEEDBACK_MIN_VIEW_MS,
   type AnalysisFeedbackContext,
@@ -73,6 +74,10 @@ function getMetricsSidebarDefaultsForModule(module: Module): Record<string, bool
     // EXTRAVIOS renderiza métricas flat (sem accordion).
     return {};
   }
+  if (module === "INDICADORES") {
+    // Accordions por contexto (metricSidebarGroups): só Venda aberto por padrão.
+    return { grp_venda: true, grp_atendimento: false, grp_produto: false };
+  }
   return { ...base };
 }
 
@@ -87,6 +92,8 @@ export default function App() {
   const [averagePeriodType, setAveragePeriodType] = useState<AveragePeriodType>(null);
   const [averageDropdownOpen, setAverageDropdownOpen] = useState(false);
   const [sharePctMode, setSharePctMode] = useState<SharePctMode>("off");
+  /** Base das métricas comparativas vs ano anterior (SSS = mesmas lojas, Overall = todas). */
+  const [baseComparativa, setBaseComparativa] = useState<BaseComparativa>("sss");
   const [isGenerating, setIsGenerating] = useState(false);
   /** Pesquisa de feedback aguardando exibição (aberta ao sair da análise). */
   const [feedbackPending, setFeedbackPending] = useState<PendingAnalysisFeedback | null>(null);
@@ -359,6 +366,15 @@ export default function App() {
     setSelectedMetrics(next);
     setResultMetricCatalog((catalog) => [...new Set([...catalog, ...next])]);
     setMetricsDraft(null);
+  };
+
+  /**
+   * Troca a base comparativa. A base é gravada no módulo de referência antes do
+   * re-render; o AnalysisView é remontado (key) para recalcular a tabela.
+   */
+  const handleBaseComparativaChange = (base: BaseComparativa) => {
+    setBaseComparativaAtiva(base);
+    setBaseComparativa(base);
   };
 
   const handleAnalysisModeChange = (mode: AnalysisMode) => {
@@ -694,6 +710,7 @@ export default function App() {
                 {currentStep === "analysis" && (
                   <div className="flex min-h-0 flex-1 flex-col">
                   <AnalysisView
+                    key={baseComparativa}
                     actionsContainer={actionsContainer}
                     moduleConfig={currentModuleConfig}
                     moduleColors={moduleColors}
@@ -735,6 +752,8 @@ export default function App() {
           </main>
 
           <MetricsSidebar
+            baseComparativa={baseComparativa}
+            onBaseComparativaChange={handleBaseComparativaChange}
             currentStep={currentStep}
             resultMetricCatalog={resultMetricCatalog}
             pendingSelectedMetrics={currentStep === "analysis" ? metricsDraft : null}

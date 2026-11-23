@@ -39,6 +39,8 @@ interface AttributeCardProps {
   moduleColors: ModuleColors;
   /** Agrupamento: quando já há 3 atributos, demais botões ficam desativados */
   groupingLimitReached?: boolean;
+  /** Agrupamento: motivo do bloqueio pela regra de combinações (pill desativada + tooltip). */
+  groupingBlockedReason?: string;
   selectionCount: number;
   isGrouped: boolean;
   groupLevel: number;
@@ -61,6 +63,7 @@ export function AttributeCard({
   step,
   moduleColors,
   groupingLimitReached = false,
+  groupingBlockedReason,
   selectionCount,
   isGrouped,
   groupLevel,
@@ -325,7 +328,9 @@ export function AttributeCard({
     (step === "selection" && selectionCount > 0) ||
     (step === "exclusion" && exclusionCount > 0);
   const isSelected2 = step === "grouping" && isGrouped;
-  const isGroupingDisabled = step === "grouping" && groupingLimitReached && !isGrouped;
+  const isGroupingBlocked = step === "grouping" && !!groupingBlockedReason && !isGrouped;
+  const isGroupingDisabled =
+    step === "grouping" && !isGrouped && (groupingLimitReached || isGroupingBlocked);
 
   const showHoverChrome =
     (isHover || isOpen) && !isGroupingDisabled;
@@ -346,13 +351,18 @@ export function AttributeCard({
     boxShadow: hover ? `0 0 0 3px ${tint(moduleColors.primaryColor, 0.12)}` : undefined,
   });
 
-  const tooltipContent = tooltip ? (
+  /** Bloqueio por combinação tem prioridade sobre o tooltip informativo. */
+  const effectiveTooltip = isGroupingBlocked ? groupingBlockedReason : tooltip;
+  const tooltipContent = effectiveTooltip ? (
     <RadixTooltip.Portal>
       <RadixTooltip.Content
-        className="z-[200] bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg max-w-[200px] text-center leading-snug"
+        className={cn(
+          "z-[200] bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg text-center leading-snug",
+          isGroupingBlocked ? "max-w-[240px]" : "max-w-[200px]",
+        )}
         sideOffset={6}
       >
-        {tooltip}
+        {effectiveTooltip}
         <RadixTooltip.Arrow className="fill-slate-800" />
       </RadixTooltip.Content>
     </RadixTooltip.Portal>
@@ -412,6 +422,8 @@ export function AttributeCard({
           BTN_DIM,
           "relative flex flex-col items-center justify-center group",
           isGroupingDisabled && "cursor-not-allowed",
+          // Deixa o hover chegar ao wrapper do tooltip (botão desativado não emite eventos).
+          isGroupingBlocked && "pointer-events-none",
           !isGroupingDisabled && "cursor-pointer",
         )}
         style={{
@@ -468,7 +480,7 @@ export function AttributeCard({
       </button>
     );
 
-    if (tooltip) {
+    if (effectiveTooltip) {
       return (
         <RadixTooltip.Root delayDuration={300}>
           <RadixTooltip.Trigger asChild>

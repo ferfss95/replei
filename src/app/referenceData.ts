@@ -2099,6 +2099,27 @@ export const applyParentContextToOptions = (
       }
     }
 
+    // ── MODELO/COR ↔ MODELO / COR (relação exata, sem fallback) ──────
+    if (
+      childAttrId === "modelo_cor" &&
+      (parentAttrId === "modelo" || parentAttrId === "cor")
+    ) {
+      const key = parentAttrId;
+      result = result.filter((opt) => splitModeloCor(opt)?.[key] === parentValue);
+      continue;
+    }
+    if (
+      (childAttrId === "modelo" || childAttrId === "cor") &&
+      parentAttrId === "modelo_cor"
+    ) {
+      const parts = splitModeloCor(parentValue);
+      if (parts) {
+        const value = parts[childAttrId];
+        result = result.filter((opt) => opt === value);
+      }
+      continue;
+    }
+
     // ── Aplica a restrição apenas se produzir resultado não-vazio ────
     if (allowed !== null && allowed.size > 0) {
       if (childAttrId === "cidade") {
@@ -2701,6 +2722,67 @@ export const MODELO_OPTIONS: string[] = MODELO_OPTIONS_RAW.map(
   formatModeloListEntry,
 );
 
+// --- MODELO/COR (atributo concatenado, PRODUTO › Agrupamento) ---
+
+/** Separador do atributo concatenado MODELO/COR: `"<modelo> / <cor>"`. */
+export const MODELO_COR_SEPARATOR = " / ";
+
+/**
+ * Cores em que cada modelo é comercializado (mock determinístico: 2 a 4 cores por modelo).
+ * Evita o produto cartesiano MODELO × COR, que geraria combinações inexistentes.
+ */
+export const CORES_BY_MODELO: Readonly<Record<string, readonly string[]>> =
+  Object.fromEntries(
+    MODELO_OPTIONS.map((modelo) => {
+      const len = COR_OPTIONS.length;
+      const seed = hashString(modelo, 51829);
+      const count = 2 + (seed % 3);
+      const start = seed % len;
+      const step = 1 + (Math.floor(seed / 7) % (len - 1));
+      const picked = new Set<string>();
+      for (let i = 0; picked.size < count && i < len; i++) {
+        picked.add(COR_OPTIONS[(start + i * step) % len]);
+      }
+      return [modelo, COR_OPTIONS.filter((c) => picked.has(c))];
+    }),
+  );
+
+export function joinModeloCor(modelo: string, cor: string): string {
+  return `${modelo}${MODELO_COR_SEPARATOR}${cor}`;
+}
+
+/** Separa `"<modelo> / <cor>"` (a cor é sempre o último segmento). */
+export function splitModeloCor(
+  entry: string,
+): { modelo: string; cor: string } | null {
+  const idx = entry.lastIndexOf(MODELO_COR_SEPARATOR);
+  if (idx === -1) return null;
+  return {
+    modelo: entry.slice(0, idx),
+    cor: entry.slice(idx + MODELO_COR_SEPARATOR.length),
+  };
+}
+
+/**
+ * Opções de MODELO/COR: concatenação de cada modelo com as cores em que existe,
+ * respeitando as listas de modelo e cor informadas (já filtradas por seleção/exclusão).
+ */
+export function buildModeloCorOptions(
+  modelos: readonly string[] = MODELO_OPTIONS,
+  cores: readonly string[] = COR_OPTIONS,
+): string[] {
+  const corSet = new Set(cores);
+  const out: string[] = [];
+  for (const modelo of modelos) {
+    for (const cor of CORES_BY_MODELO[modelo] ?? []) {
+      if (corSet.has(cor)) out.push(joinModeloCor(modelo, cor));
+    }
+  }
+  return out;
+}
+
+export const MODELO_COR_OPTIONS: string[] = buildModeloCorOptions();
+
 // --- MOCK DATA FOR METRICS ---
 
 export const MOCK_LUCRO_BRUTO = [
@@ -3099,6 +3181,28 @@ export const MOCK_IND_FLUXO = [
   1867, 2134, 1345, 1689, 1923, 1234, 1756,
 ];
 
+/** Arredonda a 3 casas (fração, ex.: 0.142 = 14,2%). */
+const roundMockRate = (n: number): number => Math.round(n * 1000) / 1000;
+
+// Var. Fluxo (MDSAA) — variação % do fluxo vs ano anterior | percent_variation | range: -7% a +14%
+export const MOCK_IND_CRESC_FLUXO = Array.from({ length: MOCK_IND_FLUXO.length }, (_, i) =>
+  roundMockRate(0.035 + (((i * 11) % 23) - 11) * 0.0099),
+);
+
+// Conversão — Qtd de Vendas ÷ Fluxo | percent1 | range: ~12% a ~20%
+// Coerência: conversão tende a cair quando o fluxo sobe (mais visitantes, mesma capacidade
+// de atendimento). Fórmula: 16,5% − (fluxo − 1.500) × 0,0038 ± ruído determinístico de 1,6 p.p.
+export const MOCK_IND_CONVERSAO = MOCK_IND_FLUXO.map((fluxo, i) =>
+  roundMockRate(0.165 - ((fluxo - 1500) / 1300) * 0.05 + (((i * 7) % 9) - 4) * 0.004),
+);
+
+// Var. Conversão (MDSAA) — variação % da conversão vs ano anterior | percent_variation | range: ~-6% a +6%
+// Coerência: acompanha o inverso do crescimento do fluxo (fluxo cresce → conversão tende a cair),
+// com ajuste de +2 p.p. para equilibrar altas e quedas, e ruído de ±3 p.p.
+export const MOCK_IND_CRESC_CONVERSAO = MOCK_IND_CRESC_FLUXO.map((crescFluxo, i) =>
+  roundMockRate(-0.5 * crescFluxo + 0.02 + (((i * 5) % 7) - 3) * 0.01),
+);
+
 // PMR — Prazo Médio de Recebimento | integer (dias) | range: 45–65
 export const MOCK_IND_PMR = [
   49, 53, 54, 57, 61, 52, 48, 59, 63, 51,
@@ -3370,10 +3474,46 @@ export const MOCK_EXT_VLR_SUCATAS = [
   1680, 9020, 4140, 5780, 3050, 7320, 3520,
 ];
 
-export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' | 'percent' | 'percent0' | 'integer' | 'days' | 'decimal' | 'decimal1' | 'percent1' | 'variation' | 'percent_capacity' }> = {
+export type MetricFormat =
+  | 'currency' | 'percent' | 'percent0' | 'integer' | 'days' | 'decimal' | 'decimal1'
+  | 'percent1' | 'variation' | 'percent_variation' | 'percent_capacity';
+
+// ── Base Comparativa (variações vs ano anterior) ─────────────
+// Mesmas Lojas (SSS): compara só lojas que existiam nos dois anos.
+// Todas Lojas (Overall): compara todas as lojas, incluindo aberturas e fechamentos.
+export type BaseComparativa = 'sss' | 'overall';
+
+export const BASE_COMPARATIVA_OPTIONS: { value: BaseComparativa; label: string }[] = [
+  { value: 'sss', label: 'Mesmas Lojas (SSS)' },
+  { value: 'overall', label: 'Todas Lojas (Overall)' },
+];
+
+/** Base ativa lida pelas métricas comparativas. Atualizada pelo App antes de cada re-render. */
+let baseComparativaAtiva: BaseComparativa = 'sss';
+
+export function setBaseComparativaAtiva(base: BaseComparativa): void {
+  baseComparativaAtiva = base;
+}
+
+// Overall: lojas novas somam crescimento (+) e lojas que fecharam/ainda não maduras puxam para baixo na conversão.
+const MOCK_SSS_OVERALL = MOCK_SSS.map((v) => roundMockRate(v + 0.012));
+const MOCK_IND_CRESC_FLUXO_OVERALL = MOCK_IND_CRESC_FLUXO.map((v) => roundMockRate(v + 0.015));
+const MOCK_IND_CRESC_CONVERSAO_OVERALL = MOCK_IND_CRESC_CONVERSAO.map((v) => roundMockRate(v - 0.004));
+
+/** Métrica comparativa: `data` troca conforme a Base Comparativa ativa (lido a cada cálculo). */
+function comparativeMetric(sssData: number[], overallData: number[], format: MetricFormat) {
+  return {
+    get data(): number[] {
+      return baseComparativaAtiva === 'overall' ? overallData : sssData;
+    },
+    format,
+  };
+}
+
+export const METRIC_CONFIG: Record<string, { data: number[], format: MetricFormat }> = {
   // Produto metrics
   'venda': { data: MOCK_ROB, format: 'currency' },
-  'sss': { data: MOCK_SSS, format: 'percent' },
+  'sss': comparativeMetric(MOCK_SSS, MOCK_SSS_OVERALL, 'percent'),
   'cmv': { data: MOCK_CMV, format: 'currency' },
   'margem': { data: MOCK_MARGEM, format: 'percent' },
   'margem_liquida': { data: MOCK_MARGEM_LIQUIDA, format: 'percent' },
@@ -3439,6 +3579,9 @@ export const METRIC_CONFIG: Record<string, { data: number[], format: 'currency' 
   'ind_paridade':      { data: MOCK_IND_PARIDADE,      format: 'decimal'  },
   'ind_cupons_mistos': { data: MOCK_IND_CUPONS_MISTOS, format: 'percent'  },
   'ind_fluxo':         { data: MOCK_IND_FLUXO,         format: 'integer'  },
+  'ind_cresc_fluxo':   comparativeMetric(MOCK_IND_CRESC_FLUXO, MOCK_IND_CRESC_FLUXO_OVERALL, 'percent_variation'),
+  'ind_conversao':     { data: MOCK_IND_CONVERSAO,     format: 'percent1' },
+  'ind_cresc_conversao': comparativeMetric(MOCK_IND_CRESC_CONVERSAO, MOCK_IND_CRESC_CONVERSAO_OVERALL, 'percent_variation'),
   'ind_pmr':           { data: MOCK_IND_PMR,           format: 'integer'  },
   'ind_nps':           { data: MOCK_IND_NPS,           format: 'percent1' },
   'ind_ruptura':       { data: MOCK_IND_RUPTURA,       format: 'percent'  },
@@ -3506,6 +3649,11 @@ export const formatMetricValue = (
       return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
     case 'decimal1':
       return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+    case 'percent_variation': {
+      // Variação percentual sempre em % (com sinal), 1 casa decimal
+      const signPct = value > 0 ? '+' : '';
+      return signPct + new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+    }
     case 'variation':
       // Para valores de variação (com cor positiva/negativa) - adiciona sinal
       const sign = value > 0 ? '+' : '';
@@ -3529,6 +3677,7 @@ export function isPercentRatioAggregatedAverage(
     format === 'percent' ||
     format === 'percent0' ||
     format === 'percent1' ||
+    format === 'percent_variation' ||
     format === 'percent_capacity'
   );
 }

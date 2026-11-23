@@ -222,6 +222,9 @@ export const indicadoresModule: ModuleConfig = {
     { id: 'ind_paridade',      label: 'Paridade',                 icon: Activity     },
     { id: 'ind_cupons_mistos', label: 'Cupons Mistos',            icon: Percent      },
     { id: 'ind_fluxo',         label: 'Fluxo',                    icon: TrendingUp   },
+    { id: 'ind_cresc_fluxo',   label: 'Var. Fluxo (MDSAA)',     icon: TrendingUp   },
+    { id: 'ind_conversao',     label: 'Conversão',                icon: Percent      },
+    { id: 'ind_cresc_conversao', label: 'Var. Conversão (MDSAA)', icon: TrendingUp },
     { id: 'ind_pmr',           label: 'PMR',                      icon: Clock        },
     { id: 'ind_nps',           label: 'NPS',                      icon: Star         },
     { id: 'ind_ruptura',       label: 'Ruptura',                  icon: Hash         },
@@ -263,6 +266,45 @@ export const indicadoresModule: ModuleConfig = {
     },
   ],
 
+  // ── Agrupamento do menu lateral de métricas ───────────────
+  // Só reagrupa os ids acima (nenhuma métrica nova). Cada id deve aparecer em um único grupo.
+  metricSidebarGroups: [
+    {
+      id: 'venda',
+      label: 'Venda',
+      metricIds: [
+        'ind_tkm',
+        'ind_pmi',
+        'ind_ipc',
+        'ind_paridade',
+        'ind_cupons_mistos',
+        'ind_ruptura',
+        'ind_ee',
+        'ind_pmr',
+        'ind_conv_click',
+      ],
+    },
+    {
+      id: 'atendimento',
+      label: 'Atendimento',
+      metricIds: [
+        'ind_fluxo',
+        'ind_cresc_fluxo',
+        'ind_conversao',
+        'ind_cresc_conversao',
+        'ind_nps',
+        'ind_cko_movel',
+        'ind_qtd_personalizacoes',
+        'ind_vlr_personalizacoes',
+      ],
+    },
+    {
+      id: 'produto',
+      label: 'Produto',
+      metricIds: ['ind_ppa', 'ind_match_preco', 'ind_match_preco_valor'],
+    },
+  ],
+
   // ── Ordem das colunas na tabela de resultados ─────────────
   metricDisplayOrder: [
     'ind_tkm',
@@ -271,6 +313,9 @@ export const indicadoresModule: ModuleConfig = {
     'ind_paridade',
     'ind_cupons_mistos',
     'ind_fluxo',
+    'ind_cresc_fluxo',
+    'ind_conversao',
+    'ind_cresc_conversao',
     'ind_pmr',
     'ind_nps',
     'ind_ruptura',

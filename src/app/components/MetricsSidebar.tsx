@@ -5,7 +5,6 @@ import {
   ChevronDown,
   PanelRightOpen,
   PanelRightClose,
-  Search,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../utils";
@@ -14,34 +13,21 @@ import type { MetricDef, ModuleConfig } from "../modules/types";
 import type { AnalysisMode } from "../types/wizard";
 import { type ModuleColors } from "../constants/moduleColors";
 import { UI, tint } from "../constants/uiTheme";
-import { Input } from "./ui/input";
-import { stripAccents } from "../utils/searchNormalize";
 import { getMetricSidebarLabel } from "../data/metricNaming";
 import {
   MetricCheckIconTooltip,
   MetricInfoIconTooltip,
 } from "./MetricOrientationTooltip";
-
-function metricMatchesNormalizedQuery(metric: MetricDef, normQuery: string): boolean {
-  if (!normQuery) return true;
-  const displayLabel = getMetricSidebarLabel(metric.id, metric.label);
-  const haystack = [
-    stripAccents(displayLabel.toLowerCase()),
-    stripAccents(metric.label.toLowerCase()),
-    metric.id.toLowerCase(),
-    metric.tooltip ? stripAccents(metric.tooltip.toLowerCase()) : "",
-  ].join(" ");
-  return haystack.includes(normQuery);
-}
-
-type MetricSearchCluster = {
-  key: string;
-  title: string;
-  subtitle?: string;
-  metrics: MetricDef[];
-};
+import {
+  BASE_COMPARATIVA_OPTIONS,
+  type BaseComparativa,
+} from "../referenceData";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 interface MetricsSidebarProps {
+  /** Base das métricas comparativas vs ano anterior (SSS ou Overall). */
+  baseComparativa: BaseComparativa;
+  onBaseComparativaChange: (base: BaseComparativa) => void;
   currentStep: Step;
   /** Ids ativados na preparação (histórico); no Calcular a sidebar lista todas as métricas do módulo. */
   resultMetricCatalog: string[];
@@ -64,6 +50,8 @@ interface MetricsSidebarProps {
 }
 
 export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSidebar({
+  baseComparativa,
+  onBaseComparativaChange,
   currentStep,
   resultMetricCatalog,
   pendingSelectedMetrics = null,
@@ -102,7 +90,6 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
   const showCapacidadeExposicaoFlat =
     currentModule === "PRODUTO" && analysisMode === "capacidade_exposicao";
   const [hoveredMetricId, setHoveredMetricId] = React.useState<string | null>(null);
-  const [metricsSearchQuery, setMetricsSearchQuery] = React.useState("");
   const isResultStep = currentStep === "analysis";
   // No Calcular todas as métricas do módulo ficam disponíveis: a inclusão/remoção
   // de colunas passa pelo "Aplicar alterações" (resultMetricCatalog é só histórico).
@@ -124,6 +111,20 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
       .filter((m): m is MetricDef => Boolean(m));
     return defs;
   }, [showCapacidadeExposicaoFlat, currentModuleConfig]);
+
+  // Agrupamento por contexto (ex.: INDICADORES): substitui o agrupamento padrão.
+  const customSidebarGroups = currentModuleConfig.metricSidebarGroups ?? null;
+  const customGroupsResolved = React.useMemo(
+    () =>
+      (customSidebarGroups ?? []).map((group) => ({
+        key: `grp_${group.id}`,
+        label: group.label,
+        metrics: group.metricIds
+          .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
+          .filter((m): m is MetricDef => Boolean(m)),
+      })),
+    [customSidebarGroups, currentModuleConfig],
+  );
 
   const planningMetrics = currentModuleConfig.planningMetrics || [];
   const excludedFromVendaEstoque = new Set(
@@ -177,113 +178,6 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
     (showVendaEstoqueAccordion ||
       showFlatMetricsList ||
       visibleExtraSidebarSections.length > 0);
-
-  React.useEffect(() => {
-    setMetricsSearchQuery("");
-  }, [currentModule]);
-
-  React.useEffect(() => {
-    if (isResultStep) setMetricsSearchQuery("");
-  }, [isResultStep]);
-
-  const trimmedSearch = metricsSearchQuery.trim();
-  const normSearchQuery = trimmedSearch
-    ? stripAccents(trimmedSearch.toLowerCase())
-    : "";
-  const isSearchMode = normSearchQuery.length > 0;
-
-  const searchClusters = React.useMemo((): MetricSearchCluster[] => {
-    if (!normSearchQuery) return [];
-
-    const planningIds = currentModuleConfig.planningMetrics || [];
-    const planningSet = new Set(planningIds);
-    const excludedFromVenda = new Set(
-      currentModuleConfig.metricsSidebarExcludeFromVendaEstoque || [],
-    );
-    const vendaMetrics = currentModuleConfig.metrics.filter(
-      (m) => !planningSet.has(m.id) && !excludedFromVenda.has(m.id),
-    );
-    const planMetrics = currentModuleConfig.metrics.filter((m) => planningSet.has(m.id));
-    const outrasIds = currentModuleConfig.metricsSidebarOutrasAfterPlanning || [];
-    const outrasMetrics = outrasIds
-      .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
-      .filter((m): m is MetricDef => Boolean(m));
-    const hasPlanAccordion = planMetrics.length > 0 || outrasMetrics.length > 0;
-    const extras = (currentModuleConfig.metricSidebarExtraSections || []).filter(
-      (section) => {
-        if (hideExposicaoProdutos && section.sidebarGroupId === "exposicao_produtos") return false;
-        // A seção "Capacidade de Exposição" é renderizada flat no topo (não como accordion).
-      if (section.sidebarGroupId === "capacidade_exposicao_metrics") return false;
-        return true;
-      },
-    );
-
-    const match = (m: MetricDef) => metricMatchesNormalizedQuery(m, normSearchQuery);
-    const clusters: MetricSearchCluster[] = [];
-
-    // PRODUTO + Capacidade de Exposição: inclui as 3 métricas flat como cluster.
-    if (showCapacidadeExposicaoFlat) {
-      const section = (currentModuleConfig.metricSidebarExtraSections || []).find(
-        (s) => s.sidebarGroupId === "capacidade_exposicao_metrics",
-      );
-      if (section) {
-        const ids = section.groups.flatMap((g) => g.metricIds);
-        const hits = ids
-          .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
-          .filter((m): m is MetricDef => Boolean(m))
-          .filter(match);
-        if (hits.length > 0) {
-          clusters.push({ key: "capacidade_exposicao_flat", title: "Métricas", metrics: hits });
-        }
-      }
-    }
-
-    if (!hideVendaEstoqueAndPlanning) {
-      const veHits = vendaMetrics.filter(match);
-      if (veHits.length > 0) {
-        clusters.push({
-          key: isLojaFlatMetrics ? "metricas_flat" : "venda_estoque",
-          title: isLojaFlatMetrics ? "Métricas" : "Venda e Estoque",
-          metrics: veHits,
-        });
-      }
-    }
-
-    extras.forEach((section, sectionIdx) => {
-      const groupId = section.sidebarGroupId ?? `metric_extra_${sectionIdx}`;
-      section.groups.forEach((group) => {
-        const metrics = group.metricIds
-          .map((id) => currentModuleConfig.metrics.find((m) => m.id === id))
-          .filter((m): m is MetricDef => Boolean(m))
-          .filter(match);
-        if (metrics.length > 0) {
-          clusters.push({
-            key: `${groupId}__${group.subtitle}`,
-            title: section.title,
-            subtitle: group.subtitle,
-            metrics,
-          });
-        }
-      });
-    });
-
-    if (hasPlanAccordion && !hideVendaEstoqueAndPlanning) {
-      const planLabel =
-        currentModuleConfig.metricsSidebarPlanningGroupLabel ?? "Planejamento";
-      const planOrdered: MetricDef[] = [];
-      for (const m of planMetrics) {
-        if (match(m)) planOrdered.push(m);
-      }
-      for (const m of outrasMetrics) {
-        if (match(m)) planOrdered.push(m);
-      }
-      if (planOrdered.length > 0) {
-        clusters.push({ key: "planejamento", title: planLabel, metrics: planOrdered });
-      }
-    }
-
-    return clusters;
-  }, [normSearchQuery, currentModuleConfig, isLojaFlatMetrics, hideVendaEstoqueAndPlanning, hideExposicaoProdutos, showCapacidadeExposicaoFlat]);
 
   const renderMetricRow = (
     metric: Pick<MetricDef, "id" | "label" | "tooltip" | "orientation" | "formula">,
@@ -388,56 +282,67 @@ export const MetricsSidebar = React.memo<MetricsSidebarProps>(function MetricsSi
 
       {!metricsCollapsed && (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4">
-          {!isResultStep ? (
-          <div className="shrink-0 bg-white pb-3 pt-0">
-            <div className="relative">
-              <Search
-                size={14}
-                className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#90A1B9]"
-                aria-hidden
-              />
-              <Input
-                value={metricsSearchQuery}
-                onChange={(e) => setMetricsSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") setMetricsSearchQuery("");
-                }}
-                placeholder="Buscar métricas…"
-                aria-label="Buscar métricas no menu lateral"
-                className="h-9 border-[#d5dbe3] bg-white pl-8 text-[13px] shadow-none placeholder:text-slate-400 focus-visible:border-slate-400 focus-visible:ring-slate-200"
-              />
-            </div>
+          <div className="shrink-0 pb-4">
+            <p
+              className="mb-1.5 text-[12px] font-semibold uppercase tracking-[0.2px]"
+              style={{ color: UI.title }}
+              id="base-comparativa-label"
+            >
+              Base Comparativa
+            </p>
+            <RadioGroup
+              value={baseComparativa}
+              onValueChange={(value) => onBaseComparativaChange(value as BaseComparativa)}
+              aria-labelledby="base-comparativa-label"
+              className="gap-2"
+            >
+              {BASE_COMPARATIVA_OPTIONS.map((opt) => {
+                const checked = baseComparativa === opt.value;
+                return (
+                  <label
+                    key={opt.value}
+                    htmlFor={`base-comparativa-${opt.value}`}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-[14px] transition-colors hover:bg-[#F4F4F5]"
+                    style={{ color: checked ? moduleColors.primaryColor : UI.text }}
+                  >
+                    <RadioGroupItem
+                      id={`base-comparativa-${opt.value}`}
+                      value={opt.value}
+                      className="size-4 border-[#d5dbe3] data-[state=checked]:border-current"
+                      style={{ color: moduleColors.primaryColor }}
+                    />
+                    <span className={cn(checked && "font-semibold")}>{opt.label}</span>
+                  </label>
+                );
+              })}
+            </RadioGroup>
           </div>
-          ) : null}
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="space-y-4">
-              {isSearchMode ? (
-                searchClusters.length === 0 ? (
-                  <p className="px-1 py-10 text-center text-[13px] leading-relaxed text-slate-500">
-                    Nenhuma métrica encontrada para &ldquo;{trimmedSearch}&rdquo;.
-                  </p>
-                ) : (
-                  searchClusters.map((cluster) => (
-                    <div key={cluster.key} className="space-y-2">
-                      <div className="border-l-2 border-slate-200 pl-2.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#62748E]">
-                          {cluster.title}
-                        </p>
-                        {cluster.subtitle ? (
-                          <p
-                            className="mt-0.5 text-[10px] font-semibold tracking-wide"
-                            style={{ color: "rgba(86, 104, 120, 0.75)" }}
-                          >
-                            {cluster.subtitle}
-                          </p>
-                        ) : null}
+              {customGroupsResolved.length > 0 && !hideVendaEstoqueAndPlanning ? (
+                customGroupsResolved.map((group, groupIdx) => (
+                  <React.Fragment key={group.key}>
+                    {groupIdx > 0 ? (
+                      <div className="py-2">
+                        <div className="h-px bg-slate-200" />
                       </div>
-                      <div className="space-y-1.5">
-                        {cluster.metrics.map((metric) => renderMetricRow(metric))}
-                      </div>
+                    ) : null}
+                    <div className="space-y-2">
+                      {renderGroupHeader(group.key, group.label)}
+                      {metricsGroupExpanded[group.key] && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-1.5 pl-1"
+                        >
+                          {group.metrics.map((metric) => renderMetricRow(metric))}
+                        </motion.div>
+                      )}
                     </div>
-                  ))
-                )
+                  </React.Fragment>
+                ))
               ) : showFlatMetricsList ? (
                 <div className="space-y-1.5">{vendaEstoqueMetricRows}</div>
               ) : showCapacidadeExposicaoFlat && capacidadeExposicaoMetrics.length > 0 ? (

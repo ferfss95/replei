@@ -72,7 +72,7 @@ export const MetricCell = React.memo<MetricCellProps>(
     const formatted = formatMetricValue(value, format);
 
     // Apply color for variation metrics (positive/negative)
-    if (format === 'variation') {
+    if (format === 'variation' || format === 'percent_variation') {
       const v = value ?? 0;
       const isPositive = v > 0;
       const isNegative = v < 0;

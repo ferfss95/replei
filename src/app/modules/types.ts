@@ -19,14 +19,51 @@ export interface DomainAttributeExtraRow {
   attributes: AttributeDef[];
 }
 
-/** Primeira linha + linhas extras — para label, ícone e checagem de opções de domínio. */
+/**
+ * Atributo combinado: junção de atributos existentes (ex.: MODELO/COR = MODELO + COR).
+ * Vive na faixa «Combinações», exclusiva da etapa de Agrupamento.
+ */
+export interface CombinedAttributeDef extends AttributeDef {
+  /** Atributos de origem, na ordem da concatenação. */
+  sourceAttrIds: string[];
+}
+
+/** Faixa «Combinações» do Agrupamento (entre PRODUTO e LOCALIZAÇÃO). */
+export interface GroupingCombinationsSection {
+  sectionLabel: string;
+  /** Texto de apoio exibido ao lado do rótulo da faixa. */
+  description: string;
+  attributes: CombinedAttributeDef[];
+}
+
+/** Primeira linha + linhas extras + combinações — para label, ícone e opções de domínio. */
 export function collectAllDomainAttributes(
   config: ModuleConfig,
 ): AttributeDef[] {
   const extra = (config.domainAttributeExtraRows ?? []).flatMap(
     (row) => row.attributes,
   );
-  return [...config.domainAttributes, ...extra];
+  const combined = config.groupingCombinations?.attributes ?? [];
+  return [...config.domainAttributes, ...extra, ...combined];
+}
+
+/**
+ * Regra de hierarquia das combinações: um atributo combinado é sempre o nível
+ * mais detalhado em relação às suas origens. Se a combinação já está no
+ * agrupamento, as origens não podem entrar abaixo dela (cada linha teria um
+ * único filho). Retorna o motivo do bloqueio ou `null`.
+ */
+export function getCombinedGroupingBlockReason(
+  config: ModuleConfig,
+  attrId: string,
+  grouping: string[],
+): string | null {
+  if (grouping.includes(attrId)) return null;
+  const combined = (config.groupingCombinations?.attributes ?? []).find(
+    (c) => grouping.includes(c.id) && c.sourceAttrIds.includes(attrId),
+  );
+  if (!combined) return null;
+  return `Já detalhado por ${combined.label}: abaixo dele cada linha teria um único item. Para usar este atributo, inclua-o antes de ${combined.label}.`;
 }
 
 export interface MetricDef {
@@ -44,6 +81,17 @@ export interface MetricDef {
 /** Subtítulo dentro de uma seção extra do menu de métricas (ex.: PRODUTO exposição) */
 export interface MetricSidebarExtraGroup {
   subtitle: string;
+  metricIds: string[];
+}
+
+/**
+ * Accordion de métricas no menu lateral, agrupado por contexto de negócio.
+ * Quando `metricSidebarGroups` está definido no módulo, substitui o agrupamento
+ * padrão (Venda e Estoque / extras / Planejamento). Não cria métricas: só reagrupa ids existentes.
+ */
+export interface MetricSidebarGroup {
+  id: string;
+  label: string;
   metricIds: string[];
 }
 
@@ -71,6 +119,12 @@ export interface ModuleConfig {
    * Ex.: LOJA e INDICADORES exibem o bloco «Produto» (SALA…SABOR) após LOCALIZAÇÃO.
    */
   domainAttributeExtraRows?: DomainAttributeExtraRow[];
+
+  /**
+   * Faixa «Combinações» (somente etapa de Agrupamento): atributos formados pela
+   * junção de outros atributos, ex.: MODELO/COR no PRODUTO.
+   */
+  groupingCombinations?: GroupingCombinationsSection;
 
   /**
    * Resolves the live option list for a domain attribute.
@@ -120,6 +174,8 @@ export interface ModuleConfig {
   metricsSidebarExcludeFromVendaEstoque?: string[];
   /** Seções extras no menu de métricas (ex.: Exposição de produtos no PRODUTO) */
   metricSidebarExtraSections?: MetricSidebarExtraSection[];
+  /** Accordions de métricas por contexto (ex.: INDICADORES: Venda / Atendimento / Produto) */
+  metricSidebarGroups?: MetricSidebarGroup[];
 
   /**
    * Fator de escala da `meta_mensal_loja` por `attrId` do nó folha.

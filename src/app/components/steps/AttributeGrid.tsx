@@ -9,7 +9,12 @@ import {
 import type { AnalysisMode } from "../../types/wizard";
 import { ScrollableRow } from "../ScrollableRow";
 import { AttributeCard as SmartAttributeCard } from "../AttributeCard";
-import type { AttributeDef, ModuleConfig } from "../../modules/types";
+import {
+  collectAllDomainAttributes,
+  getCombinedGroupingBlockReason,
+  type AttributeDef,
+  type ModuleConfig,
+} from "../../modules/types";
 import type { ModuleColors } from "../../constants/moduleColors";
 import { UI, UI_CARD_CLASS } from "../../constants/uiTheme";
 
@@ -59,10 +64,13 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
     "sabor",
     "modelo",
     "cor",
+    "modelo_cor",
     "tamanho",
   ]);
+  const isProdutoCapacidade =
+    currentModule === "PRODUTO" && analysisMode === "capacidade_exposicao";
   const filterDomainForAnalysis = <T extends { id: string }>(attrs: T[]): T[] => {
-    if (currentModule === "PRODUTO" && analysisMode === "capacidade_exposicao") {
+    if (isProdutoCapacidade) {
       return attrs.filter((a) => !PRODUTO_CAPACIDADE_HIDDEN_DOMAIN_IDS.has(a.id));
     }
     return attrs;
@@ -71,7 +79,25 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
     currentModuleConfig.domainAttributes,
   );
 
-  const renderCard = (attr: AttributeDef, tooltip?: string) => (
+  /** Faixa «Combinações»: só no Agrupamento (e fora da Capacidade de Exposição). */
+  const combinations = currentModuleConfig.groupingCombinations;
+  const visibleCombinedAttributes =
+    currentStep === "grouping" && combinations
+      ? filterDomainForAnalysis(combinations.attributes)
+      : [];
+
+  /** Rótulo de um atributo (domínio, linhas extras ou localização) — para "MODELO + COR". */
+  const labelOf = (id: string) =>
+    collectAllDomainAttributes(currentModuleConfig).find((a) => a.id === id)?.label ??
+    visibleLocationAttributes.find((a) => a.id === id)?.label ??
+    id.toUpperCase();
+
+  const renderCard = (attr: AttributeDef, tooltip?: string) => {
+    const blockedReason =
+      currentStep === "grouping"
+        ? getCombinedGroupingBlockReason(currentModuleConfig, attr.id, grouping)
+        : null;
+    return (
     <SmartAttributeCard
       key={attr.id}
       attribute={{ ...attr, options: getAttributeOptions(attr.id) }}
@@ -80,6 +106,7 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
       groupingLimitReached={
         currentStep === "grouping" && grouping.length >= MAX_GROUPING_LEVELS
       }
+      groupingBlockedReason={blockedReason ?? undefined}
       selectionCount={selections[attr.id]?.length || 0}
       isGrouped={grouping.includes(attr.id)}
       groupLevel={grouping.indexOf(attr.id) + 1}
@@ -91,14 +118,20 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
       currentExclusion={exclusions[attr.id] || []}
       tooltip={tooltip}
     />
-  );
+    );
+  };
 
-  /** Faixa com o rótulo da seção (PRODUTO / LOCALIZAÇÃO) + linha de pills. */
-  const renderSection = (label: string, cards: React.ReactNode, key: string) => (
+  /** Faixa com o rótulo da seção (PRODUTO / LOCALIZAÇÃO / COMBINAÇÕES) + linha de pills. */
+  const renderSection = (
+    label: string,
+    cards: React.ReactNode,
+    key: string,
+    description?: string,
+  ) => (
     <div key={key}>
       {label && (
       <div
-        className="border-y px-6 py-3"
+        className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-y px-6 py-3"
         style={{ backgroundColor: UI.sectionBand, borderColor: "#EFEFF1" }}
       >
         <span
@@ -107,6 +140,9 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
         >
           {label}
         </span>
+        {description && (
+          <span className="text-[12px] text-slate-500">{description}</span>
+        )}
       </div>
       )}
       <div className="px-6 py-4">
@@ -158,6 +194,18 @@ export const AttributeGrid = React.memo<AttributeGridProps>(function AttributeGr
           `${row.sectionLabel}-${rowIdx}`,
         ),
       )}
+
+      {/* Combinações (somente Agrupamento): atributos formados pela junção de outros */}
+      {combinations &&
+        visibleCombinedAttributes.length > 0 &&
+        renderSection(
+          combinations.sectionLabel,
+          visibleCombinedAttributes.map((attr) =>
+            renderCard(attr, attr.sourceAttrIds.map(labelOf).join(" + ")),
+          ),
+          "combinacoes",
+          combinations.description,
+        )}
 
       {/* Localização (only shown for modules that use separate location section) */}
       {currentModule === "PRODUTO" &&

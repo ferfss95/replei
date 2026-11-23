@@ -394,6 +394,10 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     "match_preco",
     "ind_ppa",
     "ind_match_preco",
+    // Razões e variações de fluxo: não somam entre linhas, então não recebem Add %
+    "ind_cresc_fluxo",
+    "ind_conversao",
+    "ind_cresc_conversao",
   ]);
 
   // Temporal chart: color palette — sem conflito com azul (seleção), verde (resultado) ou vermelho (exclusão)
@@ -831,6 +835,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       case "decimal1":
         return 90; // Decimais (ex: 12,5, 123,45)
       case "variation":
+      case "percent_variation":
         return 85; // Variações (ex: +5,2%, -3,4%)
       default:
         return 95; // Default
@@ -853,7 +858,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
     );
 
     // Apply color for variation metrics (positive/negative)
-    if (config?.format === "variation") {
+    if (config?.format === "variation" || config?.format === "percent_variation") {
       const isPositive = value > 0;
       const isNegative = value < 0;
       const colorClass = isPositive
@@ -3054,6 +3059,7 @@ export const AnalysisView = React.memo<AnalysisViewProps>(function AnalysisView(
       case "decimal1":
         return 90; // Decimais (ex: 12,5, 123,45)
       case "variation":
+      case "percent_variation":
         return 85; // Variações (ex: +5,2%, -3,4%)
       default:
         return 95; // Default

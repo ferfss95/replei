@@ -203,7 +203,7 @@ export const lojaModule: ModuleConfig = {
       tooltip:
         'Quantidade de vendas realizadas (proxy baseado em ROB dividido pelo Ticket Médio).',
     },
-    { id: 'sss', label: '% SSS', icon: BarChart3 },
+    { id: 'sss', label: 'SSS (MDSAA)', icon: BarChart3 },
     { id: 'margem_bruta',  label: '% Margem Bruta (MB)', icon: Percent      },
     { id: 'valor_meta',    label: 'Vlr Meta',            icon: Target       },
     {

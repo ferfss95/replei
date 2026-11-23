@@ -21,6 +21,7 @@ import {
 import type { AnalysisMode } from '../types/wizard';
 import {
   collectAllDomainAttributes,
+  getCombinedGroupingBlockReason,
   type ModuleConfig,
 } from '../modules/types';
 import {
@@ -249,13 +250,15 @@ export const useAttributeFilters = (props: UseAttributeFiltersProps) => {
             return prev.filter((id) => id !== attrId);
           } else {
             if (prev.length >= MAX_GROUPING_LEVELS) return prev;
+            // Combinações: origem (ex.: MODELO) não entra abaixo da combinação (MODELO/COR).
+            if (getCombinedGroupingBlockReason(currentModuleConfig, attrId, prev)) return prev;
             // Add at the end (next level)
             return [...prev, attrId];
           }
         });
       }
     },
-    [currentStep],
+    [currentStep, currentModuleConfig],
   );
 
   // ─── ACTIVE FILTERS (Consolidated selections + exclusions) ───
