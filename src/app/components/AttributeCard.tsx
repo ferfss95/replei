@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Check, Search, Filter, Trash2, Anchor, Tag, Minus, Ban, Link2 } from "lucide-react";
+import { Check, Search, Filter, Trash2, Anchor, Tag, Minus, Ban, Layers } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { cn } from "../utils";
@@ -349,13 +349,8 @@ export function AttributeCard({
 
   /** Pill neutra: fundo branco e contorno cinza (realça com a cor do módulo no hover). */
   const idlePillStyle = (hover: boolean): React.CSSProperties => ({
-    // Combinado: fundo levemente tingido e contorno na cor do módulo, para diferenciar dos atributos simples.
-    backgroundColor: combined ? tint(moduleColors.primaryColor, 0.05) : "#FFFFFF",
-    borderColor: hover
-      ? tint(moduleColors.primaryColor, 0.55)
-      : combined
-        ? tint(moduleColors.primaryColor, 0.35)
-        : UI.pillBorder,
+    backgroundColor: "#FFFFFF",
+    borderColor: hover ? tint(moduleColors.primaryColor, 0.55) : UI.pillBorder,
     boxShadow: hover ? `0 0 0 3px ${tint(moduleColors.primaryColor, 0.12)}` : undefined,
   });
 
@@ -435,8 +430,9 @@ export function AttributeCard({
           !isGroupingDisabled && "cursor-pointer",
         )}
         style={{
-          borderWidth: 1,
-          borderStyle: "solid",
+          // Combinado (MODELO/COR): contorno tracejado (1,5px p/ os traços ficarem legíveis) enquanto não agrupado.
+          borderWidth: combined && !isSelected2 ? 1.5 : 1,
+          borderStyle: combined && !isSelected2 ? "dashed" : "solid",
           ...(isGroupingDisabled
             ? {
                 backgroundColor: "#FFFFFF",
@@ -464,14 +460,15 @@ export function AttributeCard({
             </span>
           </span>
         ) : combined ? (
-          <span className="flex items-center justify-center gap-1.5 px-3">
-            <Link2
-              size={14}
+          <span className="flex items-center justify-center gap-2 px-3">
+            {/* Camadas: atributo formado pela sobreposição de outros (MODELO + COR). */}
+            <Layers
+              size={16}
               className="shrink-0"
               style={{
-                color: isGroupingDisabled ? "rgba(113, 113, 122, 0.5)" : moduleColors.primaryColor,
+                color: isGroupingDisabled ? "rgba(113, 113, 122, 0.5)" : NEUTRAL_TEXT,
               }}
-              strokeWidth={2.25}
+              strokeWidth={2}
               aria-hidden
             />
             <span
